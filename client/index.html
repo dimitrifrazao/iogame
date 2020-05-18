@@ -1,0 +1,45 @@
+Hello world
+<canvas id="ctx" width="500" height="500" style="border:1px solid #000000"></canvas>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    var ctx = document.getElementById("ctx").getContext("2d");
+    ctx.font = '30px Arial';
+    var socket = io();
+
+    socket.on('update', function(data){
+        ctx.clearRect(0,0,500,500);
+        ctx.beginPath();
+        for(var i=0; i<data.length; i++){
+            ctx.fillRect(data[i].x, data[i].y, 50, 50);
+            let rgbText = "rgb(" + data[i].r+ "," + data[i].g + "," + data[i].b + ")";
+            ctx.fillStyle = rgbText;
+        }
+        ctx.stroke();
+    });
+
+    var push = function(dirValue){
+        socket.emit('ctrl', {dir:dirValue});
+    }
+
+    document.onkeydown = function(event){
+        if(event.keyCode === 68){
+            socket.emit('keyPress', {inputId:"right", state:true});
+        }
+        else if(event.keyCode === 83){
+            socket.emit('keyPress', {inputId:"down", state:true});
+        }
+        else if(event.keyCode === 65){
+            socket.emit('keyPress', {inputId:"left", state:true});
+        }
+        else if(event.keyCode === 87){
+            socket.emit('keyPress', {inputId:"up", state:true});
+        }
+
+    }
+
+</script>
+
+<button onclick="push('up')" onkeydown="">Up</button>
+<button onclick="push('down')">Down</button>
+<button onclick="push('left')">Left</button>
+<button onclick="push('right')">Right</button>
