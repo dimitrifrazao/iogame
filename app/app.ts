@@ -15,67 +15,66 @@ app.use('/client', express.static(clientPath));
 
 serv.listen(2000);
 
+var playerModule = require('./gameObjects/player');
+var Player = playerModule.Player;
+
 type myMap = Record<number, any>;
 type myMap2 = Record<number, any>;
 const SOCKET_LIST: myMap = {};
-const PLAYER_LIST: myMap2 = {};
-
-var Player = function(id: number){
-    var self = {
-        x:250,
-        y:250,
-        id:id,
-        r : Math.random() * 255,
-        g : Math.random() * 255,
-        b : Math.random() * 255,
-        dir : "",
-        number : "" + Math.floor(10 * Math.random())
-    }
-    return self;
-}
+//const PLAYER_LIST: myMap2 = {};
 
 var io = require('socket.io')(serv, {});
 io.sockets.on('connection', function(socket:any){
     console.log('socket connection!');
     SOCKET_LIST[socket.id] = socket;
     var player = Player(socket.id);
-    PLAYER_LIST[socket.id] = player;
+    playerModule.PlayerList[socket.id] = player;
 
     socket.on('ctrl', function(data:any){
-        console.log(data.dir);
-        player.dir = data.dir;
+        //console.log(data.dir);
+        player.setDirection(data.dir, data.state);
     });
 
     socket.on('keyPress', function(data:any){
-        console.log(data.inputId);
-        player.dir = data.inputId;
+        //console.log("press " + data.dir);
+        player.setDirection(data.dir, data.state);
+    });
+
+    socket.on('keyPull', function(data:any){
+        //console.log("pull " + data.dir);
+        player.setDirection(data.dir, data.state);
     });
 
     socket.on('disconnect', function(){
         delete  SOCKET_LIST[socket.id];
-        delete  PLAYER_LIST[socket.id];
+        delete  playerModule.PlayerList[socket.id];
     });
 });
 
-setInterval(function(){
-    var pack = []
-    for(var i in PLAYER_LIST){
-        var player = PLAYER_LIST[i];
+var lastUpdate = Date.now();
 
-        switch(player.dir){
-            case "up":
-                player.y -= 1;
-                break;
-            case "down":
-                player.y += 1;
-                break;
-            case "left":
-                player.x -= 1;
-                break;
-            case "right":
-                player.x += 1;
-                break;
+var lastUpdate = Date.now();
+var myInterval = setInterval(tick, 0);
+var dt = 0;
+
+function tick() {
+    let now = Date.now();
+    dt = now - lastUpdate;
+    lastUpdate = now;
+}
+
+setInterval(function(){
+
+    var pack = []
+    for(var i in playerModule.PlayerList){
+        var player = playerModule.PlayerList[i];
+
+        player.updatePosition(dt);
+
+        for(var j in playerModule.PlayerList){
+            var player2 = playerModule.PlayerList[j];
         }
+        
         pack.push({
             x:player.x,
             y:player.y,
