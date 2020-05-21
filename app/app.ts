@@ -15,8 +15,11 @@ app.use('/client', express.static(clientPath));
 
 serv.listen(2000);
 
-var playerModule = require('./gameObjects/player');
-var Player = playerModule.Player;
+let playerModule = require('./gameObjects/player');
+let Player = playerModule.Player;
+//let transformModule = require('./gameObjects/transform');
+import { Bullet } from './gameObjects/bullet';
+import { DirEnum } from './gameObjects/transform';
 
 type myMap = Record<number, any>;
 type myMap2 = Record<number, any>;
@@ -45,6 +48,28 @@ io.sockets.on('connection', function(socket:any){
         player.setDirection(data.dir, data.state);
     });
 
+    socket.on('shoot', function(data:any){
+        console.log("shoot");
+        if(player.bullets>0){
+            player.removeBullet();
+            switch(data.dir){
+                case("left"):
+                    Bullet.AddBullet(player, DirEnum.Left);
+                    break;
+                case("right"):
+                    Bullet.AddBullet(player, DirEnum.Right);
+                    break;
+                case("up"):
+                    Bullet.AddBullet(player, DirEnum.Up);
+                    break;
+                case("down"):
+                    Bullet.AddBullet(player, DirEnum.Down);
+                    break;
+            }
+        }
+        
+    });
+
     socket.on('disconnect', function(){
         delete  SOCKET_LIST[socket.id];
         delete  playerModule.PlayerList[socket.id];
@@ -65,14 +90,21 @@ function tick() {
 
 setInterval(function(){
 
-    var pack = []
+    let pack:object[] = []
     for(var i in playerModule.PlayerList){
         var player = playerModule.PlayerList[i];
 
         player.updatePosition(dt);
 
         for(var j in playerModule.PlayerList){
-            var player2 = playerModule.PlayerList[j];
+            if(i!=j){
+                var player2 = playerModule.PlayerList[j];
+                if(player.hasTouched(player2)){
+                    player.update = false;
+                    player2.update = false;
+                }
+            }
+            
         }
         
         pack.push({
@@ -80,9 +112,57 @@ setInterval(function(){
             y:player.y,
             r: player.r,
             g: player.g,
-            b: player.b
+            b: player.b,
+            size:30
         });
     }
+
+    Bullet.UpdateBullets();
+
+    let toDeleteBullets = [];
+    for(let bullet of Bullet.BulletList){
+        let skip = false;
+        for(let bullet2 of Bullet.BulletList)
+        {
+            if(bullet !== bullet2){
+                if(bullet.checkCollision(bullet2)){
+                    toDeleteBullets.push(bullet);
+                    skip = true;
+                    continue;
+                }
+            }
+        }
+        for(let i in playerModule.PlayerList){
+            let player = playerModule.PlayerList[i];
+            if(bullet.checkCollision(player)===true){
+                if(bullet.owner !== player){
+                    player.update = false;
+                    player.r = 255;
+                    player.g = 0;
+                    player.b = 0;
+                }
+                skip = true;
+                toDeleteBullets.push(bullet);
+                console.log("hit player");
+            }
+        }
+        if(skip===false){
+            pack.push({
+                x:bullet.x,
+                y:bullet.y,
+                r: 100,
+                g: 100,
+                b: 100,
+                size:10
+            });
+        }
+        
+    }
+    for(let bullet of toDeleteBullets){
+        Bullet.DeleteBullet(bullet);
+    }
+    
+
     for(var i in SOCKET_LIST){
         var socket = SOCKET_LIST[i];
         socket.emit('update', pack);

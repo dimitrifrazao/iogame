@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 var PLAYER_LIST = {};
 var Player = function (id) {
     var self = {
@@ -13,7 +14,11 @@ var Player = function (id) {
         dirDown: false,
         dirLeft: false,
         dirRight: false,
+        update: true,
         number: "" + Math.floor(10 * Math.random()),
+        bullets: 10,
+        addBullet: function () { self.bullets++; },
+        removeBullet: function () { self.bullets--; },
         setDirection: function (inputId, state) {
             switch (inputId) {
                 case "up":
@@ -31,22 +36,27 @@ var Player = function (id) {
             }
         },
         updatePosition: function (delta) {
-            if (self.dirUp === true)
-                self.y -= self.speed * delta;
-            if (self.dirDown === true)
-                self.y += self.speed * delta;
-            if (self.dirLeft === true)
-                self.x -= self.speed * delta;
-            if (self.dirRight === true)
-                self.x += self.speed * delta;
-            if (self.x > 1000)
-                self.x = -30;
-            if (self.x < -30)
-                self.x = 1000;
-            if (self.y > 500)
-                self.y = -30;
-            if (self.y < -30)
-                self.y = 500;
+            if (self.update === true) {
+                if (self.dirUp === true)
+                    self.y -= self.speed * delta;
+                if (self.dirDown === true)
+                    self.y += self.speed * delta;
+                if (self.dirLeft === true)
+                    self.x -= self.speed * delta;
+                if (self.dirRight === true)
+                    self.x += self.speed * delta;
+                if (self.x > 1000)
+                    self.x = -30;
+                if (self.x < -30)
+                    self.x = 1000;
+                if (self.y > 500)
+                    self.y = -30;
+                if (self.y < -30)
+                    self.y = 500;
+            }
+        },
+        hasTouched: function (player) {
+            return (Math.abs(self.x - player.x) < 30) && (Math.abs(self.y - player.y) < 30);
         }
     };
     return self;
