@@ -6,7 +6,7 @@ type bulletMap = Record<number, Bullet>;
 export class Bullet extends Transform implements IMove
 {
     dir:DirEnum = DirEnum.None;
-    speed:number = 3;
+    speed:number = 4;
     index:number = -1;
     owner: any;
     static BulletList: Bullet[] = [];
@@ -42,12 +42,10 @@ export class Bullet extends Transform implements IMove
 
     
     public static AddBullet( owner:any, dir:DirEnum){
-        console.log("bullet added");
         let bullet = new Bullet(
             owner.pos.x , 
             owner.pos.y , 
             owner)
-
         bullet.dir = dir;
         bullet.index = Bullet.BulletList.length;
         Bullet.BulletList.push(bullet);

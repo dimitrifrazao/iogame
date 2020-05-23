@@ -30,11 +30,11 @@ io.sockets.on('connection', function (socket) {
     player.pos.y = Math.random() * 500;
     PLAYER_LIST[socket.id] = player;
     socket.on('playerDir', function (data) {
-        console.log("press " + data.dir);
+        //console.log("press " + data.dir);
         player.SetDirection(data.dir);
     });
     socket.on('shootDir', function (data) {
-        console.log("shoot");
+        //console.log("shoot");
         bullet_1.Bullet.AddBullet(player, data.dir);
     });
     socket.on('disconnect', function () {
@@ -56,6 +56,25 @@ setInterval(function () {
     for (var i_1 in PLAYER_LIST) {
         var player = PLAYER_LIST[i_1];
         player.UpdatePosition(dt);
+    }
+    var toRevertPos = [];
+    for (var i_2 in PLAYER_LIST) {
+        var player = PLAYER_LIST[i_2];
+        for (var j in PLAYER_LIST) {
+            var player2 = PLAYER_LIST[j];
+            if (i_2 != j && player.CheckCollision(player2) == true) {
+                toRevertPos.push(player);
+                continue;
+            }
+        }
+    }
+    for (var _i = 0, toRevertPos_1 = toRevertPos; _i < toRevertPos_1.length; _i++) {
+        var player = toRevertPos_1[_i];
+        player.RevertPositionUpdate();
+        console.log("reverting");
+    }
+    for (var i_3 in PLAYER_LIST) {
+        var player = PLAYER_LIST[i_3];
         pack.push({
             pos: player.GetTopLeftPos(),
             color: player.color,
@@ -64,11 +83,11 @@ setInterval(function () {
     }
     bullet_1.Bullet.UpdateBullets(dt);
     var newBulletList = [];
-    for (var _i = 0, _a = bullet_1.Bullet.BulletList; _i < _a.length; _i++) {
-        var bullet = _a[_i];
+    for (var _a = 0, _b = bullet_1.Bullet.BulletList; _a < _b.length; _a++) {
+        var bullet = _b[_a];
         var deleteBullet = false;
-        for (var _b = 0, _c = bullet_1.Bullet.BulletList; _b < _c.length; _b++) {
-            var bullet2 = _c[_b];
+        for (var _c = 0, _d = bullet_1.Bullet.BulletList; _c < _d.length; _c++) {
+            var bullet2 = _d[_c];
             if (bullet.index != bullet2.index) {
                 if (bullet.CheckCollision(bullet2)) {
                     deleteBullet = true;
@@ -76,28 +95,28 @@ setInterval(function () {
                 }
             }
         }
-        for (var i_2 in PLAYER_LIST) {
-            var player = PLAYER_LIST[i_2];
+        for (var i_4 in PLAYER_LIST) {
+            var player = PLAYER_LIST[i_4];
             if (bullet.CheckCollision(player) === true) {
                 if (bullet.owner.id != player.id) {
                     player.color = new transform_1.Color(255, 0, 0);
                     deleteBullet = true;
-                    console.log("hit player");
+                    //console.log("hit player");
                 }
                 else {
-                    console.log("hit owner");
+                    //console.log("hit owner");
                 }
             }
         }
         if (deleteBullet === false) {
-            pack.push({
-                pos: bullet.GetTopLeftPos(),
-                color: transform_1.Color.Black,
-                size: bullet.sizeX
-            });
             bullet.index = newBulletList.length;
             newBulletList.push(bullet);
         }
+        pack.push({
+            pos: bullet.GetTopLeftPos(),
+            color: transform_1.Color.Black,
+            size: bullet.sizeX
+        });
     }
     bullet_1.Bullet.BulletList = newBulletList;
     for (var i in SOCKET_LIST) {

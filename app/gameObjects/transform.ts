@@ -42,9 +42,33 @@ export class Color{
 }
 
 export class Vector{
+    static UpLeft:Vector = new Vector(-1,-1).normal();
+    static UpRight:Vector = new Vector(1,-1).normal();
+    static DownLeft:Vector = new Vector(-1,1).normal();
+    static DownRight:Vector = new Vector(1,1).normal();
+
+    static Add(vec1: Vector, vec2:Vector){
+        return new Vector(vec1.x+vec2.x, vec1.y+vec2.y);
+    }
+    static Sub(vec1: Vector, vec2:Vector){
+        return new Vector(vec1.x-vec2.x, vec1.y-vec2.y);
+    }
+
+    static ScaleBy(vec:Vector, scale:number){
+        let newVec = new Vector(vec.x, vec.y);
+        newVec.scaleBy(scale);
+        return newVec;
+    }
+
     constructor(public x:number=0, public y:number=0){}
-    add(vec:Vector):Vector{return new Vector(this.x + vec.x, this.y + vec.y)};
-    sub(vec:Vector):Vector{return new Vector(this.x - vec.x, this.y - vec.y)};
+    add(vec:Vector){
+        this.x += vec.x;
+        this.y += vec.y;
+    };
+    sub(vec:Vector){
+        this.x -= vec.x;
+        this.y -= vec.y;
+    };
     len():number{return Math.sqrt( (this.x*this.x) + (this.y*this.y) )};
     normal():Vector{return new Vector(this.x/this.len(), this.y/this.len())};
     normalize():void{
@@ -56,7 +80,7 @@ export class Vector{
         this.y *= scale;
     }
     distaceTo(target:Vector):number{
-        return target.sub(this).len();
+        return Vector.Sub(target, this).len();
     }
 }
 

@@ -69,8 +69,29 @@ setInterval(function(){
     let pack:object[] = []
     for(let i in PLAYER_LIST){
         let player = PLAYER_LIST[i];
-
         player.UpdatePosition(dt);
+    }
+
+    let toRevertPos:Player[] = [];
+    for(let i in PLAYER_LIST){
+        let player = PLAYER_LIST[i];
+
+        for(let j in PLAYER_LIST){
+            let player2 = PLAYER_LIST[j];
+            if(i!=j && player.CheckCollision(player2)==true){
+                toRevertPos.push(player);
+                continue;
+            }
+        }
+    }
+
+    for(let player of toRevertPos){
+        player.RevertPositionUpdate();
+        console.log("reverting");
+    }
+
+    for(let i in PLAYER_LIST){
+        let player = PLAYER_LIST[i];
 
         pack.push({
             pos: player.GetTopLeftPos(),
@@ -109,15 +130,14 @@ setInterval(function(){
             }
         }
         if(deleteBullet===false){
-            pack.push({
-                pos: bullet.GetTopLeftPos(),
-                color: Color.Black,
-                size:bullet.sizeX
-            });
             bullet.index = newBulletList.length;
             newBulletList.push(bullet);
         }
-        
+        pack.push({
+            pos: bullet.GetTopLeftPos(),
+            color: Color.Black,
+            size:bullet.sizeX
+        });        
     }
 
     Bullet.BulletList = newBulletList;

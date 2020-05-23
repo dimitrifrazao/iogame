@@ -57,9 +57,26 @@ var Vector = /** @class */ (function () {
         this.x = x;
         this.y = y;
     }
-    Vector.prototype.add = function (vec) { return new Vector(this.x + vec.x, this.y + vec.y); };
+    Vector.Add = function (vec1, vec2) {
+        return new Vector(vec1.x + vec2.x, vec1.y + vec2.y);
+    };
+    Vector.Sub = function (vec1, vec2) {
+        return new Vector(vec1.x - vec2.x, vec1.y - vec2.y);
+    };
+    Vector.ScaleBy = function (vec, scale) {
+        var newVec = new Vector(vec.x, vec.y);
+        newVec.scaleBy(scale);
+        return newVec;
+    };
+    Vector.prototype.add = function (vec) {
+        this.x += vec.x;
+        this.y += vec.y;
+    };
     ;
-    Vector.prototype.sub = function (vec) { return new Vector(this.x - vec.x, this.y - vec.y); };
+    Vector.prototype.sub = function (vec) {
+        this.x -= vec.x;
+        this.y -= vec.y;
+    };
     ;
     Vector.prototype.len = function () { return Math.sqrt((this.x * this.x) + (this.y * this.y)); };
     ;
@@ -74,8 +91,12 @@ var Vector = /** @class */ (function () {
         this.y *= scale;
     };
     Vector.prototype.distaceTo = function (target) {
-        return target.sub(this).len();
+        return Vector.Sub(target, this).len();
     };
+    Vector.UpLeft = new Vector(-1, -1).normal();
+    Vector.UpRight = new Vector(1, -1).normal();
+    Vector.DownLeft = new Vector(-1, 1).normal();
+    Vector.DownRight = new Vector(1, 1).normal();
     return Vector;
 }());
 exports.Vector = Vector;

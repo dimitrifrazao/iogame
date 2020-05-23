@@ -24,6 +24,7 @@ var Player = /** @class */ (function (_super) {
         _this.dir = transform_1.DirEnum.None;
         _this.speed = 3;
         _this.bullets = 10;
+        _this.previousPos = new transform_1.Vector();
         return _this;
     }
     Player.Remove = function (player) {
@@ -32,15 +33,29 @@ var Player = /** @class */ (function (_super) {
     Player.prototype.SetDirection = function (dir) {
         this.dir = dir;
     };
+    Player.prototype.RevertPositionUpdate = function () {
+        this.pos.x = this.previousPos.x;
+        this.pos.y = this.previousPos.y;
+    };
     Player.prototype.UpdatePosition = function (dt) {
+        this.previousPos.x = this.pos.x;
+        this.previousPos.y = this.pos.y;
         switch (this.dir) {
             case (transform_1.DirEnum.UpLeft):
+                this.pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.UpLeft, this.speed * dt));
+                break;
             case (transform_1.DirEnum.UpRight):
+                this.pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.UpRight, this.speed * dt));
+                break;
             case transform_1.DirEnum.Up:
                 this.pos.y -= this.speed * dt;
                 break;
             case (transform_1.DirEnum.DownLeft):
+                this.pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.DownLeft, this.speed * dt));
+                break;
             case (transform_1.DirEnum.DownRight):
+                this.pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.DownRight, this.speed * dt));
+                break;
             case transform_1.DirEnum.Down:
                 this.pos.y += this.speed * dt;
                 break;

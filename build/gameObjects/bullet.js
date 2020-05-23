@@ -20,7 +20,7 @@ var Bullet = /** @class */ (function (_super) {
     function Bullet(x, y, owner) {
         var _this = _super.call(this, x, y, 10, 10) || this;
         _this.dir = transform_1.DirEnum.None;
-        _this.speed = 3;
+        _this.speed = 4;
         _this.index = -1;
         _this.owner = owner;
         return _this;
@@ -50,7 +50,6 @@ var Bullet = /** @class */ (function (_super) {
             this.pos.y = 500;
     };
     Bullet.AddBullet = function (owner, dir) {
-        console.log("bullet added");
         var bullet = new Bullet(owner.pos.x, owner.pos.y, owner);
         bullet.dir = dir;
         bullet.index = Bullet.BulletList.length;

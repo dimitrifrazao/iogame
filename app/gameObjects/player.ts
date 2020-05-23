@@ -1,5 +1,5 @@
 
-import { Transform, DirEnum, Color, IMove } from './transform';
+import { Transform, DirEnum, Color, IMove, Vector } from './transform';
 
 export class Player extends Transform implements IMove{
 
@@ -9,10 +9,10 @@ export class Player extends Transform implements IMove{
     public dir:DirEnum = DirEnum.None;
     public speed:number = 3;
     public bullets:number = 10;
+    public previousPos:Vector = new Vector();
 
     constructor(public id:number){
         super(0,0, 30, 30);
-        
     }
 
     static Remove(player:Player){
@@ -23,15 +23,30 @@ export class Player extends Transform implements IMove{
         this.dir = dir;
     }
 
+    RevertPositionUpdate(){
+        this.pos.x = this.previousPos.x;
+        this.pos.y = this.previousPos.y;
+    }
+
     UpdatePosition(dt:number){
+        this.previousPos.x = this.pos.x;
+        this.previousPos.y = this.pos.y;
         switch(this.dir){
             case(DirEnum.UpLeft):
-                    case(DirEnum.UpRight):
+                this.pos.add( Vector.ScaleBy(Vector.UpLeft, this.speed * dt) );
+                break;
+            case(DirEnum.UpRight):
+                this.pos.add( Vector.ScaleBy(Vector.UpRight, this.speed * dt) );
+                break;
             case DirEnum.Up:
                 this.pos.y -= this.speed * dt;
                 break;
             case(DirEnum.DownLeft):
+                this.pos.add( Vector.ScaleBy(Vector.DownLeft, this.speed * dt) );
+                break;
             case(DirEnum.DownRight):
+                this.pos.add( Vector.ScaleBy(Vector.DownRight, this.speed * dt) );
+                break;
             case DirEnum.Down:
                 this.pos.y += this.speed * dt;
                 break;
