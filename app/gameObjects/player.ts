@@ -1,7 +1,56 @@
-type myMap = Record<number, any>;
-const PLAYER_LIST: myMap = {};
 
-import { Transform, DirEnum } from './transform';
+import { Transform, DirEnum, Color, IMove } from './transform';
+
+export class Player extends Transform implements IMove{
+
+    static PLAYER_LIST: Player[] = [];
+
+    color:Color = Color.CreateRandom();
+    public dir:DirEnum = DirEnum.None;
+    public speed:number = 3;
+    public bullets:number = 10;
+
+    constructor(public id:number){
+        super(0,0, 30, 30);
+        
+    }
+
+    static Remove(player:Player){
+        delete Player.PLAYER_LIST[player.id];
+    }
+
+    SetDirection(dir:DirEnum){
+        this.dir = dir;
+    }
+
+    UpdatePosition(dt:number){
+        switch(this.dir){
+            case(DirEnum.UpLeft):
+                    case(DirEnum.UpRight):
+            case DirEnum.Up:
+                this.pos.y -= this.speed * dt;
+                break;
+            case(DirEnum.DownLeft):
+            case(DirEnum.DownRight):
+            case DirEnum.Down:
+                this.pos.y += this.speed * dt;
+                break;
+            case DirEnum.Left:
+                this.pos.x -= this.speed * dt;
+                break;
+            case DirEnum.Right:
+                this.pos.x += this.speed * dt;
+                break;
+        }
+
+        if(this.pos.x > 1000) this.pos.x = -30;
+        if(this.pos.x < -30) this.pos.x = 1000;
+        if(this.pos.y > 500) this.pos.y = -30;
+        if(this.pos.y < -30) this.pos.y = 500;
+    }
+}
+
+/*
 
 var Player = function(id: number){
     var self = {
@@ -12,41 +61,39 @@ var Player = function(id: number){
         r : Math.random() * 255,
         g : Math.random() * 255,
         b : Math.random() * 255,
-        dirUp: false,
-        dirDown: false,
-        dirLeft: false,
-        dirRight: false,
+        dir:DirEnum.None,
         update: true,
         number : "" + Math.floor(10 * Math.random()),
         bullets:10,
         addBullet: function(){self.bullets++},
         removeBullet: function(){self.bullets--},
 
-        setDirection: function(inputId: string, state:boolean){
-            switch(inputId){
-                case "up":
-                    self.dirUp = state;
-                    break;
-                case "down":
-                    self.dirDown = state;
-                    break;
-                case "left":
-                    self.dirLeft = state;
-                    break;
-                case "right":
-                    self.dirRight = state;
-                    break;
-            }
-
+        setDirection: function(dir:DirEnum){
+            self.dir = dir;
         },
 
         updatePosition: function(delta:number){
             if(self.update===true){
 
-                if(self.dirUp === true)self.y -= self.speed * delta;
-                if(self.dirDown === true) self.y += self.speed * delta;
-                if(self.dirLeft === true)self.x -= self.speed * delta;
-                if(self.dirRight === true) self.x += self.speed * delta;
+                switch(self.dir){
+                    case(DirEnum.UpLeft):
+                    case(DirEnum.UpRight):
+                    case(DirEnum.Up):
+                    self.y -= self.speed * delta;
+                    break;
+                    case(DirEnum.DownLeft):
+                    case(DirEnum.DownRight):
+                    case(DirEnum.Down):
+                    self.y += self.speed * delta;
+                    break;
+
+                    case(DirEnum.Left):
+                    self.x -= self.speed * delta;
+                    break;
+                    case(DirEnum.Right):
+                    self.x += self.speed * delta;
+                    break;
+                }
 
                 if(self.x > 1000) self.x = -30;
                 if(self.x < -30) self.x = 1000;
@@ -61,8 +108,4 @@ var Player = function(id: number){
     }
     return self;
 }
-
-module.exports = {
-    Player: Player,
-    PlayerList: PLAYER_LIST
-};
+*/

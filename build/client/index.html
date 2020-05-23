@@ -1,0 +1,39 @@
+<canvas id="ctx" width="1000" height="500" style="border:1px solid #000000"></canvas>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/client/inputManager.js"></script>
+<script>
+    var ctx = document.getElementById("ctx").getContext("2d");
+    ctx.font = '30px Arial';
+    var socket = io();
+
+    socket.on('update', function(data){
+        ctx.clearRect(0,0,1000,500);
+        ctx.beginPath();
+        for(var i=0; i<data.length; i++){
+            let pos = data[i].pos;
+            let color = data[i].color;
+            let size = data[i].size;
+            let rgbText = "rgb(" + color.r+ "," + color.g + "," + color.b + ")";
+            ctx.fillStyle = rgbText;
+            ctx.fillRect(pos.x, pos.y, size, size);
+            //if(x<0 || x > 500 || y < 0 || )
+            
+        }
+        ctx.stroke();
+    });
+
+    InputManager.SetSocket(socket);
+
+    document.onkeydown = function(event){
+        InputManager.OnKeyDown(event.keyCode);
+    }
+
+    document.onkeyup = function(event){
+        InputManager.OnKeyUp(event.keyCode);
+    }
+
+    document.onkeypress = function(event){
+        InputManager.OnKeyPress(event.keyCode);
+    }
+
+</script>

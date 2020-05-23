@@ -4,63 +4,42 @@ var express = require("express");
 var app = express();
 var serv = require('http').Server(app);
 var path = require('path');
-var indexPath = path.join(__dirname + '../../client/index.html');
+var indexPath = path.join(__dirname + '/client/index.html');
 console.log(indexPath);
 app.get('/', function (req, res) {
     res.sendFile(indexPath);
 });
-var clientPath = path.join(__dirname + '../../client');
+var clientPath = path.join(__dirname + '/client');
 console.log(clientPath);
 app.use('/client', express.static(clientPath));
 serv.listen(2000);
-var playerModule = require('./gameObjects/player');
-var Player = playerModule.Player;
+//let playerModule = require('./gameObjects/player');
+//let Player = playerModule.Player;
 //let transformModule = require('./gameObjects/transform');
 var bullet_1 = require("./gameObjects/bullet");
 var transform_1 = require("./gameObjects/transform");
+var player_1 = require("./gameObjects/player");
 var SOCKET_LIST = {};
-//const PLAYER_LIST: myMap2 = {};
+var PLAYER_LIST = {};
 var io = require('socket.io')(serv, {});
 io.sockets.on('connection', function (socket) {
     console.log('socket connection!');
     SOCKET_LIST[socket.id] = socket;
-    var player = Player(socket.id);
-    playerModule.PlayerList[socket.id] = player;
-    socket.on('ctrl', function (data) {
-        //console.log(data.dir);
-        player.setDirection(data.dir, data.state);
+    var player = new player_1.Player(socket.id);
+    player.pos.x = Math.random() * 1000;
+    player.pos.y = Math.random() * 500;
+    PLAYER_LIST[socket.id] = player;
+    socket.on('playerDir', function (data) {
+        console.log("press " + data.dir);
+        player.SetDirection(data.dir);
     });
-    socket.on('keyPress', function (data) {
-        //console.log("press " + data.dir);
-        player.setDirection(data.dir, data.state);
-    });
-    socket.on('keyPull', function (data) {
-        //console.log("pull " + data.dir);
-        player.setDirection(data.dir, data.state);
-    });
-    socket.on('shoot', function (data) {
+    socket.on('shootDir', function (data) {
         console.log("shoot");
-        if (player.bullets > 0) {
-            player.removeBullet();
-            switch (data.dir) {
-                case ("left"):
-                    bullet_1.Bullet.AddBullet(player, transform_1.DirEnum.Left);
-                    break;
-                case ("right"):
-                    bullet_1.Bullet.AddBullet(player, transform_1.DirEnum.Right);
-                    break;
-                case ("up"):
-                    bullet_1.Bullet.AddBullet(player, transform_1.DirEnum.Up);
-                    break;
-                case ("down"):
-                    bullet_1.Bullet.AddBullet(player, transform_1.DirEnum.Down);
-                    break;
-            }
-        }
+        bullet_1.Bullet.AddBullet(player, data.dir);
     });
     socket.on('disconnect', function () {
         delete SOCKET_LIST[socket.id];
-        delete playerModule.PlayerList[socket.id];
+        delete PLAYER_LIST[socket.id];
     });
 });
 var lastUpdate = Date.now();
@@ -74,71 +53,53 @@ function tick() {
 }
 setInterval(function () {
     var pack = [];
-    for (var i in playerModule.PlayerList) {
-        var player = playerModule.PlayerList[i];
-        player.updatePosition(dt);
-        for (var j in playerModule.PlayerList) {
-            if (i != j) {
-                var player2 = playerModule.PlayerList[j];
-                if (player.hasTouched(player2)) {
-                    player.update = false;
-                    player2.update = false;
-                }
-            }
-        }
+    for (var i_1 in PLAYER_LIST) {
+        var player = PLAYER_LIST[i_1];
+        player.UpdatePosition(dt);
         pack.push({
-            x: player.x,
-            y: player.y,
-            r: player.r,
-            g: player.g,
-            b: player.b,
-            size: 30
+            pos: player.GetTopLeftPos(),
+            color: player.color,
+            size: player.sizeX
         });
     }
-    bullet_1.Bullet.UpdateBullets();
-    var toDeleteBullets = [];
+    bullet_1.Bullet.UpdateBullets(dt);
+    var newBulletList = [];
     for (var _i = 0, _a = bullet_1.Bullet.BulletList; _i < _a.length; _i++) {
         var bullet = _a[_i];
-        var skip = false;
+        var deleteBullet = false;
         for (var _b = 0, _c = bullet_1.Bullet.BulletList; _b < _c.length; _b++) {
             var bullet2 = _c[_b];
-            if (bullet !== bullet2) {
-                if (bullet.checkCollision(bullet2)) {
-                    toDeleteBullets.push(bullet);
-                    skip = true;
+            if (bullet.index != bullet2.index) {
+                if (bullet.CheckCollision(bullet2)) {
+                    deleteBullet = true;
                     continue;
                 }
             }
         }
-        for (var i_1 in playerModule.PlayerList) {
-            var player_1 = playerModule.PlayerList[i_1];
-            if (bullet.checkCollision(player_1) === true) {
-                if (bullet.owner !== player_1) {
-                    player_1.update = false;
-                    player_1.r = 255;
-                    player_1.g = 0;
-                    player_1.b = 0;
+        for (var i_2 in PLAYER_LIST) {
+            var player = PLAYER_LIST[i_2];
+            if (bullet.CheckCollision(player) === true) {
+                if (bullet.owner.id != player.id) {
+                    player.color = new transform_1.Color(255, 0, 0);
+                    deleteBullet = true;
+                    console.log("hit player");
                 }
-                skip = true;
-                toDeleteBullets.push(bullet);
-                console.log("hit player");
+                else {
+                    console.log("hit owner");
+                }
             }
         }
-        if (skip === false) {
+        if (deleteBullet === false) {
             pack.push({
-                x: bullet.x,
-                y: bullet.y,
-                r: 100,
-                g: 100,
-                b: 100,
-                size: 10
+                pos: bullet.GetTopLeftPos(),
+                color: transform_1.Color.Black,
+                size: bullet.sizeX
             });
+            bullet.index = newBulletList.length;
+            newBulletList.push(bullet);
         }
     }
-    for (var _d = 0, toDeleteBullets_1 = toDeleteBullets; _d < toDeleteBullets_1.length; _d++) {
-        var bullet = toDeleteBullets_1[_d];
-        bullet_1.Bullet.DeleteBullet(bullet);
-    }
+    bullet_1.Bullet.BulletList = newBulletList;
     for (var i in SOCKET_LIST) {
         var socket = SOCKET_LIST[i];
         socket.emit('update', pack);

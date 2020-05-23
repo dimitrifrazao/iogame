@@ -17,55 +17,49 @@ exports.Bullet = void 0;
 var transform_1 = require("./transform");
 var Bullet = /** @class */ (function (_super) {
     __extends(Bullet, _super);
-    function Bullet(x, y, size, owner) {
-        var _this = _super.call(this, x, y, size) || this;
+    function Bullet(x, y, owner) {
+        var _this = _super.call(this, x, y, 10, 10) || this;
         _this.dir = transform_1.DirEnum.None;
         _this.speed = 3;
         _this.index = -1;
         _this.owner = owner;
         return _this;
     }
-    Bullet.prototype.updatePosition = function () {
+    Bullet.prototype.UpdatePosition = function (dt) {
         switch (this.dir) {
             case (transform_1.DirEnum.Up):
-                this.y -= this.speed;
+                this.pos.y -= this.speed * dt;
                 break;
             case (transform_1.DirEnum.Down):
-                this.y += this.speed;
+                this.pos.y += this.speed * dt;
                 break;
             case (transform_1.DirEnum.Left):
-                this.x -= this.speed;
+                this.pos.x -= this.speed * dt;
                 break;
             case (transform_1.DirEnum.Right):
-                this.x += this.speed;
+                this.pos.x += this.speed * dt;
                 break;
         }
-        if (this.x > 1000)
-            this.x = -this.size;
-        if (this.x < -this.size)
-            this.x = 1000;
-        if (this.y > 500)
-            this.y = -this.size;
-        if (this.y < -this.size)
-            this.y = 500;
+        if (this.pos.x > 1000)
+            this.pos.x = -this.sizeX;
+        if (this.pos.x < -this.sizeX)
+            this.pos.x = 1000;
+        if (this.pos.y > 500)
+            this.pos.y = -this.sizeY;
+        if (this.pos.y < -this.sizeY)
+            this.pos.y = 500;
     };
     Bullet.AddBullet = function (owner, dir) {
         console.log("bullet added");
-        var bullet = new Bullet(owner.x, owner.y, 10, owner);
-        bullet.index = Bullet.BulletList.length;
+        var bullet = new Bullet(owner.pos.x, owner.pos.y, owner);
         bullet.dir = dir;
+        bullet.index = Bullet.BulletList.length;
         Bullet.BulletList.push(bullet);
     };
-    Bullet.DeleteBullet = function (bullet) {
-        bullet.owner.addBullet();
-        var index = bullet.index;
-        delete Bullet.BulletList[index];
-        Bullet.BulletList.splice(index, 1);
-    };
-    Bullet.UpdateBullets = function () {
+    Bullet.UpdateBullets = function (dt) {
         for (var _i = 0, _a = Bullet.BulletList; _i < _a.length; _i++) {
             var bullet = _a[_i];
-            bullet.updatePosition();
+            bullet.UpdatePosition(dt);
         }
     };
     Bullet.GetBulletData = function () {
@@ -73,12 +67,12 @@ var Bullet = /** @class */ (function (_super) {
         for (var _i = 0, _a = Bullet.BulletList; _i < _a.length; _i++) {
             var bullet = _a[_i];
             bData.push({
-                x: bullet.x,
-                y: bullet.y,
+                x: bullet.pos.x,
+                y: bullet.pos.y,
                 r: 255,
                 g: 100,
                 b: 0,
-                size: bullet.size
+                size: bullet.sizeX
             });
         }
         return bData;
