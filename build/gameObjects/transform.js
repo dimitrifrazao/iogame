@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Transform = exports.Vector = exports.Color = exports.convertDirString = exports.DirEnum = void 0;
+exports.Transform = exports.Vector = exports.Color = exports.DirEnum = void 0;
 var DirEnum;
 (function (DirEnum) {
     DirEnum[DirEnum["None"] = 0] = "None";
@@ -13,24 +13,6 @@ var DirEnum;
     DirEnum[DirEnum["DownLeft"] = 7] = "DownLeft";
     DirEnum[DirEnum["DownRight"] = 8] = "DownRight";
 })(DirEnum = exports.DirEnum || (exports.DirEnum = {}));
-function convertDirString(dir) {
-    switch (dir) {
-        case "up":
-            return DirEnum.Up;
-            break;
-        case "down":
-            return DirEnum.Down;
-            break;
-        case "left":
-            return DirEnum.Left;
-            break;
-        case "right":
-            return DirEnum.Right;
-            break;
-    }
-    return DirEnum.None;
-}
-exports.convertDirString = convertDirString;
 var Color = /** @class */ (function () {
     function Color(r, g, b) {
         if (r === void 0) { r = 0; }
@@ -40,7 +22,7 @@ var Color = /** @class */ (function () {
         this.g = g;
         this.b = b;
     }
-    Color.CreateRandom = function () {
+    Color.Random = function () {
         return new Color(Math.random() * Color.maxValue, Math.random() * Color.maxValue, Math.random() * Color.maxValue);
     };
     ;
@@ -57,17 +39,6 @@ var Vector = /** @class */ (function () {
         this.x = x;
         this.y = y;
     }
-    Vector.Add = function (vec1, vec2) {
-        return new Vector(vec1.x + vec2.x, vec1.y + vec2.y);
-    };
-    Vector.Sub = function (vec1, vec2) {
-        return new Vector(vec1.x - vec2.x, vec1.y - vec2.y);
-    };
-    Vector.ScaleBy = function (vec, scale) {
-        var newVec = new Vector(vec.x, vec.y);
-        newVec.scaleBy(scale);
-        return newVec;
-    };
     Vector.prototype.add = function (vec) {
         this.x += vec.x;
         this.y += vec.y;
@@ -93,6 +64,42 @@ var Vector = /** @class */ (function () {
     Vector.prototype.distaceTo = function (target) {
         return Vector.Sub(target, this).len();
     };
+    Vector.GetDirVector = function (dir) {
+        switch (dir) {
+            case DirEnum.Up:
+                return Vector.Up;
+                break;
+            case DirEnum.Down:
+                return Vector.Down;
+                break;
+            case DirEnum.Left:
+                return Vector.Left;
+                break;
+            case DirEnum.Right:
+                return Vector.Right;
+                break;
+            default:
+                return new Vector();
+                break;
+        }
+    };
+    Vector.Copy = function (vec) { return new Vector(vec.x, vec.y); };
+    ;
+    Vector.Add = function (vec1, vec2) {
+        return new Vector(vec1.x + vec2.x, vec1.y + vec2.y);
+    };
+    Vector.Sub = function (vec1, vec2) {
+        return new Vector(vec1.x - vec2.x, vec1.y - vec2.y);
+    };
+    Vector.ScaleBy = function (vec, scale) {
+        var newVec = new Vector(vec.x, vec.y);
+        newVec.scaleBy(scale);
+        return newVec;
+    };
+    Vector.Up = new Vector(0, -1);
+    Vector.Down = new Vector(0, 1);
+    Vector.Left = new Vector(-1, 0);
+    Vector.Right = new Vector(1, 0);
     Vector.UpLeft = new Vector(-1, -1).normal();
     Vector.UpRight = new Vector(1, -1).normal();
     Vector.DownLeft = new Vector(-1, 1).normal();

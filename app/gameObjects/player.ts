@@ -1,22 +1,34 @@
 
 import { Transform, DirEnum, Color, IMove, Vector } from './transform';
 
+export enum PlayerState{
+    Alive=0,
+    Stunned=1,
+    Dead=2
+}
+
 export class Player extends Transform implements IMove{
 
-    static PLAYER_LIST: Player[] = [];
-
-    color:Color = Color.CreateRandom();
+    color:Color = Color.Random();
     public dir:DirEnum = DirEnum.None;
     public speed:number = 3;
     public bullets:number = 10;
+    public hp = 10;
+    public state:PlayerState = PlayerState.Alive;
     public previousPos:Vector = new Vector();
 
     constructor(public id:number){
         super(0,0, 30, 30);
     }
 
-    static Remove(player:Player){
-        delete Player.PLAYER_LIST[player.id];
+    TakeDamage(damage:number){
+        if(this.state == PlayerState.Alive){
+            this.hp -= damage;
+            if(this.hp <= 0 ){
+                this.state = PlayerState.Dead;
+                this.color = Color.Red;
+            }
+        }
     }
 
     SetDirection(dir:DirEnum){
@@ -29,6 +41,8 @@ export class Player extends Transform implements IMove{
     }
 
     UpdatePosition(dt:number){
+        if(this.state != PlayerState.Alive) return;
+
         this.previousPos.x = this.pos.x;
         this.previousPos.y = this.pos.y;
         switch(this.dir){
@@ -63,64 +77,37 @@ export class Player extends Transform implements IMove{
         if(this.pos.y > 500) this.pos.y = -30;
         if(this.pos.y < -30) this.pos.y = 500;
     }
-}
 
-/*
+    static PLAYER_LIST: Record<number, Player> = {};
+    static AddPlayer(player:Player){ Player.PLAYER_LIST[player.id] = player; }
+    static DeletePlayer(id:number){delete Player.PLAYER_LIST[id];}
+    static GetPlayerById(id:number){return Player.PLAYER_LIST[id];}
+    static GetPlayers(){return Player.PLAYER_LIST;}
 
-var Player = function(id: number){
-    var self = {
-        x: Math.random() * 1000,
-        y: Math.random() * 500,
-        speed:3,
-        id:id,
-        r : Math.random() * 255,
-        g : Math.random() * 255,
-        b : Math.random() * 255,
-        dir:DirEnum.None,
-        update: true,
-        number : "" + Math.floor(10 * Math.random()),
-        bullets:10,
-        addBullet: function(){self.bullets++},
-        removeBullet: function(){self.bullets--},
+    static UpdatePlayers(dt:number, pack:object[]){
 
-        setDirection: function(dir:DirEnum){
-            self.dir = dir;
-        },
+        for(let i in Player.PLAYER_LIST){
+            let player = Player.PLAYER_LIST[i];
+            player.UpdatePosition(dt);
+        }
 
-        updatePosition: function(delta:number){
-            if(self.update===true){
+        let toRevertPos:Player[] = [];
+        for(let i in Player.PLAYER_LIST){
+            let player = Player.PLAYER_LIST[i];
 
-                switch(self.dir){
-                    case(DirEnum.UpLeft):
-                    case(DirEnum.UpRight):
-                    case(DirEnum.Up):
-                    self.y -= self.speed * delta;
-                    break;
-                    case(DirEnum.DownLeft):
-                    case(DirEnum.DownRight):
-                    case(DirEnum.Down):
-                    self.y += self.speed * delta;
-                    break;
-
-                    case(DirEnum.Left):
-                    self.x -= self.speed * delta;
-                    break;
-                    case(DirEnum.Right):
-                    self.x += self.speed * delta;
-                    break;
+            for(let j in Player.PLAYER_LIST){
+                let player2 = Player.PLAYER_LIST[j];
+                if(i!=j && player.CheckCollision(player2)==true){
+                    player.TakeDamage(player.hp);
+                    continue;
                 }
-
-                if(self.x > 1000) self.x = -30;
-                if(self.x < -30) self.x = 1000;
-                if(self.y > 500) self.y = -30;
-                if(self.y < -30) self.y = 500;
             }
-        },
-
-        hasTouched: function(player : any) : boolean{
-            return ( Math.abs(self.x - player.x) < 30) && ( Math.abs(self.y - player.y) < 30);
+            pack.push({
+                pos: player.GetTopLeftPos(),
+                color: player.color,
+                size:player.sizeX
+            });
         }
     }
-    return self;
+    
 }
-*/

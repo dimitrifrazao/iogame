@@ -96,16 +96,16 @@ class InputManager{
                 break;
 
             case KeyCode.Up:
-                InputManager.socket.emit('shootDir', {dir:DirEnum.Up});
+                InputManager.socket.emit('shoot', {dir:DirEnum.Up});
                 break;
             case KeyCode.Down:
-                InputManager.socket.emit('shootDir', {dir:DirEnum.Down});
+                InputManager.socket.emit('shoot', {dir:DirEnum.Down});
                 break;
             case KeyCode.Left:
-                InputManager.socket.emit('shootDir', {dir:DirEnum.Left});
+                InputManager.socket.emit('shoot', {dir:DirEnum.Left});
                 break;
             case KeyCode.Right:
-                InputManager.socket.emit('shootDir', {dir:DirEnum.Right});
+                InputManager.socket.emit('shoot', {dir:DirEnum.Right});
                 break;
 
        
@@ -133,6 +133,10 @@ class InputManager{
                 break;
 
         }
+    }
+
+    static OnKeyPress(keyCode:number){
+
     }
 
 }

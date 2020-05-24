@@ -10,30 +10,12 @@ export enum DirEnum {
     DownRight=8
 }
 
-export function convertDirString(dir: string):DirEnum{
-    switch(dir){
-        case "up":
-            return DirEnum.Up;
-            break;
-        case "down":
-            return DirEnum.Down;
-            break
-        case "left":
-            return DirEnum.Left;
-            break;
-        case "right":
-            return DirEnum.Right;
-            break;
-    }
-    return DirEnum.None;
-}
-
 export class Color{
     static maxValue:number = 255;
     static Black:Color = new Color(0,0,0);
     static Red:Color = new Color(255,0,0);
     constructor(public r:number=0, public g:number=0, public b:number=0){}
-    static CreateRandom(){
+    static Random(){
         return new Color(
             Math.random() * Color.maxValue, 
             Math.random() * Color.maxValue, 
@@ -41,25 +23,7 @@ export class Color{
     };
 }
 
-export class Vector{
-    static UpLeft:Vector = new Vector(-1,-1).normal();
-    static UpRight:Vector = new Vector(1,-1).normal();
-    static DownLeft:Vector = new Vector(-1,1).normal();
-    static DownRight:Vector = new Vector(1,1).normal();
-
-    static Add(vec1: Vector, vec2:Vector){
-        return new Vector(vec1.x+vec2.x, vec1.y+vec2.y);
-    }
-    static Sub(vec1: Vector, vec2:Vector){
-        return new Vector(vec1.x-vec2.x, vec1.y-vec2.y);
-    }
-
-    static ScaleBy(vec:Vector, scale:number){
-        let newVec = new Vector(vec.x, vec.y);
-        newVec.scaleBy(scale);
-        return newVec;
-    }
-
+export class Vector{    
     constructor(public x:number=0, public y:number=0){}
     add(vec:Vector){
         this.x += vec.x;
@@ -82,6 +46,50 @@ export class Vector{
     distaceTo(target:Vector):number{
         return Vector.Sub(target, this).len();
     }
+
+    static Up:Vector = new Vector(0,-1);
+    static Down:Vector = new Vector(0,1);
+    static Left:Vector = new Vector(-1,0);
+    static Right:Vector = new Vector(1,0);
+    static UpLeft:Vector = new Vector(-1,-1).normal();
+    static UpRight:Vector = new Vector(1,-1).normal();
+    static DownLeft:Vector = new Vector(-1,1).normal();
+    static DownRight:Vector = new Vector(1,1).normal();
+
+    static GetDirVector(dir:DirEnum):Vector{
+        switch(dir){
+            case DirEnum.Up:
+                return Vector.Up;
+                break;
+            case DirEnum.Down:
+                return Vector.Down;
+                break;
+            case DirEnum.Left:
+                return Vector.Left;
+                break;
+            case DirEnum.Right:
+                return Vector.Right;
+                break;
+            default:
+                return new Vector();
+                break;
+        }
+    }
+
+    static Copy(vec:Vector){return new Vector(vec.x, vec.y);};
+
+    static Add(vec1: Vector, vec2:Vector){
+        return new Vector(vec1.x+vec2.x, vec1.y+vec2.y);
+    }
+    static Sub(vec1: Vector, vec2:Vector){
+        return new Vector(vec1.x-vec2.x, vec1.y-vec2.y);
+    }
+
+    static ScaleBy(vec:Vector, scale:number){
+        let newVec = new Vector(vec.x, vec.y);
+        newVec.scaleBy(scale);
+        return newVec;
+    }
 }
 
 export class Transform {
@@ -101,6 +109,8 @@ export class Transform {
         return new Vector(this.pos.x - (this.sizeX/2), this.pos.y - (this.sizeY/2))
     };
 }
+
+import {World} from "../main/world"
 
 export interface IMove{
     dir: DirEnum;

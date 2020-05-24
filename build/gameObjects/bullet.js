@@ -17,14 +17,17 @@ exports.Bullet = void 0;
 var transform_1 = require("./transform");
 var Bullet = /** @class */ (function (_super) {
     __extends(Bullet, _super);
-    function Bullet(x, y, owner) {
+    function Bullet(owner, x, y) {
         var _this = _super.call(this, x, y, 10, 10) || this;
         _this.dir = transform_1.DirEnum.None;
         _this.speed = 4;
-        _this.index = -1;
         _this.owner = owner;
         return _this;
     }
+    Bullet.prototype.SetDirection = function (dir) { this.dir = dir; };
+    Bullet.prototype.GetDirection = function () { return this.dir; };
+    Bullet.prototype.SetSpeed = function (speed) { this.speed = speed; };
+    Bullet.prototype.GetSpeed = function () { return this.speed; };
     Bullet.prototype.UpdatePosition = function (dt) {
         switch (this.dir) {
             case (transform_1.DirEnum.Up):
@@ -49,32 +52,48 @@ var Bullet = /** @class */ (function (_super) {
         if (this.pos.y < -this.sizeY)
             this.pos.y = 500;
     };
-    Bullet.AddBullet = function (owner, dir) {
-        var bullet = new Bullet(owner.pos.x, owner.pos.y, owner);
-        bullet.dir = dir;
-        bullet.index = Bullet.BulletList.length;
+    Bullet.AddBullet = function (bullet) {
         Bullet.BulletList.push(bullet);
     };
-    Bullet.UpdateBullets = function (dt) {
+    Bullet.GetBullets = function () { return Bullet.BulletList; };
+    Bullet.UpdateBullets = function (dt, pack, players) {
         for (var _i = 0, _a = Bullet.BulletList; _i < _a.length; _i++) {
             var bullet = _a[_i];
             bullet.UpdatePosition(dt);
-        }
-    };
-    Bullet.GetBulletData = function () {
-        var bData = [];
-        for (var _i = 0, _a = Bullet.BulletList; _i < _a.length; _i++) {
-            var bullet = _a[_i];
-            bData.push({
-                x: bullet.pos.x,
-                y: bullet.pos.y,
-                r: 255,
-                g: 100,
-                b: 0,
+            pack.push({
+                pos: bullet.GetTopLeftPos(),
+                color: transform_1.Color.Black,
                 size: bullet.sizeX
             });
         }
-        return bData;
+        var updatedBullets = [];
+        for (var _b = 0, _c = Bullet.BulletList; _b < _c.length; _b++) {
+            var bullet = _c[_b];
+            var deleteBullet = false;
+            for (var _d = 0, _e = Bullet.BulletList; _d < _e.length; _d++) {
+                var bullet2 = _e[_d];
+                if (bullet !== bullet2 && bullet.CheckCollision(bullet2) === true) {
+                    deleteBullet = true;
+                    continue;
+                }
+            }
+            for (var k in players) {
+                var player = players[k];
+                if (bullet.CheckCollision(player) === true) {
+                    if (bullet.owner.id != player.id) {
+                        player.TakeDamage(1);
+                    }
+                    deleteBullet = true;
+                }
+            }
+            if (deleteBullet === false) {
+                updatedBullets.push(bullet);
+            }
+            else {
+                bullet.owner.bullets++;
+            }
+        }
+        Bullet.BulletList = updatedBullets;
     };
     Bullet.BulletList = [];
     return Bullet;

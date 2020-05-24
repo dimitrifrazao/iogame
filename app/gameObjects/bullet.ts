@@ -1,21 +1,25 @@
 
-import { Transform, DirEnum, IMove } from './transform';
+import { Transform, DirEnum, Color, IMove } from './transform';
+import { Player } from "./player";
 
 type bulletMap = Record<number, Bullet>;
 
 export class Bullet extends Transform implements IMove
 {
+    owner:Player;
     dir:DirEnum = DirEnum.None;
     speed:number = 4;
-    index:number = -1;
-    owner: any;
-    static BulletList: Bullet[] = [];
 
-    constructor(x:number, y:number, owner:any)
+    constructor(owner:Player, x:number, y:number)
     {
         super(x, y, 10, 10);
         this.owner = owner;
     }
+
+    SetDirection(dir:DirEnum){this.dir = dir;}
+    GetDirection(){return this.dir;}
+    SetSpeed(speed:number){this.speed=speed;}
+    GetSpeed(){return this.speed;}
 
     UpdatePosition(dt:number)
     {
@@ -40,38 +44,54 @@ export class Bullet extends Transform implements IMove
         if(this.pos.y < -this.sizeY) this.pos.y = 500;
     }
 
-    
-    public static AddBullet( owner:any, dir:DirEnum){
-        let bullet = new Bullet(
-            owner.pos.x , 
-            owner.pos.y , 
-            owner)
-        bullet.dir = dir;
-        bullet.index = Bullet.BulletList.length;
+    static BulletList: Bullet[] = [];
+
+    static AddBullet(bullet:Bullet){
         Bullet.BulletList.push(bullet);
     }
 
+    static GetBullets(){return Bullet.BulletList;}
 
-    public static UpdateBullets(dt:number){
+    static UpdateBullets(dt:number, pack:object[], players:any){
+
         for(let bullet of Bullet.BulletList){
             bullet.UpdatePosition(dt);
-        }
-    }
 
-    public static GetBulletData(): object[]{
-        let bData: object[] = [];
-        for(let bullet of Bullet.BulletList){
-            bData.push({
-                x:bullet.pos.x,
-                y:bullet.pos.y,
-                r: 255,
-                g: 100,
-                b: 0,
+            pack.push({
+                pos: bullet.GetTopLeftPos(),
+                color: Color.Black,
                 size:bullet.sizeX
-            });
+            }); 
         }
-        return bData;
-    }
 
+        let updatedBullets:Bullet[] = []
+
+        for(let bullet of Bullet.BulletList){
+            let deleteBullet:boolean = false;
+            for(let bullet2 of Bullet.BulletList)
+            {
+                if(bullet !== bullet2 && bullet.CheckCollision(bullet2)===true){
+                    deleteBullet = true;
+                    continue;
+                }
+            }
+            for(let k in players){
+                let player = players[k];
+                if(bullet.CheckCollision(player)===true){
+                    if(bullet.owner.id != player.id){
+                        player.TakeDamage(1);
+                    }
+                    deleteBullet = true;
+                }
+            }
+            if(deleteBullet===false){
+                updatedBullets.push(bullet);
+            }     
+            else{
+                bullet.owner.bullets++;
+            }             
+        } 
+        Bullet.BulletList = updatedBullets; 
+    }
 
 }
