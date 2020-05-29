@@ -15,6 +15,7 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Player = exports.PlayerState = void 0;
 var transform_1 = require("./transform");
+var world_1 = require("../main/world");
 var PlayerState;
 (function (PlayerState) {
     PlayerState[PlayerState["Alive"] = 0] = "Alive";
@@ -47,9 +48,11 @@ var Player = /** @class */ (function (_super) {
         return false;
     };
     Player.prototype.AddHp = function (hp) {
-        this.hp += hp;
-        if (this.hp > this.hpMax) {
-            this.hp = this.hpMax;
+        if (this.state != PlayerState.Dead) {
+            this.hp += hp;
+            if (this.hp > this.hpMax) {
+                this.hp = this.hpMax;
+            }
         }
     };
     Player.prototype.LevelUp = function () {
@@ -107,6 +110,32 @@ var Player = /** @class */ (function (_super) {
             var player = Player.PLAYER_LIST[i];
             player.UpdatePosition(dt);
             player.CheckWorldWrap();
+            pack.push({
+                pos: player.GetTopLeftPos(),
+                color: transform_1.Color.Red,
+                sizeX: player.sizeX,
+                sizeY: player.sizeY
+            });
+            // check collision against rocks
+            for (var _i = 0, _a = world_1.World.inst.GetRocks(); _i < _a.length; _i++) {
+                var rock = _a[_i];
+                if (player.CheckCollision(rock) == true) {
+                    var overlap = player.GetOverlap(rock);
+                    /*pack.push({
+                        pos: rock.GetTopLeftPos(),
+                        color: Color.Blue,
+                        sizeX:rock.sizeX,
+                        sizeY:rock.sizeY
+                    });
+                    pack.push({
+                        pos: overlap.GetTopLeftPos(),
+                        color: Color.Green,
+                        sizeX:overlap.sizeX,
+                        sizeY:overlap.sizeY
+                    });*/
+                    player.ApplyOverlapPush(overlap);
+                }
+            }
         }
         var toRevertPos = [];
         for (var i in Player.PLAYER_LIST) {
@@ -118,12 +147,6 @@ var Player = /** @class */ (function (_super) {
                     continue;
                 }
             }
-            pack.push({
-                pos: player.GetTopLeftPos(),
-                color: transform_1.Color.Red,
-                sizeX: player.sizeX,
-                sizeY: player.sizeY
-            });
             var topPos = player.GetTopLeftPos();
             var offsetY = player.sizeY * (player.hp / player.hpMax);
             topPos.y += player.sizeY - offsetY;

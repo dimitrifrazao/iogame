@@ -1,4 +1,4 @@
-import {Vector, Color} from "../gameObjects/transform";
+import {Vector, Color, Cell, CellType} from "../gameObjects/transform";
 
 export class World{
     public static inst:World = new World(50, 40);
@@ -11,25 +11,43 @@ export class World{
     GetHorizontalUnits(){return this.hUnits * World.unitSize;};
     GetVerticalUnits(){return this.vUnits * World.unitSize;};
     GetCellCount(){return this.hUnits * this.vUnits;};
+
     GetXValue(i:number){ return (i% this.hUnits) * World.unitSize;};
     GetYValue(i:number){ return (Math.trunc(i / this.vUnits))*World.unitSize;};
+    GetIndex(pos:Vector){
+        return ((Math.trunc(pos.y / World.unitSize)) * this.vUnits) + (Math.trunc(pos.x / World.unitSize)) 
+    }
+
+    GetSurroundingCells(i:number):Cell[]{
+        let cells:Cell[] = []
+        cells.push()
+        return cells;
+    }
+
+    GetPossibleCollisions(pos:Vector){
+
+    }
+
+
     Build(){
         let cellsCount = this.GetCellCount();
         for(let i=0; i<cellsCount; i++){
-            let x = this.GetXValue(i);
-            let y = this.GetYValue(i);
+            let x = this.GetXValue(i) + (World.unitSize/2);
+            let y = this.GetYValue(i) + (World.unitSize/2);
             if( (Math.random() * 100) > 98){
-                this.rocks.push(new Cell(new Vector(x,y),CellType.Rock));
+                this.rocks.push(new Cell(x,y, World.unitSize,CellType.Rock));
             }
 
         } 
     }
 
+    GetRocks(){return this.rocks};
+    
     GenerateDataPack(){        
         let pack:object[] = [];
         for(let cell of this.rocks){
             pack.push({
-                pos: cell.pos,
+                pos: cell.GetTopLeftPos(),
                 color: Color.Black,
                 sizeX: World.unitSize,
                 sizeY: World.unitSize
@@ -39,12 +57,4 @@ export class World{
     }
 }
 
-export class Cell{
-    constructor(public pos:Vector, public cellType:CellType){};
-    IsRock():boolean{return this.cellType == CellType.Rock;}
-}
 
-export enum CellType{
-    Empty=0,
-    Rock=1,
-}

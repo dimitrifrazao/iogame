@@ -58,6 +58,14 @@ var Bullet = /** @class */ (function (_super) {
             var bullet = _a[_i];
             bullet.UpdatePosition(dt);
             bullet.CheckWorldWrap();
+            for (var _b = 0, _c = transform_1.World.inst.GetRocks(); _b < _c.length; _b++) {
+                var rock = _c[_b];
+                if (bullet.CheckCollision(rock) == true) {
+                    var overlap = bullet.GetOverlap(rock);
+                    bullet.ApplyOverlapPush(overlap);
+                    bullet.dir = Bullet.GetMirrorDir(bullet.dir);
+                }
+            }
             pack.push({
                 pos: bullet.GetTopLeftPos(),
                 color: bullet.owner.color,
@@ -66,11 +74,11 @@ var Bullet = /** @class */ (function (_super) {
             });
         }
         var deletedBullets = [];
-        for (var _b = 0, _c = Bullet.BulletList; _b < _c.length; _b++) {
-            var bullet = _c[_b];
+        for (var _d = 0, _e = Bullet.BulletList; _d < _e.length; _d++) {
+            var bullet = _e[_d];
             var deleteBullet = false;
-            for (var _d = 0, _e = Bullet.BulletList; _d < _e.length; _d++) {
-                var bullet2 = _e[_d];
+            for (var _f = 0, _g = Bullet.BulletList; _f < _g.length; _f++) {
+                var bullet2 = _g[_f];
                 if (bullet !== bullet2 && bullet.CheckCollision(bullet2) === true) {
                     deleteBullet = true;
                     continue;
@@ -93,8 +101,8 @@ var Bullet = /** @class */ (function (_super) {
                 bullet.owner.AddHp(1);
             }
         }
-        for (var _f = 0, deletedBullets_1 = deletedBullets; _f < deletedBullets_1.length; _f++) {
-            var bullet = deletedBullets_1[_f];
+        for (var _h = 0, deletedBullets_1 = deletedBullets; _h < deletedBullets_1.length; _h++) {
+            var bullet = deletedBullets_1[_h];
             Bullet.DeleteBullet(bullet);
         }
     };

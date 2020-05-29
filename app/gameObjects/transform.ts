@@ -18,6 +18,8 @@ export class Color{
     static maxValue:number = 255;
     static Black:Color = new Color(0,0,0);
     static Red:Color = new Color(255,0,0);
+    static Green:Color = new Color(0,255,0);
+    static Blue:Color = new Color(0,0,255);
     constructor(public r:number=0, public g:number=0, public b:number=0){}
     static Random(){
         return new Color(
@@ -95,6 +97,13 @@ export class Vector{
         newVec.scaleBy(scale);
         return newVec;
     }
+
+    static GetInbetween(pos1:Vector, pos2:Vector){
+        let pos3 = Vector.Sub(pos2, pos1);
+        pos3.scaleBy(0.5)
+        pos3.add(pos1);
+        return pos3;
+    }
 }
 
 export class Transform {
@@ -110,9 +119,45 @@ export class Transform {
         return (Math.abs(this.pos.x - trans.pos.x ) < (this.sizeX + trans.sizeX)/2 ) && 
         (Math.abs(this.pos.y - trans.pos.y ) < (this.sizeY + trans.sizeY)/2 );
     };
+
+    GetOverlap(trans:Transform):Transform{
+        let overLapPos = Vector.GetInbetween(this.pos, trans.pos);
+        let newX = Math.min( Math.abs(this.GetBotRightPos().x - trans.GetTopLeftPos().x), Math.abs(this.GetTopLeftPos().x - trans.GetBotRightPos().x));
+        let newY = Math.min( Math.abs(this.GetBotRightPos().y - trans.GetTopLeftPos().y), Math.abs(this.GetTopLeftPos().y - trans.GetBotRightPos().y));
+        return new Transform(overLapPos.x, overLapPos.y, newX, newY);
+    }
+
+    ApplyOverlapPush(overlap:Transform){
+        if(overlap.sizeX < overlap.sizeY){
+            if(overlap.pos.x > this.pos.x){
+                this.pos.x -= overlap.sizeX;
+            }
+            else{
+                this.pos.x += overlap.sizeX;
+            }
+        }
+        else{
+            if(overlap.pos.y > this.pos.y){
+                this.pos.y -= overlap.sizeY;
+            }
+            else{
+                this.pos.y += overlap.sizeY;
+            }
+        }
+        
+    }
+
     GetTopLeftPos(){
         return new Vector(this.pos.x - (this.sizeX/2), this.pos.y - (this.sizeY/2))
     };
+
+    GetBotRightPos(){
+        return new Vector(this.pos.x + (this.sizeX/2), this.pos.y + (this.sizeY/2))
+    }
+
+    GetArea(){
+        return this.sizeX * this.sizeY;
+    }
 
     CheckWorldWrap(){
         if(this.pos.x > World.inst.GetHorizontalUnits()) this.pos.x = -this.sizeX;
@@ -120,10 +165,34 @@ export class Transform {
         if(this.pos.y > World.inst.GetVerticalUnits()) this.pos.y = -this.sizeY;
         if(this.pos.y < -this.sizeY) this.pos.y = World.inst.GetVerticalUnits();
     }
+
+    static GetMirrorDir(dir:DirEnum){
+        switch(dir){
+            case DirEnum.Left: return DirEnum.Right;
+            case DirEnum.Right: return DirEnum.Left;
+            case DirEnum.Up: return DirEnum.Down;
+            case DirEnum.Down: return DirEnum.Up;
+            case DirEnum.UpLeft: return DirEnum.DownRight;
+            case DirEnum.UpRight: return DirEnum.DownLeft;
+        }
+        return DirEnum.None;
+    }
 }
 
 export interface IMove{
     dir: DirEnum;
     speed: number;
     UpdatePosition(dt:number):void;
+}
+
+export class Cell extends Transform{
+    constructor(x:number, y:number, worldUnitSize:number, public cellType:CellType){
+        super(x,y, worldUnitSize,worldUnitSize);
+    };
+    IsRock():boolean{return this.cellType == CellType.Rock;}
+}
+
+export enum CellType{
+    Empty=0,
+    Rock=1,
 }

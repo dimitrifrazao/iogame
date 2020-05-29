@@ -1,4 +1,5 @@
 import { Transform, DirEnum, Color, IMove, Vector  } from "./transform"
+import { World } from "../main/world";
 
 export enum PlayerState{
     Alive=0,
@@ -33,10 +34,13 @@ export class Player extends Transform implements IMove{
     }
 
     AddHp(hp:number){
-        this.hp += hp;
-        if(this.hp > this.hpMax){
-            this.hp = this.hpMax;
+        if(this.state != PlayerState.Dead){
+            this.hp += hp;
+            if(this.hp > this.hpMax){
+                this.hp = this.hpMax;
+            }
         }
+        
     }
 
     LevelUp(){
@@ -102,6 +106,33 @@ export class Player extends Transform implements IMove{
             let player = Player.PLAYER_LIST[i];
             player.UpdatePosition(dt);
             player.CheckWorldWrap();
+
+            pack.push({
+                pos: player.GetTopLeftPos(),
+                color: Color.Red,
+                sizeX:player.sizeX,
+                sizeY:player.sizeY
+            });
+
+            // check collision against rocks
+            for(let rock of World.inst.GetRocks()){
+                if(player.CheckCollision(rock)==true){
+                    let overlap = player.GetOverlap(rock);
+                    /*pack.push({
+                        pos: rock.GetTopLeftPos(),
+                        color: Color.Blue,
+                        sizeX:rock.sizeX,
+                        sizeY:rock.sizeY
+                    });
+                    pack.push({
+                        pos: overlap.GetTopLeftPos(),
+                        color: Color.Green,
+                        sizeX:overlap.sizeX,
+                        sizeY:overlap.sizeY
+                    });*/
+                    player.ApplyOverlapPush(overlap);
+                }
+            }
         }
 
         let toRevertPos:Player[] = [];
@@ -115,12 +146,7 @@ export class Player extends Transform implements IMove{
                     continue;
                 }
             }
-            pack.push({
-                pos: player.GetTopLeftPos(),
-                color: Color.Red,
-                sizeX:player.sizeX,
-                sizeY:player.sizeY
-            });
+            
 
             let topPos = player.GetTopLeftPos();
             let offsetY = player.sizeY * (player.hp/player.hpMax);

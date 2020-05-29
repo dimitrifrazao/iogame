@@ -1,5 +1,5 @@
 
-import { Transform, DirEnum, Color, IMove  } from "./transform"
+import { Transform, DirEnum, World, IMove  } from "./transform"
 import { Player } from "./player"
 
 
@@ -59,6 +59,14 @@ export class Bullet extends Transform implements IMove
         for(let bullet of Bullet.BulletList){
             bullet.UpdatePosition(dt);
             bullet.CheckWorldWrap();
+
+            for(let rock of World.inst.GetRocks()){
+                if(bullet.CheckCollision(rock)==true){
+                    let overlap = bullet.GetOverlap(rock);
+                    bullet.ApplyOverlapPush(overlap);
+                    bullet.dir = Bullet.GetMirrorDir(bullet.dir);
+                }
+            }
 
             pack.push({
                 pos: bullet.GetTopLeftPos(),

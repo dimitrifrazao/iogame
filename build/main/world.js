@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CellType = exports.Cell = exports.World = void 0;
+exports.World = void 0;
 var transform_1 = require("../gameObjects/transform");
 var World = /** @class */ (function () {
     function World(hUnits, vUnits) {
@@ -18,22 +18,34 @@ var World = /** @class */ (function () {
     ;
     World.prototype.GetYValue = function (i) { return (Math.trunc(i / this.vUnits)) * World.unitSize; };
     ;
+    World.prototype.GetIndex = function (pos) {
+        return ((Math.trunc(pos.y / World.unitSize)) * this.vUnits) + (Math.trunc(pos.x / World.unitSize));
+    };
+    World.prototype.GetSurroundingCells = function (i) {
+        var cells = [];
+        cells.push();
+        return cells;
+    };
+    World.prototype.GetPossibleCollisions = function (pos) {
+    };
     World.prototype.Build = function () {
         var cellsCount = this.GetCellCount();
         for (var i = 0; i < cellsCount; i++) {
-            var x = this.GetXValue(i);
-            var y = this.GetYValue(i);
+            var x = this.GetXValue(i) + (World.unitSize / 2);
+            var y = this.GetYValue(i) + (World.unitSize / 2);
             if ((Math.random() * 100) > 98) {
-                this.rocks.push(new Cell(new transform_1.Vector(x, y), CellType.Rock));
+                this.rocks.push(new transform_1.Cell(x, y, World.unitSize, transform_1.CellType.Rock));
             }
         }
     };
+    World.prototype.GetRocks = function () { return this.rocks; };
+    ;
     World.prototype.GenerateDataPack = function () {
         var pack = [];
         for (var _i = 0, _a = this.rocks; _i < _a.length; _i++) {
             var cell = _a[_i];
             pack.push({
-                pos: cell.pos,
+                pos: cell.GetTopLeftPos(),
                 color: transform_1.Color.Black,
                 sizeX: World.unitSize,
                 sizeY: World.unitSize
@@ -46,18 +58,3 @@ var World = /** @class */ (function () {
     return World;
 }());
 exports.World = World;
-var Cell = /** @class */ (function () {
-    function Cell(pos, cellType) {
-        this.pos = pos;
-        this.cellType = cellType;
-    }
-    ;
-    Cell.prototype.IsRock = function () { return this.cellType == CellType.Rock; };
-    return Cell;
-}());
-exports.Cell = Cell;
-var CellType;
-(function (CellType) {
-    CellType[CellType["Empty"] = 0] = "Empty";
-    CellType[CellType["Rock"] = 1] = "Rock";
-})(CellType = exports.CellType || (exports.CellType = {}));
