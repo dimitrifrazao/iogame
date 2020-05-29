@@ -4,25 +4,22 @@ var serv = require('http').Server(app);
 
 var path = require('path');
 var indexPath = path.join(__dirname + '/client/index.html');
-console.log(indexPath);
 
 app.get('/', function(req, res) {
     res.sendFile(indexPath);
 });
 var clientPath = path.join(__dirname + '/client');
-console.log(clientPath);
 app.use('/client', express.static(clientPath));
 
 serv.listen(2000);
+console.log("Server listening");
 
-//let playerModule = require('./gameObjects/player');
-//let Player = playerModule.Player;
-//let transformModule = require('./gameObjects/transform');
 import { Main } from "./main/main"
 import { World } from "./main/world"
-import { Bullet } from './gameObjects/bullet';
-import { DirEnum, Color } from './gameObjects/transform';
-import { Player } from './gameObjects/player';
+
+Main.inst.Init();
+console.log("World generated");
+var worldData = World.inst.GenerateDataPack();
 
 const SOCKET_LIST: Record<number, any> = {};
 
@@ -30,6 +27,8 @@ var io = require('socket.io')(serv, {});
 io.sockets.on('connection', function(socket:any){
     console.log('socket connection!');
     SOCKET_LIST[socket.id] = socket;
+
+    socket.emit('worldData', worldData);
 
     Main.inst.AddPlayer(socket.id);
     
@@ -51,16 +50,11 @@ io.sockets.on('connection', function(socket:any){
 
 setInterval(function() {
     Main.inst.Tick();
-}, 0);
-
-setInterval(function(){
-
+    
     let pack:object[] = Main.inst.Update();
 
     for(var i in SOCKET_LIST){
         var socket = SOCKET_LIST[i];
         socket.emit('update', pack);
     }
-
-
-}, 1000/25);
+}, 0);

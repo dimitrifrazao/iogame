@@ -1,0 +1,8 @@
+body {
+    overflow: hidden;
+}
+
+#ctx{
+    width: 100%;
+    height: 100%;
+}

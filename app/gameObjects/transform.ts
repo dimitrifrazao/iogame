@@ -1,3 +1,7 @@
+
+import {World} from "../main/world";
+export * from "../main/world";
+
 export enum DirEnum {
     None=0,
     Up=1,
@@ -17,9 +21,10 @@ export class Color{
     constructor(public r:number=0, public g:number=0, public b:number=0){}
     static Random(){
         return new Color(
-            Math.random() * Color.maxValue, 
-            Math.random() * Color.maxValue, 
-            Math.random() * Color.maxValue);
+            (Math.random() * 100) + 100, 
+            (Math.random() * 100) + 100, 
+            (Math.random() * 100) + 100
+        )
     };
 }
 
@@ -96,7 +101,7 @@ export class Transform {
     pos:Vector;
     public sizeX:number;
     public sizeY:number;
-    constructor(x:number=0, y:number=0, sizeX:number=1, sizeY:number=1){
+    constructor(x:number=0, y:number=0, sizeX:number, sizeY:number){
         this.pos = new Vector(x,y);
         this.sizeX = sizeX;
         this.sizeY = sizeY;
@@ -108,18 +113,17 @@ export class Transform {
     GetTopLeftPos(){
         return new Vector(this.pos.x - (this.sizeX/2), this.pos.y - (this.sizeY/2))
     };
-}
 
-import {World} from "../main/world"
+    CheckWorldWrap(){
+        if(this.pos.x > World.inst.GetHorizontalUnits()) this.pos.x = -this.sizeX;
+        if(this.pos.x < -this.sizeX) this.pos.x = World.inst.GetHorizontalUnits();
+        if(this.pos.y > World.inst.GetVerticalUnits()) this.pos.y = -this.sizeY;
+        if(this.pos.y < -this.sizeY) this.pos.y = World.inst.GetVerticalUnits();
+    }
+}
 
 export interface IMove{
     dir: DirEnum;
     speed: number;
     UpdatePosition(dt:number):void;
 }
-
-
-
-/*module.exports = {
-    convertDirEnum: convertDirString
-};*/

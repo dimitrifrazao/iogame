@@ -21,6 +21,7 @@ enum KeyCode{
     Down=40,
     Space=32
 }
+
 class InputManager{
 
     static w:boolean = false;

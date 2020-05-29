@@ -1,13 +1,18 @@
-import { World } from "./world"
-import { Bullet } from '../gameObjects/bullet';
-import { DirEnum, Color, Vector } from '../gameObjects/transform';
-import { Player } from '../gameObjects/player';
+import { DirEnum, Vector, World, Color} from "../gameObjects/transform"
+import { Player } from "../gameObjects/player"
+import { Bullet } from "../gameObjects/bullet"
+
 
 export class Main{
     static inst:Main = new Main();
+    private timeScale = 0.2;
     private dt:number = 0;
 
     constructor(){}
+
+    Init(){
+        World.inst.Build();
+    }
 
     Tick(){
         let now = Date.now();
@@ -16,7 +21,7 @@ export class Main{
     }
 
     SetDeltaTime(dt:number){this.dt=dt};
-    GetDeltaTime(){return this.dt};
+    GetDeltaTime(){return this.dt * this.timeScale};
 
     private lastUpdate = Date.now();
 
@@ -36,22 +41,21 @@ export class Main{
 
     Shoot(id:number, dir:DirEnum){
         let player = Player.GetPlayerById(id);
-        if(player.bullets > 0){
+        if(player.hp >= 2){
             let pos = Vector.Copy(player.pos);
             let bullet = new Bullet(player, pos.x ,pos.y);
             bullet.pos.add( Vector.ScaleBy( Vector.GetDirVector(dir), (player.sizeX/2)+(bullet.sizeX/2)) );
             bullet.SetDirection(dir);
             Bullet.AddBullet(bullet);
-            player.bullets--;
+            player.TakeDamage(1);
         }
     }
 
     Update():object[]{
         let pack:object[] = []
-
-        Player.UpdatePlayers(this.dt, pack);
-        Bullet.UpdateBullets(this.dt, pack, Player.GetPlayers());
-
+        let dt = this.GetDeltaTime();
+        Player.UpdatePlayers(dt, pack);
+        Bullet.UpdateBullets(dt, pack, Player.GetPlayers());
         return pack;
     }
 

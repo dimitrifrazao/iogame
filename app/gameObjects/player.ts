@@ -1,5 +1,4 @@
-
-import { Transform, DirEnum, Color, IMove, Vector } from './transform';
+import { Transform, DirEnum, Color, IMove, Vector  } from "./transform"
 
 export enum PlayerState{
     Alive=0,
@@ -11,9 +10,10 @@ export class Player extends Transform implements IMove{
 
     color:Color = Color.Random();
     public dir:DirEnum = DirEnum.None;
-    public speed:number = 3;
-    public bullets:number = 10;
-    public hp = 10;
+    public speed:number = 1;
+    public hpMax:number = 11;
+    public level:number = 1;
+    public hp:number = this.hpMax;
     public state:PlayerState = PlayerState.Alive;
     public previousPos:Vector = new Vector();
 
@@ -21,14 +21,30 @@ export class Player extends Transform implements IMove{
         super(0,0, 30, 30);
     }
 
-    TakeDamage(damage:number){
+    TakeDamage(damage:number):boolean{
         if(this.state == PlayerState.Alive){
             this.hp -= damage;
             if(this.hp <= 0 ){
                 this.state = PlayerState.Dead;
-                this.color = Color.Red;
+                return true;
             }
         }
+        return false;
+    }
+
+    AddHp(hp:number){
+        this.hp += hp;
+        if(this.hp > this.hpMax){
+            this.hp = this.hpMax;
+        }
+    }
+
+    LevelUp(){
+        this.level++;
+        this.hpMax++;
+        this.hp++;
+        this.sizeX += 5;
+        this.sizeY += 5;
     }
 
     SetDirection(dir:DirEnum){
@@ -72,10 +88,6 @@ export class Player extends Transform implements IMove{
                 break;
         }
 
-        if(this.pos.x > 1000) this.pos.x = -30;
-        if(this.pos.x < -30) this.pos.x = 1000;
-        if(this.pos.y > 500) this.pos.y = -30;
-        if(this.pos.y < -30) this.pos.y = 500;
     }
 
     static PLAYER_LIST: Record<number, Player> = {};
@@ -89,6 +101,7 @@ export class Player extends Transform implements IMove{
         for(let i in Player.PLAYER_LIST){
             let player = Player.PLAYER_LIST[i];
             player.UpdatePosition(dt);
+            player.CheckWorldWrap();
         }
 
         let toRevertPos:Player[] = [];
@@ -104,8 +117,19 @@ export class Player extends Transform implements IMove{
             }
             pack.push({
                 pos: player.GetTopLeftPos(),
+                color: Color.Red,
+                sizeX:player.sizeX,
+                sizeY:player.sizeY
+            });
+
+            let topPos = player.GetTopLeftPos();
+            let offsetY = player.sizeY * (player.hp/player.hpMax);
+            topPos.y += player.sizeY - offsetY;
+            pack.push({
+                pos: topPos,
                 color: player.color,
-                size:player.sizeX
+                sizeX:player.sizeX,
+                sizeY:offsetY
             });
         }
     }

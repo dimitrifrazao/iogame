@@ -20,7 +20,7 @@ var Bullet = /** @class */ (function (_super) {
     function Bullet(owner, x, y) {
         var _this = _super.call(this, x, y, 10, 10) || this;
         _this.dir = transform_1.DirEnum.None;
-        _this.speed = 4;
+        _this.speed = 2;
         _this.owner = owner;
         return _this;
     }
@@ -43,30 +43,29 @@ var Bullet = /** @class */ (function (_super) {
                 this.pos.x += this.speed * dt;
                 break;
         }
-        if (this.pos.x > 1000)
-            this.pos.x = -this.sizeX;
-        if (this.pos.x < -this.sizeX)
-            this.pos.x = 1000;
-        if (this.pos.y > 500)
-            this.pos.y = -this.sizeY;
-        if (this.pos.y < -this.sizeY)
-            this.pos.y = 500;
     };
     Bullet.AddBullet = function (bullet) {
         Bullet.BulletList.push(bullet);
+    };
+    Bullet.DeleteBullet = function (bullet) {
+        var index = Bullet.BulletList.indexOf(bullet);
+        delete Bullet.BulletList[index];
+        Bullet.BulletList.splice(index, 1);
     };
     Bullet.GetBullets = function () { return Bullet.BulletList; };
     Bullet.UpdateBullets = function (dt, pack, players) {
         for (var _i = 0, _a = Bullet.BulletList; _i < _a.length; _i++) {
             var bullet = _a[_i];
             bullet.UpdatePosition(dt);
+            bullet.CheckWorldWrap();
             pack.push({
                 pos: bullet.GetTopLeftPos(),
-                color: transform_1.Color.Black,
-                size: bullet.sizeX
+                color: bullet.owner.color,
+                sizeX: bullet.sizeX,
+                sizeY: bullet.sizeY
             });
         }
-        var updatedBullets = [];
+        var deletedBullets = [];
         for (var _b = 0, _c = Bullet.BulletList; _b < _c.length; _b++) {
             var bullet = _c[_b];
             var deleteBullet = false;
@@ -81,19 +80,23 @@ var Bullet = /** @class */ (function (_super) {
                 var player = players[k];
                 if (bullet.CheckCollision(player) === true) {
                     if (bullet.owner.id != player.id) {
-                        player.TakeDamage(1);
+                        var killed = player.TakeDamage(1);
+                        if (killed) {
+                            bullet.owner.LevelUp();
+                        }
                     }
                     deleteBullet = true;
                 }
             }
-            if (deleteBullet === false) {
-                updatedBullets.push(bullet);
-            }
-            else {
-                bullet.owner.bullets++;
+            if (deleteBullet) {
+                deletedBullets.push(bullet);
+                bullet.owner.AddHp(1);
             }
         }
-        Bullet.BulletList = updatedBullets;
+        for (var _f = 0, deletedBullets_1 = deletedBullets; _f < deletedBullets_1.length; _f++) {
+            var bullet = deletedBullets_1[_f];
+            Bullet.DeleteBullet(bullet);
+        }
     };
     Bullet.BulletList = [];
     return Bullet;

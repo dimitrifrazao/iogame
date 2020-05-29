@@ -1,6 +1,18 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
+}
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Transform = exports.Vector = exports.Color = exports.DirEnum = void 0;
+var world_1 = require("../main/world");
+__exportStar(require("../main/world"), exports);
 var DirEnum;
 (function (DirEnum) {
     DirEnum[DirEnum["None"] = 0] = "None";
@@ -23,7 +35,7 @@ var Color = /** @class */ (function () {
         this.b = b;
     }
     Color.Random = function () {
-        return new Color(Math.random() * Color.maxValue, Math.random() * Color.maxValue, Math.random() * Color.maxValue);
+        return new Color((Math.random() * 100) + 100, (Math.random() * 100) + 100, (Math.random() * 100) + 100);
     };
     ;
     Color.maxValue = 255;
@@ -111,8 +123,6 @@ var Transform = /** @class */ (function () {
     function Transform(x, y, sizeX, sizeY) {
         if (x === void 0) { x = 0; }
         if (y === void 0) { y = 0; }
-        if (sizeX === void 0) { sizeX = 1; }
-        if (sizeY === void 0) { sizeY = 1; }
         this.pos = new Vector(x, y);
         this.sizeX = sizeX;
         this.sizeY = sizeY;
@@ -126,9 +136,16 @@ var Transform = /** @class */ (function () {
         return new Vector(this.pos.x - (this.sizeX / 2), this.pos.y - (this.sizeY / 2));
     };
     ;
+    Transform.prototype.CheckWorldWrap = function () {
+        if (this.pos.x > world_1.World.inst.GetHorizontalUnits())
+            this.pos.x = -this.sizeX;
+        if (this.pos.x < -this.sizeX)
+            this.pos.x = world_1.World.inst.GetHorizontalUnits();
+        if (this.pos.y > world_1.World.inst.GetVerticalUnits())
+            this.pos.y = -this.sizeY;
+        if (this.pos.y < -this.sizeY)
+            this.pos.y = world_1.World.inst.GetVerticalUnits();
+    };
     return Transform;
 }());
 exports.Transform = Transform;
-/*module.exports = {
-    convertDirEnum: convertDirString
-};*/ 

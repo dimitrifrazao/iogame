@@ -1,25 +1,28 @@
-<canvas id="ctx" width="1000" height="500" style="border:1px solid #000000"></canvas>
-<script src="/socket.io/socket.io.js"></script>
-<script src="/client/inputManager.js"></script>
+<head>
+    <link rel="stylesheet" href="client/styles.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/client/inputManager.js"></script>
+    <script src="/client/renderer.js"></script>
+</head>
+<body>
+    <canvas id="ctx" style="border:1px solid #000000"></canvas>
+</body>
+
+
 <script>
-    var ctx = document.getElementById("ctx").getContext("2d");
+    var canvas = document.getElementById("ctx");
+    canvas.width = document.body.clientWidth;
+    canvas.height = document.body.clientHeight;
+    var ctx = canvas.getContext("2d");
     ctx.font = '30px Arial';
     var socket = io();
 
     socket.on('update', function(data){
-        ctx.clearRect(0,0,1000,500);
-        ctx.beginPath();
-        for(var i=0; i<data.length; i++){
-            let pos = data[i].pos;
-            let color = data[i].color;
-            let size = data[i].size;
-            let rgbText = "rgb(" + color.r+ "," + color.g + "," + color.b + ")";
-            ctx.fillStyle = rgbText;
-            ctx.fillRect(pos.x, pos.y, size, size);
-            //if(x<0 || x > 500 || y < 0 || )
-            
-        }
-        ctx.stroke();
+        Renderer.Render(canvas, ctx, data);
+    });
+
+    socket.on('worldData', function(data){
+        Renderer.SetWorldData(data);
     });
 
     InputManager.SetSocket(socket);

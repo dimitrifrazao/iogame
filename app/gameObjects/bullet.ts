@@ -1,6 +1,7 @@
 
-import { Transform, DirEnum, Color, IMove } from './transform';
-import { Player } from "./player";
+import { Transform, DirEnum, Color, IMove  } from "./transform"
+import { Player } from "./player"
+
 
 type bulletMap = Record<number, Bullet>;
 
@@ -8,7 +9,7 @@ export class Bullet extends Transform implements IMove
 {
     owner:Player;
     dir:DirEnum = DirEnum.None;
-    speed:number = 4;
+    speed:number = 2;
 
     constructor(owner:Player, x:number, y:number)
     {
@@ -38,16 +39,17 @@ export class Bullet extends Transform implements IMove
                 break;
         }
 
-        if(this.pos.x > 1000) this.pos.x = -this.sizeX;
-        if(this.pos.x < -this.sizeX) this.pos.x = 1000;
-        if(this.pos.y > 500) this.pos.y = -this.sizeY;
-        if(this.pos.y < -this.sizeY) this.pos.y = 500;
     }
 
     static BulletList: Bullet[] = [];
 
     static AddBullet(bullet:Bullet){
         Bullet.BulletList.push(bullet);
+    }
+    static DeleteBullet(bullet:Bullet){
+        let index = Bullet.BulletList.indexOf(bullet);
+        delete Bullet.BulletList[index];
+        Bullet.BulletList.splice(index, 1);
     }
 
     static GetBullets(){return Bullet.BulletList;}
@@ -56,15 +58,17 @@ export class Bullet extends Transform implements IMove
 
         for(let bullet of Bullet.BulletList){
             bullet.UpdatePosition(dt);
+            bullet.CheckWorldWrap();
 
             pack.push({
                 pos: bullet.GetTopLeftPos(),
-                color: Color.Black,
-                size:bullet.sizeX
+                color: bullet.owner.color,
+                sizeX:bullet.sizeX,
+                sizeY:bullet.sizeY
             }); 
         }
 
-        let updatedBullets:Bullet[] = []
+        let deletedBullets:Bullet[] = []
 
         for(let bullet of Bullet.BulletList){
             let deleteBullet:boolean = false;
@@ -79,19 +83,23 @@ export class Bullet extends Transform implements IMove
                 let player = players[k];
                 if(bullet.CheckCollision(player)===true){
                     if(bullet.owner.id != player.id){
-                        player.TakeDamage(1);
+                        let killed = player.TakeDamage(1);
+                        if(killed){
+                            bullet.owner.LevelUp();
+                        }
+                        
                     }
                     deleteBullet = true;
                 }
             }
-            if(deleteBullet===false){
-                updatedBullets.push(bullet);
-            }     
-            else{
-                bullet.owner.bullets++;
+            if(deleteBullet){
+                deletedBullets.push(bullet);
+                bullet.owner.AddHp(1);
             }             
         } 
-        Bullet.BulletList = updatedBullets; 
+        for(let bullet of deletedBullets){
+            Bullet.DeleteBullet(bullet)
+        }
     }
 
 }

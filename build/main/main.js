@@ -1,14 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Main = void 0;
-var bullet_1 = require("../gameObjects/bullet");
 var transform_1 = require("../gameObjects/transform");
 var player_1 = require("../gameObjects/player");
+var bullet_1 = require("../gameObjects/bullet");
 var Main = /** @class */ (function () {
     function Main() {
+        this.timeScale = 0.2;
         this.dt = 0;
         this.lastUpdate = Date.now();
     }
+    Main.prototype.Init = function () {
+        transform_1.World.inst.Build();
+    };
     Main.prototype.Tick = function () {
         var now = Date.now();
         this.dt = now - this.lastUpdate;
@@ -16,7 +20,7 @@ var Main = /** @class */ (function () {
     };
     Main.prototype.SetDeltaTime = function (dt) { this.dt = dt; };
     ;
-    Main.prototype.GetDeltaTime = function () { return this.dt; };
+    Main.prototype.GetDeltaTime = function () { return this.dt * this.timeScale; };
     ;
     Main.prototype.AddPlayer = function (id) {
         var player = new player_1.Player(id);
@@ -33,19 +37,20 @@ var Main = /** @class */ (function () {
     };
     Main.prototype.Shoot = function (id, dir) {
         var player = player_1.Player.GetPlayerById(id);
-        if (player.bullets > 0) {
+        if (player.hp >= 2) {
             var pos = transform_1.Vector.Copy(player.pos);
             var bullet = new bullet_1.Bullet(player, pos.x, pos.y);
             bullet.pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.GetDirVector(dir), (player.sizeX / 2) + (bullet.sizeX / 2)));
             bullet.SetDirection(dir);
             bullet_1.Bullet.AddBullet(bullet);
-            player.bullets--;
+            player.TakeDamage(1);
         }
     };
     Main.prototype.Update = function () {
         var pack = [];
-        player_1.Player.UpdatePlayers(this.dt, pack);
-        bullet_1.Bullet.UpdateBullets(this.dt, pack, player_1.Player.GetPlayers());
+        var dt = this.GetDeltaTime();
+        player_1.Player.UpdatePlayers(dt, pack);
+        bullet_1.Bullet.UpdateBullets(dt, pack, player_1.Player.GetPlayers());
         return pack;
     };
     Main.inst = new Main();

@@ -28,9 +28,10 @@ var Player = /** @class */ (function (_super) {
         _this.id = id;
         _this.color = transform_1.Color.Random();
         _this.dir = transform_1.DirEnum.None;
-        _this.speed = 3;
-        _this.bullets = 10;
-        _this.hp = 10;
+        _this.speed = 1;
+        _this.hpMax = 11;
+        _this.level = 1;
+        _this.hp = _this.hpMax;
         _this.state = PlayerState.Alive;
         _this.previousPos = new transform_1.Vector();
         return _this;
@@ -40,9 +41,23 @@ var Player = /** @class */ (function (_super) {
             this.hp -= damage;
             if (this.hp <= 0) {
                 this.state = PlayerState.Dead;
-                this.color = transform_1.Color.Red;
+                return true;
             }
         }
+        return false;
+    };
+    Player.prototype.AddHp = function (hp) {
+        this.hp += hp;
+        if (this.hp > this.hpMax) {
+            this.hp = this.hpMax;
+        }
+    };
+    Player.prototype.LevelUp = function () {
+        this.level++;
+        this.hpMax++;
+        this.hp++;
+        this.sizeX += 5;
+        this.sizeY += 5;
     };
     Player.prototype.SetDirection = function (dir) {
         this.dir = dir;
@@ -82,14 +97,6 @@ var Player = /** @class */ (function (_super) {
                 this.pos.x += this.speed * dt;
                 break;
         }
-        if (this.pos.x > 1000)
-            this.pos.x = -30;
-        if (this.pos.x < -30)
-            this.pos.x = 1000;
-        if (this.pos.y > 500)
-            this.pos.y = -30;
-        if (this.pos.y < -30)
-            this.pos.y = 500;
     };
     Player.AddPlayer = function (player) { Player.PLAYER_LIST[player.id] = player; };
     Player.DeletePlayer = function (id) { delete Player.PLAYER_LIST[id]; };
@@ -99,6 +106,7 @@ var Player = /** @class */ (function (_super) {
         for (var i in Player.PLAYER_LIST) {
             var player = Player.PLAYER_LIST[i];
             player.UpdatePosition(dt);
+            player.CheckWorldWrap();
         }
         var toRevertPos = [];
         for (var i in Player.PLAYER_LIST) {
@@ -112,8 +120,18 @@ var Player = /** @class */ (function (_super) {
             }
             pack.push({
                 pos: player.GetTopLeftPos(),
+                color: transform_1.Color.Red,
+                sizeX: player.sizeX,
+                sizeY: player.sizeY
+            });
+            var topPos = player.GetTopLeftPos();
+            var offsetY = player.sizeY * (player.hp / player.hpMax);
+            topPos.y += player.sizeY - offsetY;
+            pack.push({
+                pos: topPos,
                 color: player.color,
-                size: player.sizeX
+                sizeX: player.sizeX,
+                sizeY: offsetY
             });
         }
     };
