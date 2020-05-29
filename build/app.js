@@ -44,4 +44,4 @@ setInterval(function () {
         var socket = SOCKET_LIST[i];
         socket.emit('update', pack);
     }
-}, 0);
+}, 1000 / 25);

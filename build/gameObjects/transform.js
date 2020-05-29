@@ -56,6 +56,7 @@ var Color = /** @class */ (function () {
     Color.Red = new Color(255, 0, 0);
     Color.Green = new Color(0, 255, 0);
     Color.Blue = new Color(0, 0, 255);
+    Color.Grey = new Color(200, 200, 200);
     return Color;
 }());
 exports.Color = Color;
@@ -91,6 +92,16 @@ var Vector = /** @class */ (function () {
     Vector.prototype.distaceTo = function (target) {
         return Vector.Sub(target, this).len();
     };
+    Vector.prototype.wrap = function (x, y) {
+        if (this.x < 0)
+            this.x += x;
+        else
+            this.x = this.x % x;
+        if (this.y < 0)
+            this.y += y;
+        else
+            this.y = this.y % y;
+    };
     Vector.GetDirVector = function (dir) {
         switch (dir) {
             case DirEnum.Up:
@@ -122,6 +133,11 @@ var Vector = /** @class */ (function () {
         var newVec = new Vector(vec.x, vec.y);
         newVec.scaleBy(scale);
         return newVec;
+    };
+    Vector.Wrap = function (vec, x, y) {
+        var wrappedVec = Vector.Copy(vec);
+        wrappedVec.wrap(x, y);
+        return wrappedVec;
     };
     Vector.GetInbetween = function (pos1, pos2) {
         var pos3 = Vector.Sub(pos2, pos1);
@@ -214,6 +230,7 @@ exports.Transform = Transform;
 var Cell = /** @class */ (function (_super) {
     __extends(Cell, _super);
     function Cell(x, y, worldUnitSize, cellType) {
+        if (cellType === void 0) { cellType = CellType.Empty; }
         var _this = _super.call(this, x, y, worldUnitSize, worldUnitSize) || this;
         _this.cellType = cellType;
         return _this;

@@ -20,6 +20,7 @@ export class Color{
     static Red:Color = new Color(255,0,0);
     static Green:Color = new Color(0,255,0);
     static Blue:Color = new Color(0,0,255);
+    static Grey:Color = new Color(200,200,200);
     constructor(public r:number=0, public g:number=0, public b:number=0){}
     static Random(){
         return new Color(
@@ -52,6 +53,12 @@ export class Vector{
     }
     distaceTo(target:Vector):number{
         return Vector.Sub(target, this).len();
+    }
+    wrap(x:number, y:number){
+        if(this.x < 0) this.x += x;
+        else this.x = this.x % x;
+        if(this.y < 0) this.y += y;
+        else this.y = this.y % y;
     }
 
     static Up:Vector = new Vector(0,-1);
@@ -98,12 +105,19 @@ export class Vector{
         return newVec;
     }
 
+    static Wrap(vec:Vector, x:number, y:number):Vector{
+        let wrappedVec = Vector.Copy(vec);
+        wrappedVec.wrap(x,y);
+        return wrappedVec
+    }
+
     static GetInbetween(pos1:Vector, pos2:Vector){
         let pos3 = Vector.Sub(pos2, pos1);
         pos3.scaleBy(0.5)
         pos3.add(pos1);
         return pos3;
     }
+    
 }
 
 export class Transform {
@@ -186,7 +200,7 @@ export interface IMove{
 }
 
 export class Cell extends Transform{
-    constructor(x:number, y:number, worldUnitSize:number, public cellType:CellType){
+    constructor(x:number, y:number, worldUnitSize:number, public cellType:CellType=CellType.Empty){
         super(x,y, worldUnitSize,worldUnitSize);
     };
     IsRock():boolean{return this.cellType == CellType.Rock;}

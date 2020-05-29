@@ -110,24 +110,22 @@ var Player = /** @class */ (function (_super) {
             var player = Player.PLAYER_LIST[i];
             player.UpdatePosition(dt);
             player.CheckWorldWrap();
-            pack.push({
-                pos: player.GetTopLeftPos(),
-                color: transform_1.Color.Red,
-                sizeX: player.sizeX,
-                sizeY: player.sizeY
-            });
             // check collision against rocks
-            for (var _i = 0, _a = world_1.World.inst.GetRocks(); _i < _a.length; _i++) {
-                var rock = _a[_i];
-                if (player.CheckCollision(rock) == true) {
-                    var overlap = player.GetOverlap(rock);
+            //console.log(World.inst.GetIndex(player.pos));
+            //console.log(player.pos);
+            var cells = world_1.World.inst.GetPossibleCollisions(player.pos);
+            //console.log(cells.length);
+            for (var _i = 0, cells_1 = cells; _i < cells_1.length; _i++) {
+                var cell = cells_1[_i];
+                /*pack.push({
+                    pos: cell.GetTopLeftPos(),
+                    color: Color.Blue,
+                    sizeX:cell.sizeX,
+                    sizeY:cell.sizeY
+                });*/
+                if (cell.IsRock() && player.CheckCollision(cell) == true) {
+                    var overlap = player.GetOverlap(cell);
                     /*pack.push({
-                        pos: rock.GetTopLeftPos(),
-                        color: Color.Blue,
-                        sizeX:rock.sizeX,
-                        sizeY:rock.sizeY
-                    });
-                    pack.push({
                         pos: overlap.GetTopLeftPos(),
                         color: Color.Green,
                         sizeX:overlap.sizeX,
@@ -147,14 +145,22 @@ var Player = /** @class */ (function (_super) {
                     continue;
                 }
             }
+            pack.push({
+                pos: player.GetTopLeftPos(),
+                color: transform_1.Color.Red,
+                sizeX: player.sizeX,
+                sizeY: player.sizeY,
+                id: -1
+            });
             var topPos = player.GetTopLeftPos();
             var offsetY = player.sizeY * (player.hp / player.hpMax);
             topPos.y += player.sizeY - offsetY;
             pack.push({
                 pos: topPos,
-                color: player.color,
+                color: transform_1.Color.Grey,
                 sizeX: player.sizeX,
-                sizeY: offsetY
+                sizeY: offsetY,
+                id: player.id
             });
         }
     };

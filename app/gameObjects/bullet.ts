@@ -60,9 +60,24 @@ export class Bullet extends Transform implements IMove
             bullet.UpdatePosition(dt);
             bullet.CheckWorldWrap();
 
-            for(let rock of World.inst.GetRocks()){
-                if(bullet.CheckCollision(rock)==true){
-                    let overlap = bullet.GetOverlap(rock);
+            let cells = World.inst.GetPossibleCollisions(bullet.pos);
+            //console.log(cells.length);
+            for(let cell of cells){
+                /*pack.push({
+                    pos: cell.GetTopLeftPos(),
+                    color: Color.Blue,
+                    sizeX:cell.sizeX,
+                    sizeY:cell.sizeY
+                });*/
+                if(cell.IsRock() && bullet.CheckCollision(cell)==true){
+                    let overlap = bullet.GetOverlap(cell);
+                    
+                    /*pack.push({
+                        pos: overlap.GetTopLeftPos(),
+                        color: Color.Green,
+                        sizeX:overlap.sizeX,
+                        sizeY:overlap.sizeY
+                    });*/
                     bullet.ApplyOverlapPush(overlap);
                     bullet.dir = Bullet.GetMirrorDir(bullet.dir);
                 }
@@ -72,7 +87,8 @@ export class Bullet extends Transform implements IMove
                 pos: bullet.GetTopLeftPos(),
                 color: bullet.owner.color,
                 sizeX:bullet.sizeX,
-                sizeY:bullet.sizeY
+                sizeY:bullet.sizeY,
+                id:bullet.owner.id
             }); 
         }
 

@@ -107,24 +107,22 @@ export class Player extends Transform implements IMove{
             player.UpdatePosition(dt);
             player.CheckWorldWrap();
 
-            pack.push({
-                pos: player.GetTopLeftPos(),
-                color: Color.Red,
-                sizeX:player.sizeX,
-                sizeY:player.sizeY
-            });
-
             // check collision against rocks
-            for(let rock of World.inst.GetRocks()){
-                if(player.CheckCollision(rock)==true){
-                    let overlap = player.GetOverlap(rock);
+            //console.log(World.inst.GetIndex(player.pos));
+            //console.log(player.pos);
+            let cells = World.inst.GetPossibleCollisions(player.pos);
+            //console.log(cells.length);
+            for(let cell of cells){
+                /*pack.push({
+                    pos: cell.GetTopLeftPos(),
+                    color: Color.Blue,
+                    sizeX:cell.sizeX,
+                    sizeY:cell.sizeY
+                });*/
+                if(cell.IsRock() && player.CheckCollision(cell)==true){
+                    let overlap = player.GetOverlap(cell);
+                    
                     /*pack.push({
-                        pos: rock.GetTopLeftPos(),
-                        color: Color.Blue,
-                        sizeX:rock.sizeX,
-                        sizeY:rock.sizeY
-                    });
-                    pack.push({
                         pos: overlap.GetTopLeftPos(),
                         color: Color.Green,
                         sizeX:overlap.sizeX,
@@ -147,15 +145,23 @@ export class Player extends Transform implements IMove{
                 }
             }
             
+            pack.push({
+                pos: player.GetTopLeftPos(),
+                color: Color.Red,
+                sizeX:player.sizeX,
+                sizeY:player.sizeY,
+                id:-1
+            });
 
             let topPos = player.GetTopLeftPos();
             let offsetY = player.sizeY * (player.hp/player.hpMax);
             topPos.y += player.sizeY - offsetY;
             pack.push({
                 pos: topPos,
-                color: player.color,
+                color: Color.Grey,
                 sizeX:player.sizeX,
-                sizeY:offsetY
+                sizeY:offsetY,
+                id:player.id
             });
         }
     }

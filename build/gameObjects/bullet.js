@@ -58,10 +58,24 @@ var Bullet = /** @class */ (function (_super) {
             var bullet = _a[_i];
             bullet.UpdatePosition(dt);
             bullet.CheckWorldWrap();
-            for (var _b = 0, _c = transform_1.World.inst.GetRocks(); _b < _c.length; _b++) {
-                var rock = _c[_b];
-                if (bullet.CheckCollision(rock) == true) {
-                    var overlap = bullet.GetOverlap(rock);
+            var cells = transform_1.World.inst.GetPossibleCollisions(bullet.pos);
+            //console.log(cells.length);
+            for (var _b = 0, cells_1 = cells; _b < cells_1.length; _b++) {
+                var cell = cells_1[_b];
+                /*pack.push({
+                    pos: cell.GetTopLeftPos(),
+                    color: Color.Blue,
+                    sizeX:cell.sizeX,
+                    sizeY:cell.sizeY
+                });*/
+                if (cell.IsRock() && bullet.CheckCollision(cell) == true) {
+                    var overlap = bullet.GetOverlap(cell);
+                    /*pack.push({
+                        pos: overlap.GetTopLeftPos(),
+                        color: Color.Green,
+                        sizeX:overlap.sizeX,
+                        sizeY:overlap.sizeY
+                    });*/
                     bullet.ApplyOverlapPush(overlap);
                     bullet.dir = Bullet.GetMirrorDir(bullet.dir);
                 }
@@ -70,15 +84,16 @@ var Bullet = /** @class */ (function (_super) {
                 pos: bullet.GetTopLeftPos(),
                 color: bullet.owner.color,
                 sizeX: bullet.sizeX,
-                sizeY: bullet.sizeY
+                sizeY: bullet.sizeY,
+                id: bullet.owner.id
             });
         }
         var deletedBullets = [];
-        for (var _d = 0, _e = Bullet.BulletList; _d < _e.length; _d++) {
-            var bullet = _e[_d];
+        for (var _c = 0, _d = Bullet.BulletList; _c < _d.length; _c++) {
+            var bullet = _d[_c];
             var deleteBullet = false;
-            for (var _f = 0, _g = Bullet.BulletList; _f < _g.length; _f++) {
-                var bullet2 = _g[_f];
+            for (var _e = 0, _f = Bullet.BulletList; _e < _f.length; _e++) {
+                var bullet2 = _f[_e];
                 if (bullet !== bullet2 && bullet.CheckCollision(bullet2) === true) {
                     deleteBullet = true;
                     continue;
@@ -101,8 +116,8 @@ var Bullet = /** @class */ (function (_super) {
                 bullet.owner.AddHp(1);
             }
         }
-        for (var _h = 0, deletedBullets_1 = deletedBullets; _h < deletedBullets_1.length; _h++) {
-            var bullet = deletedBullets_1[_h];
+        for (var _g = 0, deletedBullets_1 = deletedBullets; _g < deletedBullets_1.length; _g++) {
+            var bullet = deletedBullets_1[_g];
             Bullet.DeleteBullet(bullet);
         }
     };

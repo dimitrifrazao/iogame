@@ -7,6 +7,7 @@ var World = /** @class */ (function () {
         this.hUnits = hUnits;
         this.vUnits = vUnits;
         this.rocks = [];
+        this.cells = [];
     }
     World.prototype.GetHorizontalUnits = function () { return this.hUnits * World.unitSize; };
     ;
@@ -16,26 +17,46 @@ var World = /** @class */ (function () {
     ;
     World.prototype.GetXValue = function (i) { return (i % this.hUnits) * World.unitSize; };
     ;
-    World.prototype.GetYValue = function (i) { return (Math.trunc(i / this.vUnits)) * World.unitSize; };
+    World.prototype.GetYValue = function (i) { return (Math.floor(i / this.hUnits)) * World.unitSize; };
     ;
     World.prototype.GetIndex = function (pos) {
-        return ((Math.trunc(pos.y / World.unitSize)) * this.vUnits) + (Math.trunc(pos.x / World.unitSize));
+        var wPos = transform_1.Vector.Wrap(pos, this.GetHorizontalUnits(), this.GetVerticalUnits());
+        return (((Math.floor(wPos.y / World.unitSize)) * this.hUnits) + (Math.floor(wPos.x / World.unitSize)));
+    };
+    World.prototype.WrapIndex = function (i) {
+        if (i < 0)
+            return this.GetCellCount() + i;
+        else if (i > this.GetCellCount())
+            return i - this.GetCellCount();
+        return i;
     };
     World.prototype.GetSurroundingCells = function (i) {
         var cells = [];
-        cells.push();
+        cells.push(this.cells[i]);
+        cells.push(this.cells[this.WrapIndex(i + 1)]);
+        cells.push(this.cells[this.WrapIndex(i - 1)]);
+        cells.push(this.cells[this.WrapIndex(i - this.hUnits)]);
+        cells.push(this.cells[this.WrapIndex(i - this.hUnits + 1)]);
+        cells.push(this.cells[this.WrapIndex(i - this.hUnits - 1)]);
+        cells.push(this.cells[this.WrapIndex(i + this.hUnits)]);
+        cells.push(this.cells[this.WrapIndex(i + this.hUnits + 1)]);
+        cells.push(this.cells[this.WrapIndex(i + this.hUnits - 1)]);
         return cells;
     };
     World.prototype.GetPossibleCollisions = function (pos) {
+        return this.GetSurroundingCells(this.GetIndex(pos));
     };
     World.prototype.Build = function () {
         var cellsCount = this.GetCellCount();
         for (var i = 0; i < cellsCount; i++) {
             var x = this.GetXValue(i) + (World.unitSize / 2);
             var y = this.GetYValue(i) + (World.unitSize / 2);
+            var c = new transform_1.Cell(x, y, World.unitSize);
             if ((Math.random() * 100) > 98) {
-                this.rocks.push(new transform_1.Cell(x, y, World.unitSize, transform_1.CellType.Rock));
+                c.cellType = transform_1.CellType.Rock;
+                this.rocks.push(c);
             }
+            this.cells.push(c);
         }
     };
     World.prototype.GetRocks = function () { return this.rocks; };
@@ -54,7 +75,7 @@ var World = /** @class */ (function () {
         return pack;
     };
     World.inst = new World(50, 40);
-    World.unitSize = 30;
+    World.unitSize = 30.0;
     return World;
 }());
 exports.World = World;
