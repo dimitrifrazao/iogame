@@ -82,7 +82,7 @@ var Bullet = /** @class */ (function (_super) {
             }
             pack.push({
                 pos: bullet.GetTopLeftPos(),
-                color: bullet.owner.color,
+                color: transform_1.Color.DarkGrey,
                 sizeX: bullet.sizeX,
                 sizeY: bullet.sizeY,
                 id: bullet.owner.id

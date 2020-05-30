@@ -4,6 +4,7 @@ export class World{
     public static inst:World = new World(50, 40);
     public static unitSize = 30.0;
     private rocks:Cell[] = [];
+    private deads:any[] = [];
     private cells:Cell[] = [];
 
     constructor(private hUnits:number, private vUnits:number){
@@ -61,6 +62,10 @@ export class World{
     }
 
     GetRocks(){return this.rocks};
+
+    AddDead(dead:any){
+        this.deads.push(dead);
+    }
     
     GenerateDataPack(){        
         let pack:object[] = [];
@@ -71,6 +76,9 @@ export class World{
                 sizeX: World.unitSize,
                 sizeY: World.unitSize
             });
+        }
+        for(let dead of this.deads){
+            pack.push(dead);
         }
         return pack;
     }

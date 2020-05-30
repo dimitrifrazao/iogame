@@ -21,6 +21,7 @@ export class Color{
     static Green:Color = new Color(0,255,0);
     static Blue:Color = new Color(0,0,255);
     static Grey:Color = new Color(200,200,200);
+    static DarkGrey:Color = new Color(50,50,50);
     constructor(public r:number=0, public g:number=0, public b:number=0){}
     static Random(){
         return new Color(

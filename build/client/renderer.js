@@ -3,8 +3,16 @@ var Renderer = /** @class */ (function () {
     function Renderer() {
     }
     ;
+    Renderer.SetPlayerId = function (data) {
+        Renderer.id = data.id;
+        //console.log(" id set to " + Renderer.id );
+    };
     Renderer.SetWorldData = function (data) {
         Renderer.worldData = data;
+    };
+    Renderer.AddWorldData = function (data) {
+        console.log("dead added");
+        Renderer.worldData.push(data);
     };
     Renderer.Render = function (canvas, ctx, data) {
         var w = canvas.width;
@@ -39,6 +47,9 @@ var Renderer = /** @class */ (function () {
             var sizeX = data[i].sizeX;
             var sizeY = data[i].sizeY;
             var rgbText = "rgb(" + color.r + "," + color.g + "," + color.b + ")";
+            if (data[i].id == Renderer.id) {
+                rgbText = "rgb(255,0,0)";
+            }
             ctx.fillStyle = rgbText;
             ctx.fillRect(pos.x, pos.y, sizeX, sizeY);
         }
@@ -46,5 +57,7 @@ var Renderer = /** @class */ (function () {
     };
     Renderer.gridColor = "rgba(0,0,255,0.2)"; // transparent blue
     Renderer.worldData = [];
+    //static inst:Renderer = new Renderer();
+    Renderer.id = -1;
     return Renderer;
 }());

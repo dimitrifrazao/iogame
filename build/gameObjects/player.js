@@ -24,7 +24,7 @@ var PlayerState;
 })(PlayerState = exports.PlayerState || (exports.PlayerState = {}));
 var Player = /** @class */ (function (_super) {
     __extends(Player, _super);
-    function Player(id) {
+    function Player(id, deadCallback) {
         var _this = _super.call(this, 0, 0, 30, 30) || this;
         _this.id = id;
         _this.color = transform_1.Color.Random();
@@ -35,6 +35,7 @@ var Player = /** @class */ (function (_super) {
         _this.hp = _this.hpMax;
         _this.state = PlayerState.Alive;
         _this.previousPos = new transform_1.Vector();
+        _this.deadCallback = deadCallback;
         return _this;
     }
     Player.prototype.TakeDamage = function (damage) {
@@ -42,6 +43,12 @@ var Player = /** @class */ (function (_super) {
             this.hp -= damage;
             if (this.hp <= 0) {
                 this.state = PlayerState.Dead;
+                this.deadCallback(this.id, {
+                    pos: this.GetTopLeftPos(),
+                    color: transform_1.Color.Red,
+                    sizeX: this.sizeX,
+                    sizeY: this.sizeY
+                });
                 return true;
             }
         }
@@ -157,10 +164,10 @@ var Player = /** @class */ (function (_super) {
             topPos.y += player.sizeY - offsetY;
             pack.push({
                 pos: topPos,
-                color: transform_1.Color.Grey,
+                color: player.color,
                 sizeX: player.sizeX,
                 sizeY: offsetY,
-                id: player.id
+                id: -1
             });
         }
     };

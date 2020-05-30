@@ -57,6 +57,7 @@ var Color = /** @class */ (function () {
     Color.Green = new Color(0, 255, 0);
     Color.Blue = new Color(0, 0, 255);
     Color.Grey = new Color(200, 200, 200);
+    Color.DarkGrey = new Color(50, 50, 50);
     return Color;
 }());
 exports.Color = Color;

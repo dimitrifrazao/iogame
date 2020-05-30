@@ -22,8 +22,8 @@ var Main = /** @class */ (function () {
     ;
     Main.prototype.GetDeltaTime = function () { return this.dt * this.timeScale; };
     ;
-    Main.prototype.AddPlayer = function (id) {
-        var player = new player_1.Player(id);
+    Main.prototype.AddPlayer = function (id, EmitDeadPlayer) {
+        var player = new player_1.Player(id, EmitDeadPlayer);
         player.pos.x = Math.random() * 1000;
         player.pos.y = Math.random() * 500;
         player_1.Player.AddPlayer(player);

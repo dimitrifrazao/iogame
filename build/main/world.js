@@ -7,6 +7,7 @@ var World = /** @class */ (function () {
         this.hUnits = hUnits;
         this.vUnits = vUnits;
         this.rocks = [];
+        this.deads = [];
         this.cells = [];
     }
     World.prototype.GetHorizontalUnits = function () { return this.hUnits * World.unitSize; };
@@ -61,6 +62,9 @@ var World = /** @class */ (function () {
     };
     World.prototype.GetRocks = function () { return this.rocks; };
     ;
+    World.prototype.AddDead = function (dead) {
+        this.deads.push(dead);
+    };
     World.prototype.GenerateDataPack = function () {
         var pack = [];
         for (var _i = 0, _a = this.rocks; _i < _a.length; _i++) {
@@ -71,6 +75,10 @@ var World = /** @class */ (function () {
                 sizeX: World.unitSize,
                 sizeY: World.unitSize
             });
+        }
+        for (var _b = 0, _c = this.deads; _b < _c.length; _b++) {
+            var dead = _c[_b];
+            pack.push(dead);
         }
         return pack;
     };

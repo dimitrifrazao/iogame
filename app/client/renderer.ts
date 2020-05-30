@@ -2,10 +2,22 @@ class Renderer{
     
     static gridColor: string = "rgba(0,0,255,0.2)"; // transparent blue
     static worldData:any[] = [];
-    constructor(){    };
+    //static inst:Renderer = new Renderer();
+    static id:number = -1
+    constructor(){   };
+    
+    static SetPlayerId(data:any){
+        Renderer.id = data.id;
+        //console.log(" id set to " + Renderer.id );
+    }
 
     static SetWorldData(data:any[]){
         Renderer.worldData = data;
+    }
+
+    static AddWorldData(data:any){
+        console.log("dead added")
+        Renderer.worldData.push(data);
     }
 
     static Render(canvas:any, ctx:any, data:any){
@@ -47,6 +59,9 @@ class Renderer{
             let sizeX = data[i].sizeX;
             let sizeY = data[i].sizeY;
             let rgbText = "rgb(" + color.r+ "," + color.g + "," + color.b + ")";
+            if(data[i].id == Renderer.id){
+                rgbText = "rgb(255,0,0)";
+            }
             ctx.fillStyle = rgbText;
             ctx.fillRect(pos.x, pos.y, sizeX, sizeY);            
         }

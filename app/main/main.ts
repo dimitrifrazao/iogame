@@ -25,8 +25,8 @@ export class Main{
 
     private lastUpdate = Date.now();
 
-    AddPlayer(id:number){
-        var player = new Player(id);
+    AddPlayer(id:number, EmitDeadPlayer:any){
+        var player = new Player(id, EmitDeadPlayer);
         player.pos.x = Math.random() * 1000;
         player.pos.y = Math.random() * 500;
         Player.AddPlayer(player);

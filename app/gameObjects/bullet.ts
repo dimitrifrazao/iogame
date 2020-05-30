@@ -1,5 +1,5 @@
 
-import { Transform, DirEnum, World, IMove  } from "./transform"
+import { Transform, DirEnum, World, IMove, Color  } from "./transform"
 import { Player } from "./player"
 
 
@@ -85,7 +85,7 @@ export class Bullet extends Transform implements IMove
 
             pack.push({
                 pos: bullet.GetTopLeftPos(),
-                color: bullet.owner.color,
+                color: Color.DarkGrey,
                 sizeX:bullet.sizeX,
                 sizeY:bullet.sizeY,
                 id:bullet.owner.id

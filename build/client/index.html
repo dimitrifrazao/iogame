@@ -25,6 +25,15 @@
         Renderer.SetWorldData(data);
     });
 
+    socket.on('worldDataAdd', function(data){
+        console.log("dead added")
+        Renderer.AddWorldData(data);
+    });
+
+    socket.on('setPlayerId', function(data){
+        Renderer.SetPlayerId(data);
+    });
+
     InputManager.SetSocket(socket);
 
     document.onkeydown = function(event){

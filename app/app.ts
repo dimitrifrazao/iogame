@@ -18,8 +18,6 @@ import { Main } from "./main/main"
 import { World } from "./main/world"
 
 Main.inst.Init();
-console.log("World generated");
-var worldData = World.inst.GenerateDataPack();
 
 const SOCKET_LIST: Record<number, any> = {};
 
@@ -28,9 +26,11 @@ io.sockets.on('connection', function(socket:any){
     console.log('socket connection!');
     SOCKET_LIST[socket.id] = socket;
 
-    socket.emit('worldData', worldData);
+    socket.emit('worldData', World.inst.GenerateDataPack());
+    socket.emit('setPlayerId', {id:socket.id});
+    //console.log("socket id " + socket.id.toString())
 
-    Main.inst.AddPlayer(socket.id);
+    Main.inst.AddPlayer(socket.id, EmitDeadPlayer);
     
     socket.on('playerDir', function(data:any){
         //console.log("press " + data.dir);
@@ -47,6 +47,16 @@ io.sockets.on('connection', function(socket:any){
         Main.inst.DeletePlayer(socket.id);
     });
 });
+
+var EmitDeadPlayer = function(id:number, data:any){
+    console.log("dead callback")
+    //Main.inst.DeletePlayer(id);
+    World.inst.AddDead(data);
+    for(var i in SOCKET_LIST){
+        var socket = SOCKET_LIST[i];
+        socket.emit('worldDataAdd', data);
+    }
+}
 
 setInterval(function() {
     Main.inst.Tick();

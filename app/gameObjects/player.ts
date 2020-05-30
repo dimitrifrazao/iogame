@@ -9,7 +9,7 @@ export enum PlayerState{
 
 export class Player extends Transform implements IMove{
 
-    color:Color = Color.Random();
+    public color:Color = Color.Random();
     public dir:DirEnum = DirEnum.None;
     public speed:number = 1;
     public hpMax:number = 11;
@@ -17,9 +17,11 @@ export class Player extends Transform implements IMove{
     public hp:number = this.hpMax;
     public state:PlayerState = PlayerState.Alive;
     public previousPos:Vector = new Vector();
+    public deadCallback:any ;
 
-    constructor(public id:number){
+    constructor(public id:number, deadCallback:any){
         super(0,0, 30, 30);
+        this.deadCallback = deadCallback;
     }
 
     TakeDamage(damage:number):boolean{
@@ -27,6 +29,12 @@ export class Player extends Transform implements IMove{
             this.hp -= damage;
             if(this.hp <= 0 ){
                 this.state = PlayerState.Dead;
+                this.deadCallback(this.id, {
+                    pos: this.GetTopLeftPos(),
+                    color: Color.Red,
+                    sizeX:this.sizeX,
+                    sizeY:this.sizeY
+                })
                 return true;
             }
         }
@@ -158,10 +166,10 @@ export class Player extends Transform implements IMove{
             topPos.y += player.sizeY - offsetY;
             pack.push({
                 pos: topPos,
-                color: Color.Grey,
+                color: player.color,
                 sizeX:player.sizeX,
                 sizeY:offsetY,
-                id:player.id
+                id:-1
             });
         }
     }
