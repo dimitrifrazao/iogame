@@ -22,6 +22,8 @@ var Bullet = /** @class */ (function (_super) {
         var _this = _super.call(this) || this;
         _this.dir = transform_1.DirEnum.None;
         _this.speed = 2;
+        _this.damage = 1;
+        _this.timer = -1;
         _this.size.x = 10;
         _this.size.y = 10;
         _this.player = player;
@@ -86,8 +88,8 @@ var Bullet = /** @class */ (function (_super) {
             //console.log(cells.length);
             for (var i in cells) {
                 var cell = cells[i];
-                if (cell !== undefined)
-                    console.log("DEAD CELL at " + i);
+                // FIX this, its bad
+                //if(cell !== undefined ) console.log("DEAD CELL at " + i);
                 if (cell !== undefined && cell.IsRock() && bullet.CheckCollision(cell) == true) {
                     var overlap = bullet.GetOverlap(cell);
                     bullet.ApplyOverlapPush(overlap);
@@ -113,7 +115,7 @@ var Bullet = /** @class */ (function (_super) {
                 var player = players[i];
                 if (bullet.CheckCollision(player) === true) {
                     if (id != player.GetId()) {
-                        var killed = player.TakeDamage(1);
+                        var killed = player.TakeDamage(bullet.damage);
                         if (killed && bulletPlayer != null) {
                             bulletPlayer.LevelUp();
                         }
@@ -121,10 +123,16 @@ var Bullet = /** @class */ (function (_super) {
                     deleteBullet = true;
                 }
             }
+            if (bullet.timer >= 0) {
+                console.log("timmer works");
+                bullet.timer -= dt;
+                if (bullet.timer <= 0)
+                    deleteBullet = true;
+            }
             if (deleteBullet) {
                 deletedBullets.push(bullet);
                 if (bulletPlayer != null)
-                    bullet.player.AddHp(1);
+                    bullet.player.AddHp(bullet.damage);
             }
         }
         for (var _f = 0, deletedBullets_1 = deletedBullets; _f < deletedBullets_1.length; _f++) {

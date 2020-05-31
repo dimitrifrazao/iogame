@@ -13,7 +13,7 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Player = exports.PlayerState = void 0;
+exports.Player = exports.WeaponType = exports.PlayerState = void 0;
 var transform_1 = require("./transform");
 var world_1 = require("../main/world");
 var PlayerState;
@@ -22,6 +22,13 @@ var PlayerState;
     PlayerState[PlayerState["Stunned"] = 1] = "Stunned";
     PlayerState[PlayerState["Dead"] = 2] = "Dead";
 })(PlayerState = exports.PlayerState || (exports.PlayerState = {}));
+var WeaponType;
+(function (WeaponType) {
+    WeaponType[WeaponType["default"] = 0] = "default";
+    WeaponType[WeaponType["shotgun"] = 1] = "shotgun";
+    WeaponType[WeaponType["drop"] = 2] = "drop";
+    WeaponType[WeaponType["knife"] = 3] = "knife";
+})(WeaponType = exports.WeaponType || (exports.WeaponType = {}));
 var Player = /** @class */ (function (_super) {
     __extends(Player, _super);
     function Player(id, deadCallback) {
@@ -31,6 +38,7 @@ var Player = /** @class */ (function (_super) {
         _this.hp = _this.hpMax;
         _this.state = PlayerState.Alive;
         _this.previousPos = new transform_1.Vector();
+        _this.weaponType = WeaponType.default;
         // from IMove
         _this.dir = transform_1.DirEnum.None;
         _this.speed = 1;
@@ -44,6 +52,18 @@ var Player = /** @class */ (function (_super) {
         _this.type = transform_1.UnitType.Player;
         return _this;
     }
+    Player.prototype.SetWeaponType = function (weaponType) { this.weaponType = weaponType; };
+    ;
+    Player.prototype.GetWeaponType = function () { return this.weaponType; };
+    ;
+    Player.prototype.GetWeaponData = function () {
+        switch (this.weaponType) {
+            case WeaponType.default: return { damage: 1, speed: 2, size: 10, timer: -1 };
+            case WeaponType.shotgun: return { damage: 3, speed: 1, size: 20, timer: -1 };
+            case WeaponType.drop: return { damage: 5, speed: 0, size: 5, timer: -1 };
+            case WeaponType.knife: return { damage: 10, speed: 1, size: 10, timer: 10 };
+        }
+    };
     Player.prototype.AddBullet = function (bullet) {
         this.bullets.push(bullet);
     };

@@ -11,6 +11,13 @@ var DirEnum;
     DirEnum[DirEnum["DownLeft"] = 7] = "DownLeft";
     DirEnum[DirEnum["DownRight"] = 8] = "DownRight";
 })(DirEnum || (DirEnum = {}));
+var WeaponType;
+(function (WeaponType) {
+    WeaponType[WeaponType["default"] = 0] = "default";
+    WeaponType[WeaponType["shotgun"] = 1] = "shotgun";
+    WeaponType[WeaponType["drop"] = 2] = "drop";
+    WeaponType[WeaponType["knife"] = 3] = "knife";
+})(WeaponType || (WeaponType = {}));
 var KeyCode;
 (function (KeyCode) {
     KeyCode[KeyCode["W"] = 87] = "W";
@@ -22,6 +29,10 @@ var KeyCode;
     KeyCode[KeyCode["Up"] = 38] = "Up";
     KeyCode[KeyCode["Down"] = 40] = "Down";
     KeyCode[KeyCode["Space"] = 32] = "Space";
+    KeyCode[KeyCode["N1"] = 49] = "N1";
+    KeyCode[KeyCode["N2"] = 50] = "N2";
+    KeyCode[KeyCode["N3"] = 51] = "N3";
+    KeyCode[KeyCode["N4"] = 52] = "N4";
 })(KeyCode || (KeyCode = {}));
 var InputManager = /** @class */ (function () {
     function InputManager() {
@@ -94,6 +105,18 @@ var InputManager = /** @class */ (function () {
                 break;
             case KeyCode.Right:
                 InputManager.socket.emit('shoot', { dir: DirEnum.Right });
+                break;
+            case KeyCode.N1:
+                InputManager.socket.emit('weaponChange', { type: WeaponType.default });
+                break;
+            case KeyCode.N2:
+                InputManager.socket.emit('weaponChange', { type: WeaponType.shotgun });
+                break;
+            case KeyCode.N3:
+                InputManager.socket.emit('weaponChange', { type: WeaponType.drop });
+                break;
+            case KeyCode.N4:
+                InputManager.socket.emit('weaponChange', { type: WeaponType.knife });
                 break;
         }
     };

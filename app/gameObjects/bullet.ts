@@ -9,6 +9,8 @@ export class Bullet extends Transform implements IMove, IPlayerObserver
 {
     dir:DirEnum = DirEnum.None;
     speed:number = 2;
+    damage:number = 1;
+    timer:number = -1;
 
     // IPlayerObserver
     player:Player;
@@ -86,7 +88,8 @@ export class Bullet extends Transform implements IMove, IPlayerObserver
             //console.log(cells.length);
             for(let i in  cells){
                 let cell = cells[i];
-                if(cell !== undefined ) console.log("DEAD CELL at " + i);
+                // FIX this, its bad
+                //if(cell !== undefined ) console.log("DEAD CELL at " + i);
                 if(cell !== undefined && cell.IsRock() && bullet.CheckCollision(cell)==true){
                     let overlap = bullet.GetOverlap(cell);
                     bullet.ApplyOverlapPush(overlap);
@@ -114,7 +117,7 @@ export class Bullet extends Transform implements IMove, IPlayerObserver
                 let player = players[i];
                 if(bullet.CheckCollision(player)===true){
                     if(id!= player.GetId()){
-                        let killed = player.TakeDamage(1);
+                        let killed = player.TakeDamage(bullet.damage);
                         if(killed && bulletPlayer != null){
                             bulletPlayer.LevelUp();
                         }
@@ -123,9 +126,14 @@ export class Bullet extends Transform implements IMove, IPlayerObserver
                     deleteBullet = true;
                 }
             }
+            if(bullet.timer >= 0){
+                console.log("timmer works")
+                bullet.timer -= dt;
+                if(bullet.timer <= 0) deleteBullet = true;
+            }
             if(deleteBullet){
                 deletedBullets.push(bullet);
-                if(bulletPlayer != null) bullet.player.AddHp(1);
+                if(bulletPlayer != null) bullet.player.AddHp(bullet.damage);
             }             
         } 
         for(let bullet of deletedBullets){

@@ -37,15 +37,25 @@ var Main = /** @class */ (function () {
     };
     Main.prototype.Shoot = function (id, dir) {
         var player = player_1.Player.GetPlayerById(id);
-        if (player != null && player.hp >= 2) {
+        if (player != null && player.hp >= 1 + player.GetWeaponData().damage) {
             var pos = transform_1.Vector.Copy(player.GetPos());
             var bullet = new bullet_1.Bullet(player);
             pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.GetDirVector(dir), (player.GetSize().x / 2) + (bullet.GetSize().y / 2)));
             bullet.SetPos(pos);
             bullet.SetDirection(dir);
+            var damageData = player.GetWeaponData();
+            bullet.damage = damageData.damage;
+            bullet.speed = damageData.speed;
+            bullet.timer = damageData.timer;
+            bullet.SetSize(new transform_1.Vector(damageData.size, damageData.size));
             bullet_1.Bullet.AddBullet(bullet);
-            player.TakeDamage(1);
+            player.TakeDamage(damageData.damage);
         }
+    };
+    Main.prototype.ChangeWeapon = function (id, type) {
+        var player = player_1.Player.GetPlayerById(id);
+        if (player != null)
+            player.SetWeaponType(type);
     };
     Main.prototype.Update = function () {
         var pack = [];

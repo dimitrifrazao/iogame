@@ -32,6 +32,9 @@ io.sockets.on('connection', function (socket) {
         //console.log("shoot");
         main_1.Main.inst.Shoot(socket.id, data.dir);
     });
+    socket.on('weaponChange', function (data) {
+        main_1.Main.inst.ChangeWeapon(socket.id, data.type);
+    });
     socket.on('disconnect', function () {
         delete SOCKET_LIST[socket.id];
         main_1.Main.inst.DeletePlayer(socket.id);

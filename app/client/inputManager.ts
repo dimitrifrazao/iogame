@@ -10,6 +10,13 @@ enum DirEnum {
     DownRight=8
 }
 
+enum WeaponType{
+    default=0,
+    shotgun=1,
+    drop=2,
+    knife=3
+}
+
 enum KeyCode{
     W=87,
     A=65,
@@ -19,7 +26,11 @@ enum KeyCode{
     Right=39,
     Up=38,
     Down=40,
-    Space=32
+    Space=32,
+    N1 = 49,
+    N2 = 50,
+    N3 = 51,
+    N4 = 52
 }
 
 class InputManager{
@@ -109,6 +120,18 @@ class InputManager{
                 InputManager.socket.emit('shoot', {dir:DirEnum.Right});
                 break;
 
+            case KeyCode.N1:
+                InputManager.socket.emit('weaponChange', {type:WeaponType.default});
+                break;
+            case KeyCode.N2:
+                InputManager.socket.emit('weaponChange', {type:WeaponType.shotgun});
+                break;
+            case KeyCode.N3:
+                InputManager.socket.emit('weaponChange', {type:WeaponType.drop});
+                break;
+            case KeyCode.N4:
+                InputManager.socket.emit('weaponChange', {type:WeaponType.knife});
+                break;
        
         }
     }

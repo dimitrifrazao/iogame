@@ -42,10 +42,16 @@ io.sockets.on('connection', function(socket:any){
         Main.inst.Shoot(socket.id, data.dir);
     });
 
+    socket.on('weaponChange', function(data:any){
+        Main.inst.ChangeWeapon(socket.id, data.type);
+    });
+
     socket.on('disconnect', function(){
         delete  SOCKET_LIST[socket.id];
         Main.inst.DeletePlayer(socket.id);
     });
+
+    
 });
 
 var EmitDeadPlayer = function(id:number, data:any){

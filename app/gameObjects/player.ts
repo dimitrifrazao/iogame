@@ -7,6 +7,13 @@ export enum PlayerState{
     Dead=2
 }
 
+export enum WeaponType{
+    default=0,
+    shotgun=1,
+    drop=2,
+    knife=3
+}
+
 export class Player extends Transform implements IMove, IPlayerSubject{
 
     public hpMax:number = 11;
@@ -14,7 +21,8 @@ export class Player extends Transform implements IMove, IPlayerSubject{
     public hp:number = this.hpMax;
     public state:PlayerState = PlayerState.Alive;
     public previousPos:Vector = new Vector();
-    public deadCallback:any ;
+    public deadCallback:any;
+    private weaponType: WeaponType = WeaponType.default;
 
     constructor(id:number, deadCallback:any){
         super();
@@ -29,6 +37,17 @@ export class Player extends Transform implements IMove, IPlayerSubject{
     // from IMove
     public dir:DirEnum = DirEnum.None;
     public speed:number = 1;
+
+    SetWeaponType(weaponType:WeaponType){this.weaponType=weaponType;};
+    GetWeaponType(){return this.weaponType;};
+    GetWeaponData():any{
+        switch(this.weaponType){
+            case WeaponType.default: return {damage:1, speed:2, size:10, timer:-1};
+            case WeaponType.shotgun: return {damage:3, speed:1, size:20, timer:-1};
+            case WeaponType.drop: return {damage:5, speed:0, size:5, timer:-1};
+            case WeaponType.knife: return {damage:10, speed:1, size:10, timer:10};
+        }
+    }
 
     // from IPlayerSubject
     bullets:any[] = [];

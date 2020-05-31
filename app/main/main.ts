@@ -1,5 +1,5 @@
 import { DirEnum, Vector, World, Color} from "../gameObjects/transform"
-import { Player } from "../gameObjects/player"
+import { Player, WeaponType } from "../gameObjects/player"
 import { Bullet } from "../gameObjects/bullet"
 
 
@@ -40,15 +40,27 @@ export class Main{
 
     Shoot(id:number, dir:DirEnum){
         let player = Player.GetPlayerById(id);
-        if(player != null && player.hp >= 2){
+        if(player != null && player.hp >= 1 + player.GetWeaponData().damage){
             let pos = Vector.Copy(player.GetPos());
             let bullet = new Bullet(player);
             pos.add( Vector.ScaleBy( Vector.GetDirVector(dir), (player.GetSize().x/2)+(bullet.GetSize().y/2)) );
             bullet.SetPos(pos);
             bullet.SetDirection(dir);
+
+            let damageData = player.GetWeaponData();
+            bullet.damage = damageData.damage;
+            bullet.speed = damageData.speed;
+            bullet.timer = damageData.timer;
+            bullet.SetSize( new Vector(damageData.size, damageData.size) );
+            
             Bullet.AddBullet(bullet);
-            player.TakeDamage(1);
+            player.TakeDamage(damageData.damage);
         }
+    }
+
+    ChangeWeapon(id:number, type:number){
+        let player = Player.GetPlayerById(id);
+        if(player != null) player.SetWeaponType(type);
     }
 
     Update():object[]{
