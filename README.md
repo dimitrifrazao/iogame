@@ -1,22 +1,22 @@
 **ABOUT:**
 
-simple online multiplayer io game that you can play on a browser:
-uses nodejs, express, socket.io and typescript
+simple online multiplayer io game that you can play on a browser.<br />
+uses nodejs, express, socket.io and typescript.<br />
 
 **HOW TO RUN:**
 
-First make sure you have Node.js and npm installed.
-Download the entire iogame depot.
-On your terminal navigate to your iogame folder and run this command to build and install any dependencies:
-`npm install`
-Then navigate to /builds and run this command to start the server:
-`node app.js`
+First make sure you have Node.js and npm installed.<br />
+Download the entire iogame depot.<br />
+On your terminal navigate to your iogame folder and run this command to build and install any dependencies:<br />
+`npm install`<br />
+Then navigate to /builds and run this command to start the server:<br />
+`node app.js`<br />
 
-The game is served on port 2000
-If you're running on your local machine then just open a tab in your browser and type:
-localhost:2000
+The game is served on port 2000<br />
+If you're running on your local machine then just open a tab in your browser and type:<br />
+localhost:2000<br />
 
-If you have this game running on a server than just go to <ip address>:2000 
+If you have this game running on a server than just go to <ip address>:2000 <br />
 
 **GAME INPUTS & RULES:**
 
@@ -40,6 +40,7 @@ Black square are obstacles (rocks) that players & bullets can't go through.
 - If a player touches another player then they both die!
 
 **WEAPONS:**
+
 You can switch weapons by pressing keys 1,2,3 and 4.
 
 - 1 default bullet: cost/damage 1hp, speed: 2, size:10, duration: until hits something.
