@@ -14,6 +14,12 @@ var Renderer = /** @class */ (function () {
         console.log("dead added");
         Renderer.worldData.push(data);
     };
+    Renderer.RemoveFromWorldData = function (data) {
+        console.log("dead removed");
+        var i = Renderer.worldData.indexOf(data);
+        delete Renderer.worldData[i];
+        Renderer.worldData.splice(i, 1);
+    };
     Renderer.Render = function (canvas, ctx, data) {
         var w = canvas.width;
         var h = canvas.width;
@@ -29,31 +35,34 @@ var Renderer = /** @class */ (function () {
         ctx.strokeStyle = Renderer.gridColor;
         ctx.stroke();
         ctx.beginPath();
+        var toRemoveWorldData = [];
         for (var i = 0; i < Renderer.worldData.length; i++) {
-            var data_1 = Renderer.worldData[i];
-            var pos = data_1.pos;
-            var color = data_1.color;
-            var sizeX = data_1.sizeX;
-            var sizeY = data_1.sizeY;
-            var rgbText = "rgb(" + color.r + "," + color.g + "," + color.b + ")";
+            var d = Renderer.worldData[i];
+            if (d.type == 1 && d.a > 0) {
+                d.a -= 0.01;
+                if (d.a < 0)
+                    toRemoveWorldData.push(d);
+            }
+            var rgbText = "rgba(" + d.r + "," + d.g + "," + d.b + "," + d.a + ")";
             ctx.fillStyle = rgbText;
-            ctx.fillRect(pos.x, pos.y, sizeX, sizeY);
+            ctx.fillRect(d.x, d.y, d.sx, d.sy);
         }
         ctx.stroke();
         ctx.beginPath();
         for (var i = 0; i < data.length; i++) {
-            var pos = data[i].pos;
-            var color = data[i].color;
-            var sizeX = data[i].sizeX;
-            var sizeY = data[i].sizeY;
-            var rgbText = "rgb(" + color.r + "," + color.g + "," + color.b + ")";
-            if (data[i].id == Renderer.id) {
+            var d = data[i];
+            var rgbText = "rgb(" + d.r + "," + d.g + "," + d.b + ")";
+            if (d.id == Renderer.id && d.type == 2) {
                 rgbText = "rgb(255,0,0)";
             }
             ctx.fillStyle = rgbText;
-            ctx.fillRect(pos.x, pos.y, sizeX, sizeY);
+            ctx.fillRect(d.x, d.y, d.sx, d.sy);
         }
         ctx.stroke();
+        for (var _i = 0, toRemoveWorldData_1 = toRemoveWorldData; _i < toRemoveWorldData_1.length; _i++) {
+            var d = toRemoveWorldData_1[_i];
+            Renderer.RemoveFromWorldData(d);
+        }
     };
     Renderer.gridColor = "rgba(0,0,255,0.2)"; // transparent blue
     Renderer.worldData = [];

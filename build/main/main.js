@@ -24,8 +24,7 @@ var Main = /** @class */ (function () {
     ;
     Main.prototype.AddPlayer = function (id, EmitDeadPlayer) {
         var player = new player_1.Player(id, EmitDeadPlayer);
-        player.pos.x = Math.random() * 1000;
-        player.pos.y = Math.random() * 500;
+        player.SetPos(new transform_1.Vector(Math.random() * 1000, Math.random() * 500));
         player_1.Player.AddPlayer(player);
     };
     ;
@@ -33,14 +32,16 @@ var Main = /** @class */ (function () {
     ;
     Main.prototype.SetPlayerDir = function (id, dir) {
         var player = player_1.Player.GetPlayerById(id);
-        player.SetDirection(dir);
+        if (player != null)
+            player.SetDirection(dir);
     };
     Main.prototype.Shoot = function (id, dir) {
         var player = player_1.Player.GetPlayerById(id);
-        if (player.hp >= 2) {
-            var pos = transform_1.Vector.Copy(player.pos);
-            var bullet = new bullet_1.Bullet(player, pos.x, pos.y);
-            bullet.pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.GetDirVector(dir), (player.sizeX / 2) + (bullet.sizeX / 2)));
+        if (player != null && player.hp >= 2) {
+            var pos = transform_1.Vector.Copy(player.GetPos());
+            var bullet = new bullet_1.Bullet(player);
+            pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.GetDirVector(dir), (player.GetSize().x / 2) + (bullet.GetSize().y / 2)));
+            bullet.SetPos(pos);
             bullet.SetDirection(dir);
             bullet_1.Bullet.AddBullet(bullet);
             player.TakeDamage(1);
@@ -50,7 +51,7 @@ var Main = /** @class */ (function () {
         var pack = [];
         var dt = this.GetDeltaTime();
         player_1.Player.UpdatePlayers(dt, pack);
-        bullet_1.Bullet.UpdateBullets(dt, pack, player_1.Player.GetPlayers());
+        bullet_1.Bullet.UpdateBullets(dt, pack);
         return pack;
     };
     Main.inst = new Main();

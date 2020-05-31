@@ -27,8 +27,7 @@ export class Main{
 
     AddPlayer(id:number, EmitDeadPlayer:any){
         var player = new Player(id, EmitDeadPlayer);
-        player.pos.x = Math.random() * 1000;
-        player.pos.y = Math.random() * 500;
+        player.SetPos( new Vector(Math.random() * 1000, Math.random() * 500) );
         Player.AddPlayer(player);
     };
 
@@ -36,15 +35,16 @@ export class Main{
 
     SetPlayerDir(id:number, dir:DirEnum){
         let player = Player.GetPlayerById(id);
-        player.SetDirection(dir);
+        if(player != null) player.SetDirection(dir);
     }
 
     Shoot(id:number, dir:DirEnum){
         let player = Player.GetPlayerById(id);
-        if(player.hp >= 2){
-            let pos = Vector.Copy(player.pos);
-            let bullet = new Bullet(player, pos.x ,pos.y);
-            bullet.pos.add( Vector.ScaleBy( Vector.GetDirVector(dir), (player.sizeX/2)+(bullet.sizeX/2)) );
+        if(player != null && player.hp >= 2){
+            let pos = Vector.Copy(player.GetPos());
+            let bullet = new Bullet(player);
+            pos.add( Vector.ScaleBy( Vector.GetDirVector(dir), (player.GetSize().x/2)+(bullet.GetSize().y/2)) );
+            bullet.SetPos(pos);
             bullet.SetDirection(dir);
             Bullet.AddBullet(bullet);
             player.TakeDamage(1);
@@ -55,7 +55,7 @@ export class Main{
         let pack:object[] = []
         let dt = this.GetDeltaTime();
         Player.UpdatePlayers(dt, pack);
-        Bullet.UpdateBullets(dt, pack, Player.GetPlayers());
+        Bullet.UpdateBullets(dt, pack);
         return pack;
     }
 

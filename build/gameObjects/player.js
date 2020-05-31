@@ -25,30 +25,50 @@ var PlayerState;
 var Player = /** @class */ (function (_super) {
     __extends(Player, _super);
     function Player(id, deadCallback) {
-        var _this = _super.call(this, 0, 0, 30, 30) || this;
-        _this.id = id;
-        _this.color = transform_1.Color.Random();
-        _this.dir = transform_1.DirEnum.None;
-        _this.speed = 1;
+        var _this = _super.call(this) || this;
         _this.hpMax = 11;
         _this.level = 1;
         _this.hp = _this.hpMax;
         _this.state = PlayerState.Alive;
         _this.previousPos = new transform_1.Vector();
+        // from IMove
+        _this.dir = transform_1.DirEnum.None;
+        _this.speed = 1;
+        // from IPlayerSubject
+        _this.bullets = [];
+        _this.size.x = 30;
+        _this.size.y = 30;
+        _this.id = id;
         _this.deadCallback = deadCallback;
+        _this.SetColor(transform_1.Color.Random());
+        _this.type = transform_1.UnitType.Player;
         return _this;
     }
+    Player.prototype.AddBullet = function (bullet) {
+        this.bullets.push(bullet);
+    };
+    Player.prototype.RemoveBullet = function (bullet) {
+        var i = this.bullets.indexOf(bullet);
+        delete this.bullets[i];
+        this.bullets.splice(i, 1);
+    };
+    Player.prototype.RemovePlayer = function () {
+        for (var _i = 0, _a = this.bullets; _i < _a.length; _i++) {
+            var bullet = _a[_i];
+            bullet.RemovePlayer();
+        }
+        var id = this.GetId();
+        var dPack = this.GetDataPack();
+        dPack.SetColor(transform_1.Color.Red);
+        this.deadCallback(id, dPack);
+        Player.DeletePlayer(id);
+    };
     Player.prototype.TakeDamage = function (damage) {
         if (this.state == PlayerState.Alive) {
             this.hp -= damage;
             if (this.hp <= 0) {
                 this.state = PlayerState.Dead;
-                this.deadCallback(this.id, {
-                    pos: this.GetTopLeftPos(),
-                    color: transform_1.Color.Red,
-                    sizeX: this.sizeX,
-                    sizeY: this.sizeY
-                });
+                this.RemovePlayer();
                 return true;
             }
         }
@@ -66,8 +86,8 @@ var Player = /** @class */ (function (_super) {
         this.level++;
         this.hpMax++;
         this.hp++;
-        this.sizeX += 5;
-        this.sizeY += 5;
+        this.size.x += 5;
+        this.size.y += 5;
     };
     Player.prototype.SetDirection = function (dir) {
         this.dir = dir;
@@ -108,9 +128,18 @@ var Player = /** @class */ (function (_super) {
                 break;
         }
     };
-    Player.AddPlayer = function (player) { Player.PLAYER_LIST[player.id] = player; };
-    Player.DeletePlayer = function (id) { delete Player.PLAYER_LIST[id]; };
-    Player.GetPlayerById = function (id) { return Player.PLAYER_LIST[id]; };
+    Player.AddPlayer = function (player) {
+        Player.PLAYER_LIST[player.GetId()] = player;
+    };
+    Player.DeletePlayer = function (id) {
+        delete Player.PLAYER_LIST[id];
+    };
+    Player.GetPlayerById = function (id) {
+        var player = Player.PLAYER_LIST[id];
+        if (player !== undefined)
+            return player;
+        return null;
+    };
     Player.GetPlayers = function () { return Player.PLAYER_LIST; };
     Player.UpdatePlayers = function (dt, pack) {
         for (var i in Player.PLAYER_LIST) {
@@ -118,57 +147,41 @@ var Player = /** @class */ (function (_super) {
             player.UpdatePosition(dt);
             player.CheckWorldWrap();
             // check collision against rocks
-            //console.log(World.inst.GetIndex(player.pos));
-            //console.log(player.pos);
             var cells = world_1.World.inst.GetPossibleCollisions(player.pos);
             //console.log(cells.length);
             for (var _i = 0, cells_1 = cells; _i < cells_1.length; _i++) {
                 var cell = cells_1[_i];
-                /*pack.push({
-                    pos: cell.GetTopLeftPos(),
-                    color: Color.Blue,
-                    sizeX:cell.sizeX,
-                    sizeY:cell.sizeY
-                });*/
+                //pack.push(cell.GetDataPack());
                 if (cell.IsRock() && player.CheckCollision(cell) == true) {
                     var overlap = player.GetOverlap(cell);
-                    /*pack.push({
-                        pos: overlap.GetTopLeftPos(),
-                        color: Color.Green,
-                        sizeX:overlap.sizeX,
-                        sizeY:overlap.sizeY
-                    });*/
+                    // pack.push(overlap.GetDataPack);
                     player.ApplyOverlapPush(overlap);
                 }
             }
         }
-        var toRevertPos = [];
+        var deadPlayers = [];
         for (var i in Player.PLAYER_LIST) {
             var player = Player.PLAYER_LIST[i];
             for (var j in Player.PLAYER_LIST) {
                 var player2 = Player.PLAYER_LIST[j];
                 if (i != j && player.CheckCollision(player2) == true) {
-                    player.TakeDamage(player.hp);
+                    deadPlayers.push(player);
                     continue;
                 }
             }
-            pack.push({
-                pos: player.GetTopLeftPos(),
-                color: transform_1.Color.Red,
-                sizeX: player.sizeX,
-                sizeY: player.sizeY,
-                id: -1
-            });
-            var topPos = player.GetTopLeftPos();
-            var offsetY = player.sizeY * (player.hp / player.hpMax);
-            topPos.y += player.sizeY - offsetY;
-            pack.push({
-                pos: topPos,
-                color: player.color,
-                sizeX: player.sizeX,
-                sizeY: offsetY,
-                id: -1
-            });
+            // back red square
+            var playerRedPack = player.GetDataPack();
+            playerRedPack.SetColor(transform_1.Color.Red);
+            pack.push(playerRedPack);
+            // main player square that shrinks as hp lowers
+            var playerPack = player.GetDataPack();
+            playerPack.sy = player.size.y * (player.hp / player.hpMax);
+            playerPack.y += player.size.y - playerPack.sy;
+            pack.push(playerPack);
+        }
+        for (var _a = 0, deadPlayers_1 = deadPlayers; _a < deadPlayers_1.length; _a++) {
+            var deadPlayer = deadPlayers_1[_a];
+            deadPlayer.TakeDamage(deadPlayer.hp);
         }
     };
     Player.PLAYER_LIST = {};

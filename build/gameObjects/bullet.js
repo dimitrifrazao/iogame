@@ -15,19 +15,42 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Bullet = void 0;
 var transform_1 = require("./transform");
+var player_1 = require("./player");
 var Bullet = /** @class */ (function (_super) {
     __extends(Bullet, _super);
-    function Bullet(owner, x, y) {
-        var _this = _super.call(this, x, y, 10, 10) || this;
+    function Bullet(player) {
+        var _this = _super.call(this) || this;
         _this.dir = transform_1.DirEnum.None;
         _this.speed = 2;
-        _this.owner = owner;
+        _this.size.x = 10;
+        _this.size.y = 10;
+        _this.player = player;
+        _this.type = transform_1.UnitType.Bullet;
         return _this;
     }
+    Bullet.prototype.GetPlayer = function () {
+        if (this.player !== undefined)
+            return this.player;
+        return null;
+    };
+    Bullet.prototype.RemovePlayer = function () {
+        delete this.player;
+    };
+    Bullet.prototype.RemoveBullet = function () {
+        var player = this.GetPlayer();
+        if (player != null)
+            player.RemoveBullet(this);
+    };
     Bullet.prototype.SetDirection = function (dir) { this.dir = dir; };
     Bullet.prototype.GetDirection = function () { return this.dir; };
     Bullet.prototype.SetSpeed = function (speed) { this.speed = speed; };
     Bullet.prototype.GetSpeed = function () { return this.speed; };
+    Bullet.prototype.GetId = function () {
+        var player = this.GetPlayer();
+        if (player != null)
+            return player.GetId();
+        return -1;
+    };
     Bullet.prototype.UpdatePosition = function (dt) {
         switch (this.dir) {
             case (transform_1.DirEnum.Up):
@@ -53,59 +76,46 @@ var Bullet = /** @class */ (function (_super) {
         Bullet.BulletList.splice(index, 1);
     };
     Bullet.GetBullets = function () { return Bullet.BulletList; };
-    Bullet.UpdateBullets = function (dt, pack, players) {
+    Bullet.UpdateBullets = function (dt, pack) {
+        var players = player_1.Player.GetPlayers();
         for (var _i = 0, _a = Bullet.BulletList; _i < _a.length; _i++) {
             var bullet = _a[_i];
             bullet.UpdatePosition(dt);
             bullet.CheckWorldWrap();
             var cells = transform_1.World.inst.GetPossibleCollisions(bullet.pos);
             //console.log(cells.length);
-            for (var _b = 0, cells_1 = cells; _b < cells_1.length; _b++) {
-                var cell = cells_1[_b];
-                /*pack.push({
-                    pos: cell.GetTopLeftPos(),
-                    color: Color.Blue,
-                    sizeX:cell.sizeX,
-                    sizeY:cell.sizeY
-                });*/
-                if (cell.IsRock() && bullet.CheckCollision(cell) == true) {
+            for (var i in cells) {
+                var cell = cells[i];
+                if (cell !== undefined)
+                    console.log("DEAD CELL at " + i);
+                if (cell !== undefined && cell.IsRock() && bullet.CheckCollision(cell) == true) {
                     var overlap = bullet.GetOverlap(cell);
-                    /*pack.push({
-                        pos: overlap.GetTopLeftPos(),
-                        color: Color.Green,
-                        sizeX:overlap.sizeX,
-                        sizeY:overlap.sizeY
-                    });*/
                     bullet.ApplyOverlapPush(overlap);
                     bullet.dir = Bullet.GetMirrorDir(bullet.dir);
                 }
             }
-            pack.push({
-                pos: bullet.GetTopLeftPos(),
-                color: transform_1.Color.DarkGrey,
-                sizeX: bullet.sizeX,
-                sizeY: bullet.sizeY,
-                id: bullet.owner.id
-            });
+            pack.push(bullet.GetDataPack());
         }
         var deletedBullets = [];
-        for (var _c = 0, _d = Bullet.BulletList; _c < _d.length; _c++) {
-            var bullet = _d[_c];
+        for (var _b = 0, _c = Bullet.BulletList; _b < _c.length; _b++) {
+            var bullet = _c[_b];
             var deleteBullet = false;
-            for (var _e = 0, _f = Bullet.BulletList; _e < _f.length; _e++) {
-                var bullet2 = _f[_e];
+            for (var _d = 0, _e = Bullet.BulletList; _d < _e.length; _d++) {
+                var bullet2 = _e[_d];
                 if (bullet !== bullet2 && bullet.CheckCollision(bullet2) === true) {
                     deleteBullet = true;
                     continue;
                 }
             }
-            for (var k in players) {
-                var player = players[k];
+            var id = bullet.GetId();
+            var bulletPlayer = bullet.GetPlayer();
+            for (var i in players) {
+                var player = players[i];
                 if (bullet.CheckCollision(player) === true) {
-                    if (bullet.owner.id != player.id) {
+                    if (id != player.GetId()) {
                         var killed = player.TakeDamage(1);
-                        if (killed) {
-                            bullet.owner.LevelUp();
+                        if (killed && bulletPlayer != null) {
+                            bulletPlayer.LevelUp();
                         }
                     }
                     deleteBullet = true;
@@ -113,11 +123,12 @@ var Bullet = /** @class */ (function (_super) {
             }
             if (deleteBullet) {
                 deletedBullets.push(bullet);
-                bullet.owner.AddHp(1);
+                if (bulletPlayer != null)
+                    bullet.player.AddHp(1);
             }
         }
-        for (var _g = 0, deletedBullets_1 = deletedBullets; _g < deletedBullets_1.length; _g++) {
-            var bullet = deletedBullets_1[_g];
+        for (var _f = 0, deletedBullets_1 = deletedBullets; _f < deletedBullets_1.length; _f++) {
+            var bullet = deletedBullets_1[_f];
             Bullet.DeleteBullet(bullet);
         }
     };

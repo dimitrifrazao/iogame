@@ -40,7 +40,7 @@ io.sockets.on('connection', function (socket) {
 var EmitDeadPlayer = function (id, data) {
     console.log("dead callback");
     //Main.inst.DeletePlayer(id);
-    world_1.World.inst.AddDead(data);
+    //World.inst.AddDead(data);
     for (var i in SOCKET_LIST) {
         var socket = SOCKET_LIST[i];
         socket.emit('worldDataAdd', data);

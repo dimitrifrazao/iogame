@@ -29,7 +29,7 @@ export class World{
 
     GetSurroundingCells(i:number):Cell[]{
         let cells:Cell[] = []
-        cells.push(this.cells[i]);
+        cells.push(this.cells[this.WrapIndex(i)]);
         cells.push(this.cells[this.WrapIndex(i+1)]);
         cells.push(this.cells[this.WrapIndex(i-1)]);
         cells.push(this.cells[this.WrapIndex(i-this.hUnits)]);
@@ -51,7 +51,11 @@ export class World{
         for(let i=0; i<cellsCount; i++){
             let x = this.GetXValue(i) + (World.unitSize/2);
             let y = this.GetYValue(i) + (World.unitSize/2);
-            let c = new Cell(x,y, World.unitSize)
+
+            let c = new Cell();
+            c.SetPos(new Vector(x,y));
+            c.SetSize(new Vector(World.unitSize, World.unitSize))
+
             if( (Math.random() * 100) > 98){
                 c.cellType = CellType.Rock;
                 this.rocks.push(c);
@@ -70,12 +74,7 @@ export class World{
     GenerateDataPack(){        
         let pack:object[] = [];
         for(let cell of this.rocks){
-            pack.push({
-                pos: cell.GetTopLeftPos(),
-                color: Color.Black,
-                sizeX: World.unitSize,
-                sizeY: World.unitSize
-            });
+            pack.push(cell.GetDataPack());
         }
         for(let dead of this.deads){
             pack.push(dead);

@@ -1,26 +1,47 @@
 
-import { Transform, DirEnum, World, IMove, Color  } from "./transform"
-import { Player } from "./player"
+import { Transform, DirEnum, World, IMove, UnitType  } from "./transform"
+import { Player, IPlayerObserver } from "./player"
 
 
 type bulletMap = Record<number, Bullet>;
 
-export class Bullet extends Transform implements IMove
+export class Bullet extends Transform implements IMove, IPlayerObserver
 {
-    owner:Player;
     dir:DirEnum = DirEnum.None;
     speed:number = 2;
 
-    constructor(owner:Player, x:number, y:number)
+    // IPlayerObserver
+    player:Player;
+    GetPlayer(){
+        if(this.player !== undefined) return this.player;
+        return null;
+    }
+    RemovePlayer():void{
+        delete this.player;
+    }
+    RemoveBullet():void{
+        let player = this.GetPlayer();
+        if(player != null) player.RemoveBullet(this);
+    }
+
+    constructor(player:Player)
     {
-        super(x, y, 10, 10);
-        this.owner = owner;
+        super();
+        this.size.x = 10;
+        this.size.y = 10;
+        this.player = player;
+        this.type = UnitType.Bullet;
     }
 
     SetDirection(dir:DirEnum){this.dir = dir;}
     GetDirection(){return this.dir;}
     SetSpeed(speed:number){this.speed=speed;}
     GetSpeed(){return this.speed;}
+    GetId(){
+        let player = this.GetPlayer();
+        if(player != null) return player.GetId();
+        return -1;
+    }
 
     UpdatePosition(dt:number)
     {
@@ -54,7 +75,8 @@ export class Bullet extends Transform implements IMove
 
     static GetBullets(){return Bullet.BulletList;}
 
-    static UpdateBullets(dt:number, pack:object[], players:any){
+    static UpdateBullets(dt:number, pack:object[]){
+        let players:Record<number, Player> = Player.GetPlayers()
 
         for(let bullet of Bullet.BulletList){
             bullet.UpdatePosition(dt);
@@ -62,34 +84,17 @@ export class Bullet extends Transform implements IMove
 
             let cells = World.inst.GetPossibleCollisions(bullet.pos);
             //console.log(cells.length);
-            for(let cell of cells){
-                /*pack.push({
-                    pos: cell.GetTopLeftPos(),
-                    color: Color.Blue,
-                    sizeX:cell.sizeX,
-                    sizeY:cell.sizeY
-                });*/
-                if(cell.IsRock() && bullet.CheckCollision(cell)==true){
+            for(let i in  cells){
+                let cell = cells[i];
+                if(cell !== undefined ) console.log("DEAD CELL at " + i);
+                if(cell !== undefined && cell.IsRock() && bullet.CheckCollision(cell)==true){
                     let overlap = bullet.GetOverlap(cell);
-                    
-                    /*pack.push({
-                        pos: overlap.GetTopLeftPos(),
-                        color: Color.Green,
-                        sizeX:overlap.sizeX,
-                        sizeY:overlap.sizeY
-                    });*/
                     bullet.ApplyOverlapPush(overlap);
                     bullet.dir = Bullet.GetMirrorDir(bullet.dir);
                 }
             }
 
-            pack.push({
-                pos: bullet.GetTopLeftPos(),
-                color: Color.DarkGrey,
-                sizeX:bullet.sizeX,
-                sizeY:bullet.sizeY,
-                id:bullet.owner.id
-            }); 
+            pack.push(bullet.GetDataPack()); 
         }
 
         let deletedBullets:Bullet[] = []
@@ -103,13 +108,15 @@ export class Bullet extends Transform implements IMove
                     continue;
                 }
             }
-            for(let k in players){
-                let player = players[k];
+            let id = bullet.GetId();
+            let bulletPlayer = bullet.GetPlayer();
+            for(let i in players){
+                let player = players[i];
                 if(bullet.CheckCollision(player)===true){
-                    if(bullet.owner.id != player.id){
+                    if(id!= player.GetId()){
                         let killed = player.TakeDamage(1);
-                        if(killed){
-                            bullet.owner.LevelUp();
+                        if(killed && bulletPlayer != null){
+                            bulletPlayer.LevelUp();
                         }
                         
                     }
@@ -118,7 +125,7 @@ export class Bullet extends Transform implements IMove
             }
             if(deleteBullet){
                 deletedBullets.push(bullet);
-                bullet.owner.AddHp(1);
+                if(bulletPlayer != null) bullet.player.AddHp(1);
             }             
         } 
         for(let bullet of deletedBullets){

@@ -20,6 +20,13 @@ class Renderer{
         Renderer.worldData.push(data);
     }
 
+    static RemoveFromWorldData(data:any){
+        console.log("dead removed")
+        let i = Renderer.worldData.indexOf(data);
+        delete Renderer.worldData[i];
+        Renderer.worldData.splice(i,1);
+    }
+
     static Render(canvas:any, ctx:any, data:any){
         let w = canvas.width;
         let h = canvas.width;
@@ -40,31 +47,33 @@ class Renderer{
         ctx.stroke();
 
         ctx.beginPath();
+        let toRemoveWorldData:any[] = []
         for(var i=0; i<Renderer.worldData.length; i++){
-            let data = Renderer.worldData[i];
-            let pos = data.pos;
-            let color = data.color;
-            let sizeX = data.sizeX;
-            let sizeY = data.sizeY;
-            let rgbText = "rgb(" + color.r+ "," + color.g + "," + color.b + ")";
+            let d = Renderer.worldData[i];
+            if(d.type == 1 && d.a > 0){
+                d.a -= 0.01;
+                if(d.a < 0) toRemoveWorldData.push(d);
+            }
+            let rgbText = "rgba(" + d.r+ "," + d.g + "," + d.b + "," + d.a + ")";
             ctx.fillStyle = rgbText;
-            ctx.fillRect(pos.x, pos.y, sizeX, sizeY);            
+            ctx.fillRect(d.x, d.y, d.sx, d.sy);            
         }
         ctx.stroke();
 
         ctx.beginPath();
         for(var i=0; i<data.length; i++){
-            let pos = data[i].pos;
-            let color = data[i].color;
-            let sizeX = data[i].sizeX;
-            let sizeY = data[i].sizeY;
-            let rgbText = "rgb(" + color.r+ "," + color.g + "," + color.b + ")";
-            if(data[i].id == Renderer.id){
+            let d = data[i];
+            let rgbText = "rgb(" + d.r+ "," + d.g + "," + d.b + ")";
+            if(d.id == Renderer.id && d.type ==2){
                 rgbText = "rgb(255,0,0)";
             }
             ctx.fillStyle = rgbText;
-            ctx.fillRect(pos.x, pos.y, sizeX, sizeY);            
+            ctx.fillRect(d.x, d.y, d.sx, d.sy);            
         }
         ctx.stroke();
+
+        for(let d of toRemoveWorldData){
+            Renderer.RemoveFromWorldData(d);
+        }
     }
 }

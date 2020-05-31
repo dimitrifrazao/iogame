@@ -33,7 +33,7 @@ var World = /** @class */ (function () {
     };
     World.prototype.GetSurroundingCells = function (i) {
         var cells = [];
-        cells.push(this.cells[i]);
+        cells.push(this.cells[this.WrapIndex(i)]);
         cells.push(this.cells[this.WrapIndex(i + 1)]);
         cells.push(this.cells[this.WrapIndex(i - 1)]);
         cells.push(this.cells[this.WrapIndex(i - this.hUnits)]);
@@ -52,7 +52,9 @@ var World = /** @class */ (function () {
         for (var i = 0; i < cellsCount; i++) {
             var x = this.GetXValue(i) + (World.unitSize / 2);
             var y = this.GetYValue(i) + (World.unitSize / 2);
-            var c = new transform_1.Cell(x, y, World.unitSize);
+            var c = new transform_1.Cell();
+            c.SetPos(new transform_1.Vector(x, y));
+            c.SetSize(new transform_1.Vector(World.unitSize, World.unitSize));
             if ((Math.random() * 100) > 98) {
                 c.cellType = transform_1.CellType.Rock;
                 this.rocks.push(c);
@@ -69,12 +71,7 @@ var World = /** @class */ (function () {
         var pack = [];
         for (var _i = 0, _a = this.rocks; _i < _a.length; _i++) {
             var cell = _a[_i];
-            pack.push({
-                pos: cell.GetTopLeftPos(),
-                color: transform_1.Color.Black,
-                sizeX: World.unitSize,
-                sizeY: World.unitSize
-            });
+            pack.push(cell.GetDataPack());
         }
         for (var _b = 0, _c = this.deads; _b < _c.length; _b++) {
             var dead = _c[_b];

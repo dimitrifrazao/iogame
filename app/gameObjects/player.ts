@@ -1,4 +1,4 @@
-import { Transform, DirEnum, Color, IMove, Vector  } from "./transform"
+import { Transform, DirEnum, Color, IMove, Vector, UnitType  } from "./transform"
 import { World } from "../main/world";
 
 export enum PlayerState{
@@ -7,11 +7,8 @@ export enum PlayerState{
     Dead=2
 }
 
-export class Player extends Transform implements IMove{
+export class Player extends Transform implements IMove, IPlayerSubject{
 
-    public color:Color = Color.Random();
-    public dir:DirEnum = DirEnum.None;
-    public speed:number = 1;
     public hpMax:number = 11;
     public level:number = 1;
     public hp:number = this.hpMax;
@@ -19,22 +16,50 @@ export class Player extends Transform implements IMove{
     public previousPos:Vector = new Vector();
     public deadCallback:any ;
 
-    constructor(public id:number, deadCallback:any){
-        super(0,0, 30, 30);
+    constructor(id:number, deadCallback:any){
+        super();
+        this.size.x = 30;
+        this.size.y = 30;
+        this.id = id;
         this.deadCallback = deadCallback;
+        this.SetColor( Color.Random() );
+        this.type = UnitType.Player;
     }
+
+    // from IMove
+    public dir:DirEnum = DirEnum.None;
+    public speed:number = 1;
+
+    // from IPlayerSubject
+    bullets:any[] = [];
+    AddBullet(bullet:any):void{
+        this.bullets.push(bullet);
+    }
+    RemoveBullet(bullet:any):void{
+        let i = this.bullets.indexOf(bullet);
+        delete this.bullets[i];
+        this.bullets.splice(i,1);
+    }
+
+    RemovePlayer():void{
+        for(let bullet of this.bullets){
+            bullet.RemovePlayer();
+        }
+        let id = this.GetId();
+        let dPack = this.GetDataPack();
+        dPack.SetColor(Color.Red);
+        this.deadCallback(id, dPack);
+        Player.DeletePlayer(id);
+    }
+
+    
 
     TakeDamage(damage:number):boolean{
         if(this.state == PlayerState.Alive){
             this.hp -= damage;
             if(this.hp <= 0 ){
                 this.state = PlayerState.Dead;
-                this.deadCallback(this.id, {
-                    pos: this.GetTopLeftPos(),
-                    color: Color.Red,
-                    sizeX:this.sizeX,
-                    sizeY:this.sizeY
-                })
+                this.RemovePlayer();
                 return true;
             }
         }
@@ -55,8 +80,8 @@ export class Player extends Transform implements IMove{
         this.level++;
         this.hpMax++;
         this.hp++;
-        this.sizeX += 5;
-        this.sizeY += 5;
+        this.size.x += 5;
+        this.size.y += 5;
     }
 
     SetDirection(dir:DirEnum){
@@ -103,10 +128,19 @@ export class Player extends Transform implements IMove{
     }
 
     static PLAYER_LIST: Record<number, Player> = {};
-    static AddPlayer(player:Player){ Player.PLAYER_LIST[player.id] = player; }
-    static DeletePlayer(id:number){delete Player.PLAYER_LIST[id];}
-    static GetPlayerById(id:number){return Player.PLAYER_LIST[id];}
-    static GetPlayers(){return Player.PLAYER_LIST;}
+    static AddPlayer(player:Player){ 
+        Player.PLAYER_LIST[player.GetId()] = player; 
+    }
+    static DeletePlayer(id:number){
+        delete Player.PLAYER_LIST[id];
+    }
+    static GetPlayerById(id:number):Player|null
+    {
+        let player = Player.PLAYER_LIST[id];
+        if(player !== undefined) return player;
+        return null;
+    }
+    static GetPlayers():Record<number, Player>{return Player.PLAYER_LIST;}
 
     static UpdatePlayers(dt:number, pack:object[]){
 
@@ -116,62 +150,59 @@ export class Player extends Transform implements IMove{
             player.CheckWorldWrap();
 
             // check collision against rocks
-            //console.log(World.inst.GetIndex(player.pos));
-            //console.log(player.pos);
             let cells = World.inst.GetPossibleCollisions(player.pos);
             //console.log(cells.length);
             for(let cell of cells){
-                /*pack.push({
-                    pos: cell.GetTopLeftPos(),
-                    color: Color.Blue,
-                    sizeX:cell.sizeX,
-                    sizeY:cell.sizeY
-                });*/
+                //pack.push(cell.GetDataPack());
                 if(cell.IsRock() && player.CheckCollision(cell)==true){
                     let overlap = player.GetOverlap(cell);
-                    
-                    /*pack.push({
-                        pos: overlap.GetTopLeftPos(),
-                        color: Color.Green,
-                        sizeX:overlap.sizeX,
-                        sizeY:overlap.sizeY
-                    });*/
+                    // pack.push(overlap.GetDataPack);
                     player.ApplyOverlapPush(overlap);
                 }
             }
         }
 
-        let toRevertPos:Player[] = [];
+        let deadPlayers:Player[] = [];
+
         for(let i in Player.PLAYER_LIST){
             let player = Player.PLAYER_LIST[i];
 
             for(let j in Player.PLAYER_LIST){
                 let player2 = Player.PLAYER_LIST[j];
                 if(i!=j && player.CheckCollision(player2)==true){
-                    player.TakeDamage(player.hp);
+                    deadPlayers.push(player);
                     continue;
                 }
             }
-            
-            pack.push({
-                pos: player.GetTopLeftPos(),
-                color: Color.Red,
-                sizeX:player.sizeX,
-                sizeY:player.sizeY,
-                id:-1
-            });
 
-            let topPos = player.GetTopLeftPos();
-            let offsetY = player.sizeY * (player.hp/player.hpMax);
-            topPos.y += player.sizeY - offsetY;
-            pack.push({
-                pos: topPos,
-                color: player.color,
-                sizeX:player.sizeX,
-                sizeY:offsetY,
-                id:-1
-            });
+            // back red square
+            let playerRedPack = player.GetDataPack();
+            playerRedPack.SetColor(Color.Red);
+            pack.push(playerRedPack);
+            // main player square that shrinks as hp lowers
+            let playerPack = player.GetDataPack();
+            playerPack.sy = player.size.y * (player.hp/player.hpMax);
+            playerPack.y += player.size.y - playerPack.sy;
+            pack.push(playerPack);
+        }
+
+        for(let deadPlayer of deadPlayers){
+            deadPlayer.TakeDamage(deadPlayer.hp);
         }
     }
     
+}
+
+export interface IPlayerSubject{
+    bullets:any[];
+    AddBullet(bullet:any):void;
+    RemoveBullet(bullet:any):void;
+    RemovePlayer():void;
+}
+
+export interface IPlayerObserver{
+    player:Player;
+    GetPlayer():Player | null;
+    RemovePlayer():void;
+    RemoveBullet():void;
 }
