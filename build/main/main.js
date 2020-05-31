@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Main = void 0;
-var transform_1 = require("../gameObjects/transform");
+var world_1 = require("./world");
+var vector_1 = require("../gameObjects/vector");
 var player_1 = require("../gameObjects/player");
 var bullet_1 = require("../gameObjects/bullet");
 var Main = /** @class */ (function () {
@@ -11,7 +12,7 @@ var Main = /** @class */ (function () {
         this.lastUpdate = Date.now();
     }
     Main.prototype.Init = function () {
-        transform_1.World.inst.Build();
+        world_1.World.inst.Build();
     };
     Main.prototype.Tick = function () {
         var now = Date.now();
@@ -22,9 +23,9 @@ var Main = /** @class */ (function () {
     ;
     Main.prototype.GetDeltaTime = function () { return this.dt * this.timeScale; };
     ;
-    Main.prototype.AddPlayer = function (id, EmitDeadPlayer) {
-        var player = new player_1.Player(id, EmitDeadPlayer);
-        player.SetPos(new transform_1.Vector(Math.random() * 1000, Math.random() * 500));
+    Main.prototype.AddPlayer = function (id, name, EmitDeadPlayer) {
+        var player = new player_1.Player(id, name, EmitDeadPlayer);
+        player.SetPos(new vector_1.Vector(Math.random() * 1000, Math.random() * 500));
         player_1.Player.AddPlayer(player);
     };
     ;
@@ -38,16 +39,16 @@ var Main = /** @class */ (function () {
     Main.prototype.Shoot = function (id, dir) {
         var player = player_1.Player.GetPlayerById(id);
         if (player != null && player.hp >= 1 + player.GetWeaponData().damage) {
-            var pos = transform_1.Vector.Copy(player.GetPos());
+            var pos = vector_1.Vector.Copy(player.GetPos());
             var bullet = new bullet_1.Bullet(player);
-            pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.GetDirVector(dir), (player.GetSize().x / 2) + (bullet.GetSize().y / 2)));
+            pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.GetDirVector(dir), (player.GetSize().x / 2) + (bullet.GetSize().x / 2)));
             bullet.SetPos(pos);
             bullet.SetDirection(dir);
             var damageData = player.GetWeaponData();
             bullet.damage = damageData.damage;
             bullet.speed = damageData.speed;
             bullet.timer = damageData.timer;
-            bullet.SetSize(new transform_1.Vector(damageData.size, damageData.size));
+            bullet.SetSize(new vector_1.Vector(damageData.size, damageData.size));
             bullet_1.Bullet.AddBullet(bullet);
             player.TakeDamage(damageData.damage);
         }
@@ -61,7 +62,7 @@ var Main = /** @class */ (function () {
         var pack = [];
         var dt = this.GetDeltaTime();
         player_1.Player.UpdatePlayers(dt, pack);
-        bullet_1.Bullet.UpdateBullets(dt, pack);
+        bullet_1.Bullet.UpdateBullets(dt, pack, player_1.Player.GetIPlayers());
         return pack;
     };
     Main.inst = new Main();

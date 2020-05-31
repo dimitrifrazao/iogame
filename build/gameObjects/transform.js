@@ -12,153 +12,13 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CellType = exports.Cell = exports.Transform = exports.DataPack = exports.UnitType = exports.Vector = exports.Color = exports.DirEnum = void 0;
+exports.CellType = exports.Cell = exports.Transform = exports.DataPack = exports.UnitType = void 0;
 var world_1 = require("../main/world");
-__exportStar(require("../main/world"), exports);
-var DirEnum;
-(function (DirEnum) {
-    DirEnum[DirEnum["None"] = 0] = "None";
-    DirEnum[DirEnum["Up"] = 1] = "Up";
-    DirEnum[DirEnum["Down"] = 2] = "Down";
-    DirEnum[DirEnum["Left"] = 3] = "Left";
-    DirEnum[DirEnum["Right"] = 4] = "Right";
-    DirEnum[DirEnum["UpLeft"] = 5] = "UpLeft";
-    DirEnum[DirEnum["UpRight"] = 6] = "UpRight";
-    DirEnum[DirEnum["DownLeft"] = 7] = "DownLeft";
-    DirEnum[DirEnum["DownRight"] = 8] = "DownRight";
-})(DirEnum = exports.DirEnum || (exports.DirEnum = {}));
-var Color = /** @class */ (function () {
-    function Color(r, g, b, a) {
-        if (r === void 0) { r = 0; }
-        if (g === void 0) { g = 0; }
-        if (b === void 0) { b = 0; }
-        if (a === void 0) { a = 1; }
-        this.r = r;
-        this.g = g;
-        this.b = b;
-        this.a = a;
-    }
-    Color.Random = function () {
-        return new Color((Math.random() * 100) + 100, (Math.random() * 100) + 100, (Math.random() * 100) + 100);
-    };
-    ;
-    Color.maxValue = 255;
-    Color.Black = new Color(0, 0, 0);
-    Color.Red = new Color(255, 0, 0);
-    Color.Green = new Color(0, 255, 0);
-    Color.Blue = new Color(0, 0, 255);
-    Color.Grey = new Color(200, 200, 200);
-    Color.DarkGrey = new Color(50, 50, 50);
-    return Color;
-}());
-exports.Color = Color;
-var Vector = /** @class */ (function () {
-    function Vector(x, y) {
-        if (x === void 0) { x = 0; }
-        if (y === void 0) { y = 0; }
-        this.x = x;
-        this.y = y;
-    }
-    Vector.prototype.add = function (vec) {
-        this.x += vec.x;
-        this.y += vec.y;
-    };
-    ;
-    Vector.prototype.sub = function (vec) {
-        this.x -= vec.x;
-        this.y -= vec.y;
-    };
-    ;
-    Vector.prototype.len = function () { return Math.sqrt((this.x * this.x) + (this.y * this.y)); };
-    ;
-    Vector.prototype.normal = function () { return new Vector(this.x / this.len(), this.y / this.len()); };
-    ;
-    Vector.prototype.normalize = function () {
-        this.x /= this.len();
-        this.y /= this.len();
-    };
-    Vector.prototype.scaleBy = function (scale) {
-        this.x *= scale;
-        this.y *= scale;
-    };
-    Vector.prototype.distaceTo = function (target) {
-        return Vector.Sub(target, this).len();
-    };
-    Vector.prototype.wrap = function (x, y) {
-        if (this.x < 0)
-            this.x += x;
-        else
-            this.x = this.x % x;
-        if (this.y < 0)
-            this.y += y;
-        else
-            this.y = this.y % y;
-    };
-    Vector.GetDirVector = function (dir) {
-        switch (dir) {
-            case DirEnum.Up:
-                return Vector.Up;
-                break;
-            case DirEnum.Down:
-                return Vector.Down;
-                break;
-            case DirEnum.Left:
-                return Vector.Left;
-                break;
-            case DirEnum.Right:
-                return Vector.Right;
-                break;
-            default:
-                return new Vector();
-                break;
-        }
-    };
-    Vector.Copy = function (vec) { return new Vector(vec.x, vec.y); };
-    ;
-    Vector.Add = function (vec1, vec2) {
-        return new Vector(vec1.x + vec2.x, vec1.y + vec2.y);
-    };
-    Vector.Sub = function (vec1, vec2) {
-        return new Vector(vec1.x - vec2.x, vec1.y - vec2.y);
-    };
-    Vector.ScaleBy = function (vec, scale) {
-        var newVec = new Vector(vec.x, vec.y);
-        newVec.scaleBy(scale);
-        return newVec;
-    };
-    Vector.Wrap = function (vec, x, y) {
-        var wrappedVec = Vector.Copy(vec);
-        wrappedVec.wrap(x, y);
-        return wrappedVec;
-    };
-    Vector.GetInbetween = function (pos1, pos2) {
-        var pos3 = Vector.Sub(pos2, pos1);
-        pos3.scaleBy(0.5);
-        pos3.add(pos1);
-        return pos3;
-    };
-    Vector.Up = new Vector(0, -1);
-    Vector.Down = new Vector(0, 1);
-    Vector.Left = new Vector(-1, 0);
-    Vector.Right = new Vector(1, 0);
-    Vector.UpLeft = new Vector(-1, -1).normal();
-    Vector.UpRight = new Vector(1, -1).normal();
-    Vector.DownLeft = new Vector(-1, 1).normal();
-    Vector.DownRight = new Vector(1, 1).normal();
-    return Vector;
-}());
-exports.Vector = Vector;
+var vector_1 = require("./vector");
+var color_1 = require("./color");
+var imove_1 = require("./interfaces/imove");
+var gameObject_1 = require("./gameObject");
 var UnitType;
 (function (UnitType) {
     UnitType[UnitType["None"] = 0] = "None";
@@ -177,6 +37,7 @@ var DataPack = /** @class */ (function () {
         this.sy = 0;
         this.id = 0;
         this.type = UnitType.None;
+        this.name = "";
     }
     DataPack.prototype.SetPos = function (pos) {
         this.x = pos.x;
@@ -191,13 +52,16 @@ var DataPack = /** @class */ (function () {
     return DataPack;
 }());
 exports.DataPack = DataPack;
-var Transform = /** @class */ (function () {
+var Transform = /** @class */ (function (_super) {
+    __extends(Transform, _super);
     function Transform() {
-        this.id = -1;
-        this.type = UnitType.None;
-        this.pos = new Vector();
-        this.size = new Vector(1, 1);
-        this.color = Color.Grey;
+        var _this = _super.call(this) || this;
+        _this.id = -1;
+        _this.type = UnitType.None;
+        _this.pos = new vector_1.Vector();
+        _this.size = new vector_1.Vector(1, 1);
+        _this.color = color_1.Color.Grey;
+        return _this;
     }
     Transform.prototype.GetId = function () { return this.id; };
     ;
@@ -232,8 +96,8 @@ var Transform = /** @class */ (function () {
     };
     ;
     Transform.prototype.GetOverlap = function (trans) {
-        var overLapPos = Vector.GetInbetween(this.pos, trans.pos);
-        var overlapSize = new Vector();
+        var overLapPos = vector_1.Vector.GetInbetween(this.pos, trans.pos);
+        var overlapSize = new vector_1.Vector();
         overlapSize.x = Math.min(Math.abs(this.GetBotRightPos().x - trans.GetTopLeftPos().x), Math.abs(this.GetTopLeftPos().x - trans.GetBotRightPos().x));
         overlapSize.y = Math.min(Math.abs(this.GetBotRightPos().y - trans.GetTopLeftPos().y), Math.abs(this.GetTopLeftPos().y - trans.GetBotRightPos().y));
         var overlap = new Transform();
@@ -260,11 +124,11 @@ var Transform = /** @class */ (function () {
         }
     };
     Transform.prototype.GetTopLeftPos = function () {
-        return new Vector(this.pos.x - (this.size.x / 2), this.pos.y - (this.size.y / 2));
+        return new vector_1.Vector(this.pos.x - (this.size.x / 2), this.pos.y - (this.size.y / 2));
     };
     ;
     Transform.prototype.GetBotRightPos = function () {
-        return new Vector(this.pos.x + (this.size.x / 2), this.pos.y + (this.size.y / 2));
+        return new vector_1.Vector(this.pos.x + (this.size.x / 2), this.pos.y + (this.size.y / 2));
     };
     Transform.prototype.GetArea = function () {
         return this.size.x * this.size.y;
@@ -281,17 +145,17 @@ var Transform = /** @class */ (function () {
     };
     Transform.GetMirrorDir = function (dir) {
         switch (dir) {
-            case DirEnum.Left: return DirEnum.Right;
-            case DirEnum.Right: return DirEnum.Left;
-            case DirEnum.Up: return DirEnum.Down;
-            case DirEnum.Down: return DirEnum.Up;
-            case DirEnum.UpLeft: return DirEnum.DownRight;
-            case DirEnum.UpRight: return DirEnum.DownLeft;
+            case imove_1.DirEnum.Left: return imove_1.DirEnum.Right;
+            case imove_1.DirEnum.Right: return imove_1.DirEnum.Left;
+            case imove_1.DirEnum.Up: return imove_1.DirEnum.Down;
+            case imove_1.DirEnum.Down: return imove_1.DirEnum.Up;
+            case imove_1.DirEnum.UpLeft: return imove_1.DirEnum.DownRight;
+            case imove_1.DirEnum.UpRight: return imove_1.DirEnum.DownLeft;
         }
-        return DirEnum.None;
+        return imove_1.DirEnum.None;
     };
     return Transform;
-}());
+}(gameObject_1.GameObject));
 exports.Transform = Transform;
 var Cell = /** @class */ (function (_super) {
     __extends(Cell, _super);
@@ -304,7 +168,7 @@ var Cell = /** @class */ (function (_super) {
     Cell.prototype.IsRock = function () { return this.cellType == CellType.Rock; };
     Cell.prototype.GetDataPack = function () {
         var dPack = _super.prototype.GetDataPack.call(this);
-        dPack.SetColor(Color.Black);
+        dPack.SetColor(color_1.Color.Black);
         return dPack;
     };
     return Cell;

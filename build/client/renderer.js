@@ -57,6 +57,12 @@ var Renderer = /** @class */ (function () {
             }
             ctx.fillStyle = rgbText;
             ctx.fillRect(d.x, d.y, d.sx, d.sy);
+            if (d.name !== "") {
+                ctx.fillStyle = "rgb(100,100,100)";
+                ;
+                ctx.font = "15px Arial";
+                ctx.fillText(d.name, d.x, d.y);
+            }
         }
         ctx.stroke();
         for (var _i = 0, toRemoveWorldData_1 = toRemoveWorldData; _i < toRemoveWorldData_1.length; _i++) {

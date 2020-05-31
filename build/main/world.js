@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.World = void 0;
 var transform_1 = require("../gameObjects/transform");
+var vector_1 = require("../gameObjects/vector");
 var World = /** @class */ (function () {
     function World(hUnits, vUnits) {
         this.hUnits = hUnits;
@@ -21,7 +22,7 @@ var World = /** @class */ (function () {
     World.prototype.GetYValue = function (i) { return (Math.floor(i / this.hUnits)) * World.unitSize; };
     ;
     World.prototype.GetIndex = function (pos) {
-        var wPos = transform_1.Vector.Wrap(pos, this.GetHorizontalUnits(), this.GetVerticalUnits());
+        var wPos = vector_1.Vector.Wrap(pos, this.GetHorizontalUnits(), this.GetVerticalUnits());
         return (((Math.floor(wPos.y / World.unitSize)) * this.hUnits) + (Math.floor(wPos.x / World.unitSize)));
     };
     World.prototype.WrapIndex = function (i) {
@@ -53,8 +54,8 @@ var World = /** @class */ (function () {
             var x = this.GetXValue(i) + (World.unitSize / 2);
             var y = this.GetYValue(i) + (World.unitSize / 2);
             var c = new transform_1.Cell();
-            c.SetPos(new transform_1.Vector(x, y));
-            c.SetSize(new transform_1.Vector(World.unitSize, World.unitSize));
+            c.SetPos(new vector_1.Vector(x, y));
+            c.SetSize(new vector_1.Vector(World.unitSize, World.unitSize));
             if ((Math.random() * 100) > 98) {
                 c.cellType = transform_1.CellType.Rock;
                 this.rocks.push(c);

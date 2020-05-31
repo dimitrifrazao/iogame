@@ -1,4 +1,5 @@
-import {Vector, Color, Cell, CellType} from "../gameObjects/transform";
+import {Cell, CellType} from "../gameObjects/transform";
+import { Vector } from "../gameObjects/vector"
 
 export class World{
     public static inst:World = new World(50, 40);

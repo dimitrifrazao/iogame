@@ -1,126 +1,10 @@
 
-import {World} from "../main/world";
-export * from "../main/world";
+import { World } from "../main/world";
+import { Vector } from "./vector"
+import { Color } from "./color"
+import { DirEnum } from "./interfaces/imove"
+import { GameObject } from "./gameObject"
 
-export enum DirEnum {
-    None=0,
-    Up=1,
-    Down=2,
-    Left=3,
-    Right=4,
-    UpLeft=5,
-    UpRight=6,
-    DownLeft=7,
-    DownRight=8
-}
-
-export class Color{
-    static maxValue:number = 255;
-    static Black:Color = new Color(0,0,0);
-    static Red:Color = new Color(255,0,0);
-    static Green:Color = new Color(0,255,0);
-    static Blue:Color = new Color(0,0,255);
-    static Grey:Color = new Color(200,200,200);
-    static DarkGrey:Color = new Color(50,50,50);
-
-    constructor(public r:number=0, public g:number=0, public b:number=0, public a:number=1){}
-    static Random(){
-        return new Color(
-            (Math.random() * 100) + 100, 
-            (Math.random() * 100) + 100, 
-            (Math.random() * 100) + 100
-        )
-    };
-}
-
-export class Vector{    
-    constructor(public x:number=0, public y:number=0){}
-    add(vec:Vector){
-        this.x += vec.x;
-        this.y += vec.y;
-    };
-    sub(vec:Vector){
-        this.x -= vec.x;
-        this.y -= vec.y;
-    };
-    len():number{return Math.sqrt( (this.x*this.x) + (this.y*this.y) )};
-    normal():Vector{return new Vector(this.x/this.len(), this.y/this.len())};
-    normalize():void{
-        this.x /= this.len();
-        this.y /= this.len();
-    }
-    scaleBy(scale:number):void{
-        this.x *= scale;
-        this.y *= scale;
-    }
-    distaceTo(target:Vector):number{
-        return Vector.Sub(target, this).len();
-    }
-    wrap(x:number, y:number){
-        if(this.x < 0) this.x += x;
-        else this.x = this.x % x;
-        if(this.y < 0) this.y += y;
-        else this.y = this.y % y;
-    }
-
-    static Up:Vector = new Vector(0,-1);
-    static Down:Vector = new Vector(0,1);
-    static Left:Vector = new Vector(-1,0);
-    static Right:Vector = new Vector(1,0);
-    static UpLeft:Vector = new Vector(-1,-1).normal();
-    static UpRight:Vector = new Vector(1,-1).normal();
-    static DownLeft:Vector = new Vector(-1,1).normal();
-    static DownRight:Vector = new Vector(1,1).normal();
-
-    static GetDirVector(dir:DirEnum):Vector{
-        switch(dir){
-            case DirEnum.Up:
-                return Vector.Up;
-                break;
-            case DirEnum.Down:
-                return Vector.Down;
-                break;
-            case DirEnum.Left:
-                return Vector.Left;
-                break;
-            case DirEnum.Right:
-                return Vector.Right;
-                break;
-            default:
-                return new Vector();
-                break;
-        }
-    }
-
-    static Copy(vec:Vector){return new Vector(vec.x, vec.y);};
-
-    static Add(vec1: Vector, vec2:Vector){
-        return new Vector(vec1.x+vec2.x, vec1.y+vec2.y);
-    }
-    static Sub(vec1: Vector, vec2:Vector){
-        return new Vector(vec1.x-vec2.x, vec1.y-vec2.y);
-    }
-
-    static ScaleBy(vec:Vector, scale:number){
-        let newVec = new Vector(vec.x, vec.y);
-        newVec.scaleBy(scale);
-        return newVec;
-    }
-
-    static Wrap(vec:Vector, x:number, y:number):Vector{
-        let wrappedVec = Vector.Copy(vec);
-        wrappedVec.wrap(x,y);
-        return wrappedVec
-    }
-
-    static GetInbetween(pos1:Vector, pos2:Vector){
-        let pos3 = Vector.Sub(pos2, pos1);
-        pos3.scaleBy(0.5)
-        pos3.add(pos1);
-        return pos3;
-    }
-    
-}
 
 export enum UnitType{
     None=0,
@@ -139,6 +23,7 @@ export class DataPack{
     sy:number=0;
     id:number=0;
     type:UnitType = UnitType.None;
+    name:string="";
     constructor(){
     }
     SetPos(pos:Vector){
@@ -153,14 +38,14 @@ export class DataPack{
     }
 }
 
-export class Transform {
+export class Transform extends GameObject{
     protected id:number = -1;
     protected type:UnitType = UnitType.None;
     protected pos:Vector = new Vector();
     protected size:Vector = new Vector(1,1);
     protected color:Color = Color.Grey;
 
-    constructor(){}
+    constructor(){super();}
 
     GetId():number{return this.id};;
     GetUnitType():UnitType{return this.type;};
@@ -250,16 +135,12 @@ export class Transform {
     }
 }
 
-export interface IMove{
-    dir: DirEnum;
-    speed: number;
-    UpdatePosition(dt:number):void;
-}
+
 
 export class Cell extends Transform{
     public cellType:CellType=CellType.Empty;
     constructor(){super();};
-    
+
     IsRock():boolean{return this.cellType == CellType.Rock;}
     GetDataPack():DataPack{
         let dPack = super.GetDataPack();

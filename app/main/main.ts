@@ -1,5 +1,7 @@
-import { DirEnum, Vector, World, Color} from "../gameObjects/transform"
-import { Player, WeaponType } from "../gameObjects/player"
+import { World} from "./world"
+import { DirEnum} from "../gameObjects/interfaces/imove"
+import { Vector } from "../gameObjects/vector"
+import { Player } from "../gameObjects/player"
 import { Bullet } from "../gameObjects/bullet"
 
 
@@ -25,8 +27,8 @@ export class Main{
 
     private lastUpdate = Date.now();
 
-    AddPlayer(id:number, EmitDeadPlayer:any){
-        var player = new Player(id, EmitDeadPlayer);
+    AddPlayer(id:number, name:string, EmitDeadPlayer:any){
+        var player = new Player(id, name, EmitDeadPlayer);
         player.SetPos( new Vector(Math.random() * 1000, Math.random() * 500) );
         Player.AddPlayer(player);
     };
@@ -43,7 +45,7 @@ export class Main{
         if(player != null && player.hp >= 1 + player.GetWeaponData().damage){
             let pos = Vector.Copy(player.GetPos());
             let bullet = new Bullet(player);
-            pos.add( Vector.ScaleBy( Vector.GetDirVector(dir), (player.GetSize().x/2)+(bullet.GetSize().y/2)) );
+            pos.add( Vector.ScaleBy( Vector.GetDirVector(dir), (player.GetSize().x/2)+(bullet.GetSize().x/2)) );
             bullet.SetPos(pos);
             bullet.SetDirection(dir);
 
@@ -52,7 +54,7 @@ export class Main{
             bullet.speed = damageData.speed;
             bullet.timer = damageData.timer;
             bullet.SetSize( new Vector(damageData.size, damageData.size) );
-            
+
             Bullet.AddBullet(bullet);
             player.TakeDamage(damageData.damage);
         }
@@ -67,7 +69,7 @@ export class Main{
         let pack:object[] = []
         let dt = this.GetDeltaTime();
         Player.UpdatePlayers(dt, pack);
-        Bullet.UpdateBullets(dt, pack);
+        Bullet.UpdateBullets(dt, pack, Player.GetIPlayers());
         return pack;
     }
 

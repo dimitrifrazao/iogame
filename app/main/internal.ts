@@ -1,1 +1,5 @@
-export * from '../gameObjects/transform';
+export { World} from "./world"
+export { DirEnum} from "../gameObjects/interfaces/imove"
+export { Vector } from "../gameObjects/vector"
+export { Player } from "../gameObjects/player"
+export { Bullet } from "../gameObjects/bullet"

@@ -1,19 +1,41 @@
 
-import { Transform, DirEnum, World, IMove, UnitType  } from "./transform"
-import { Player, IPlayerObserver } from "./player"
-
+import { Transform, UnitType  } from "./transform"
+import { Vector } from "./vector"
+import {World} from "../main/world"
+import {DirEnum, IMove} from "./interfaces/imove"
+import { IBulletManager, IBulletObserver, IPlayer } from "./interfaces/ishoot"
 
 type bulletMap = Record<number, Bullet>;
 
-export class Bullet extends Transform implements IMove, IPlayerObserver
+export class Bullet extends Transform implements IMove, IBulletObserver
 {
-    dir:DirEnum = DirEnum.None;
-    speed:number = 2;
+    
     damage:number = 1;
     timer:number = -1;
 
+    constructor(player:IBulletManager)
+    {
+        super();
+        this.size.x = 10;
+        this.size.y = 10;
+        this.player = player;
+        this.id = this.player.GetId();
+        this.type = UnitType.Bullet;
+    }
+
+    //IMove
+    dir:DirEnum = DirEnum.None;
+    speed:number = 2;
+    push:Vector = new Vector();
+    Push(obj:IMove){
+        let vec = Vector.GetDirVector(this.dir);
+        vec.scaleBy(3);
+        obj.push.add(vec);
+    };
+
     // IPlayerObserver
-    player:Player;
+    player:IBulletManager;
+
     GetPlayer(){
         if(this.player !== undefined) return this.player;
         return null;
@@ -26,14 +48,7 @@ export class Bullet extends Transform implements IMove, IPlayerObserver
         if(player != null) player.RemoveBullet(this);
     }
 
-    constructor(player:Player)
-    {
-        super();
-        this.size.x = 10;
-        this.size.y = 10;
-        this.player = player;
-        this.type = UnitType.Bullet;
-    }
+    // default
 
     SetDirection(dir:DirEnum){this.dir = dir;}
     GetDirection(){return this.dir;}
@@ -41,7 +56,7 @@ export class Bullet extends Transform implements IMove, IPlayerObserver
     GetSpeed(){return this.speed;}
     GetId(){
         let player = this.GetPlayer();
-        if(player != null) return player.GetId();
+        if(player !== null) return player.GetId();
         return -1;
     }
 
@@ -77,8 +92,7 @@ export class Bullet extends Transform implements IMove, IPlayerObserver
 
     static GetBullets(){return Bullet.BulletList;}
 
-    static UpdateBullets(dt:number, pack:object[]){
-        let players:Record<number, Player> = Player.GetPlayers()
+    static UpdateBullets(dt:number, pack:object[], players:Record<number, IPlayer>){
 
         for(let bullet of Bullet.BulletList){
             bullet.UpdatePosition(dt);
@@ -111,19 +125,16 @@ export class Bullet extends Transform implements IMove, IPlayerObserver
                     continue;
                 }
             }
-            let id = bullet.GetId();
             let bulletPlayer = bullet.GetPlayer();
             for(let i in players){
                 let player = players[i];
-                if(bullet.CheckCollision(player)===true){
-                    if(id!= player.GetId()){
-                        let killed = player.TakeDamage(bullet.damage);
-                        if(killed && bulletPlayer != null){
-                            bulletPlayer.LevelUp();
-                        }
-                        
+                if(bullet.CheckCollision(player.GetTransform())===true){
+                    if(bullet.id!= player.GetId()){
+                        player.TakeDamage(bullet.damage);
+                        if(!player.IsAlive() && bulletPlayer != null) bulletPlayer.LevelUp();
                     }
                     deleteBullet = true;
+                    //bullet.Push(player);
                 }
             }
             if(bullet.timer >= 0){

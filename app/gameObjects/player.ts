@@ -1,7 +1,11 @@
-import { Transform, DirEnum, Color, IMove, Vector, UnitType  } from "./transform"
+import { Transform, UnitType  } from "./transform"
+import { Vector } from "./vector"
+import { Color } from "./color"
+import { DirEnum, IMove} from "./interfaces/imove"
+import { IBulletManager, IBulletObserver, IPlayer } from "./interfaces/ishoot"
 import { World } from "../main/world";
 
-export enum PlayerState{
+export enum PlayerplayerState{
     Alive=0,
     Stunned=1,
     Dead=2
@@ -14,17 +18,18 @@ export enum WeaponType{
     knife=3
 }
 
-export class Player extends Transform implements IMove, IPlayerSubject{
+export class Player extends Transform implements IPlayer, IMove, IBulletManager{
 
+    public name:string;
     public hpMax:number = 11;
     public level:number = 1;
     public hp:number = this.hpMax;
-    public state:PlayerState = PlayerState.Alive;
+    public playerState:PlayerplayerState = PlayerplayerState.Alive;
     public previousPos:Vector = new Vector();
     public deadCallback:any;
     private weaponType: WeaponType = WeaponType.default;
 
-    constructor(id:number, deadCallback:any){
+    constructor(id:number, name:string, deadCallback:any){
         super();
         this.size.x = 30;
         this.size.y = 30;
@@ -32,11 +37,14 @@ export class Player extends Transform implements IMove, IPlayerSubject{
         this.deadCallback = deadCallback;
         this.SetColor( Color.Random() );
         this.type = UnitType.Player;
+        this.name = name;
     }
 
     // from IMove
-    public dir:DirEnum = DirEnum.None;
-    public speed:number = 1;
+    dir:DirEnum = DirEnum.None;
+    speed:number = 1;
+    push:Vector = new Vector();
+    Push(obj:IMove){};
 
     SetWeaponType(weaponType:WeaponType){this.weaponType=weaponType;};
     GetWeaponType(){return this.weaponType;};
@@ -49,12 +57,12 @@ export class Player extends Transform implements IMove, IPlayerSubject{
         }
     }
 
-    // from IPlayerSubject
-    bullets:any[] = [];
-    AddBullet(bullet:any):void{
+    // from IBulletManager
+    bullets:IBulletObserver[] = [];
+    AddBullet(bullet:IBulletObserver):void{
         this.bullets.push(bullet);
     }
-    RemoveBullet(bullet:any):void{
+    RemoveBullet(bullet:IBulletObserver):void{
         let i = this.bullets.indexOf(bullet);
         delete this.bullets[i];
         this.bullets.splice(i,1);
@@ -71,22 +79,16 @@ export class Player extends Transform implements IMove, IPlayerSubject{
         Player.DeletePlayer(id);
     }
 
-    
-
-    TakeDamage(damage:number):boolean{
-        if(this.state == PlayerState.Alive){
-            this.hp -= damage;
-            if(this.hp <= 0 ){
-                this.state = PlayerState.Dead;
-                this.RemovePlayer();
-                return true;
-            }
-        }
-        return false;
+    LevelUp(){
+        this.level++;
+        this.hpMax++;
+        this.hp++;
+        this.size.x += 5;
+        this.size.y += 5;
     }
 
     AddHp(hp:number){
-        if(this.state != PlayerState.Dead){
+        if(this.playerState != PlayerplayerState.Dead){
             this.hp += hp;
             if(this.hp > this.hpMax){
                 this.hp = this.hpMax;
@@ -95,12 +97,32 @@ export class Player extends Transform implements IMove, IPlayerSubject{
         
     }
 
-    LevelUp(){
-        this.level++;
-        this.hpMax++;
-        this.hp++;
-        this.size.x += 5;
-        this.size.y += 5;
+    
+
+    // from IPlayer
+    GetId():number{return this.id};
+
+    TakeDamage(damage:number):void{
+        if(this.playerState == PlayerplayerState.Alive){
+            this.hp -= damage;
+            if(this.hp <= 0 ){
+                this.playerState = PlayerplayerState.Dead;
+                this.RemovePlayer();
+            }
+        }
+    }
+
+    IsAlive(){return this.playerState !== PlayerplayerState.Dead};
+
+    GetTransform():Transform{return this;};
+
+    // player default 
+    
+
+    GetDataPack(){
+        let dPack = super.GetDataPack();
+        dPack.name = this.name;
+        return dPack;
     }
 
     SetDirection(dir:DirEnum){
@@ -113,7 +135,7 @@ export class Player extends Transform implements IMove, IPlayerSubject{
     }
 
     UpdatePosition(dt:number){
-        if(this.state != PlayerState.Alive) return;
+        if(this.playerState != PlayerplayerState.Alive) return;
 
         this.previousPos.x = this.pos.x;
         this.previousPos.y = this.pos.y;
@@ -143,6 +165,17 @@ export class Player extends Transform implements IMove, IPlayerSubject{
                 this.pos.x += this.speed * dt;
                 break;
         }
+        /*if(this.push.len() > 0.001){
+            if(this.push.len() > 10){
+                this.push.normalize();
+                this.push.scaleBy(10);
+            }
+            this.pos.x += this.push.x * dt;
+            this.pos.y += this.push.y * dt;
+            this.push = Vector.Lerp(this.push, Vector.Zero, dt);
+        }
+        */
+        
 
     }
 
@@ -160,6 +193,7 @@ export class Player extends Transform implements IMove, IPlayerSubject{
         return null;
     }
     static GetPlayers():Record<number, Player>{return Player.PLAYER_LIST;}
+    static GetIPlayers():Record<number, IPlayer>{return Player.PLAYER_LIST;}
 
     static UpdatePlayers(dt:number, pack:object[]){
 
@@ -200,6 +234,7 @@ export class Player extends Transform implements IMove, IPlayerSubject{
             pack.push(playerRedPack);
             // main player square that shrinks as hp lowers
             let playerPack = player.GetDataPack();
+            playerPack.name = ""; // erase name so we dont have doubles
             playerPack.sy = player.size.y * (player.hp/player.hpMax);
             playerPack.y += player.size.y - playerPack.sy;
             pack.push(playerPack);
@@ -212,16 +247,4 @@ export class Player extends Transform implements IMove, IPlayerSubject{
     
 }
 
-export interface IPlayerSubject{
-    bullets:any[];
-    AddBullet(bullet:any):void;
-    RemoveBullet(bullet:any):void;
-    RemovePlayer():void;
-}
 
-export interface IPlayerObserver{
-    player:Player;
-    GetPlayer():Player | null;
-    RemovePlayer():void;
-    RemoveBullet():void;
-}

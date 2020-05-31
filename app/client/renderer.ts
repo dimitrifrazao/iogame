@@ -56,7 +56,7 @@ class Renderer{
             }
             let rgbText = "rgba(" + d.r+ "," + d.g + "," + d.b + "," + d.a + ")";
             ctx.fillStyle = rgbText;
-            ctx.fillRect(d.x, d.y, d.sx, d.sy);            
+            ctx.fillRect(d.x, d.y, d.sx, d.sy);     
         }
         ctx.stroke();
 
@@ -68,7 +68,14 @@ class Renderer{
                 rgbText = "rgb(255,0,0)";
             }
             ctx.fillStyle = rgbText;
-            ctx.fillRect(d.x, d.y, d.sx, d.sy);            
+            ctx.fillRect(d.x, d.y, d.sx, d.sy); 
+            
+            if(d.name !== ""){
+                ctx.fillStyle = "rgb(100,100,100)";;
+                ctx.font = "15px Arial";
+                ctx.fillText(d.name, d.x, d.y);
+            }
+            
         }
         ctx.stroke();
 

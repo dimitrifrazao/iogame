@@ -15,21 +15,32 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Bullet = void 0;
 var transform_1 = require("./transform");
-var player_1 = require("./player");
+var vector_1 = require("./vector");
+var world_1 = require("../main/world");
+var imove_1 = require("./interfaces/imove");
 var Bullet = /** @class */ (function (_super) {
     __extends(Bullet, _super);
     function Bullet(player) {
         var _this = _super.call(this) || this;
-        _this.dir = transform_1.DirEnum.None;
-        _this.speed = 2;
         _this.damage = 1;
         _this.timer = -1;
+        //IMove
+        _this.dir = imove_1.DirEnum.None;
+        _this.speed = 2;
+        _this.push = new vector_1.Vector();
         _this.size.x = 10;
         _this.size.y = 10;
         _this.player = player;
+        _this.id = _this.player.GetId();
         _this.type = transform_1.UnitType.Bullet;
         return _this;
     }
+    Bullet.prototype.Push = function (obj) {
+        var vec = vector_1.Vector.GetDirVector(this.dir);
+        vec.scaleBy(3);
+        obj.push.add(vec);
+    };
+    ;
     Bullet.prototype.GetPlayer = function () {
         if (this.player !== undefined)
             return this.player;
@@ -43,28 +54,29 @@ var Bullet = /** @class */ (function (_super) {
         if (player != null)
             player.RemoveBullet(this);
     };
+    // default
     Bullet.prototype.SetDirection = function (dir) { this.dir = dir; };
     Bullet.prototype.GetDirection = function () { return this.dir; };
     Bullet.prototype.SetSpeed = function (speed) { this.speed = speed; };
     Bullet.prototype.GetSpeed = function () { return this.speed; };
     Bullet.prototype.GetId = function () {
         var player = this.GetPlayer();
-        if (player != null)
+        if (player !== null)
             return player.GetId();
         return -1;
     };
     Bullet.prototype.UpdatePosition = function (dt) {
         switch (this.dir) {
-            case (transform_1.DirEnum.Up):
+            case (imove_1.DirEnum.Up):
                 this.pos.y -= this.speed * dt;
                 break;
-            case (transform_1.DirEnum.Down):
+            case (imove_1.DirEnum.Down):
                 this.pos.y += this.speed * dt;
                 break;
-            case (transform_1.DirEnum.Left):
+            case (imove_1.DirEnum.Left):
                 this.pos.x -= this.speed * dt;
                 break;
-            case (transform_1.DirEnum.Right):
+            case (imove_1.DirEnum.Right):
                 this.pos.x += this.speed * dt;
                 break;
         }
@@ -78,13 +90,12 @@ var Bullet = /** @class */ (function (_super) {
         Bullet.BulletList.splice(index, 1);
     };
     Bullet.GetBullets = function () { return Bullet.BulletList; };
-    Bullet.UpdateBullets = function (dt, pack) {
-        var players = player_1.Player.GetPlayers();
+    Bullet.UpdateBullets = function (dt, pack, players) {
         for (var _i = 0, _a = Bullet.BulletList; _i < _a.length; _i++) {
             var bullet = _a[_i];
             bullet.UpdatePosition(dt);
             bullet.CheckWorldWrap();
-            var cells = transform_1.World.inst.GetPossibleCollisions(bullet.pos);
+            var cells = world_1.World.inst.GetPossibleCollisions(bullet.pos);
             //console.log(cells.length);
             for (var i in cells) {
                 var cell = cells[i];
@@ -109,18 +120,17 @@ var Bullet = /** @class */ (function (_super) {
                     continue;
                 }
             }
-            var id = bullet.GetId();
             var bulletPlayer = bullet.GetPlayer();
             for (var i in players) {
                 var player = players[i];
-                if (bullet.CheckCollision(player) === true) {
-                    if (id != player.GetId()) {
-                        var killed = player.TakeDamage(bullet.damage);
-                        if (killed && bulletPlayer != null) {
+                if (bullet.CheckCollision(player.GetTransform()) === true) {
+                    if (bullet.id != player.GetId()) {
+                        player.TakeDamage(bullet.damage);
+                        if (!player.IsAlive() && bulletPlayer != null)
                             bulletPlayer.LevelUp();
-                        }
                     }
                     deleteBullet = true;
+                    //bullet.Push(player);
                 }
             }
             if (bullet.timer >= 0) {

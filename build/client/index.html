@@ -1,51 +1,12 @@
 <head>
     <link rel="stylesheet" href="client/styles.css">
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/client/inputManager.js"></script>
-    <script src="/client/renderer.js"></script>
 </head>
 <body>
-    <canvas id="ctx" style="border:1px solid #000000"></canvas>
+    <div id="enterGame">
+        <form action="start">
+            <label >name</label>
+            <input type="text" id="name" name="name" maxlength="10"><br><br>
+            <input type="submit" value="Enter Game" />
+        </form>
+    </div>
 </body>
-
-
-<script>
-    var canvas = document.getElementById("ctx");
-    canvas.width = document.body.clientWidth;
-    canvas.height = document.body.clientHeight;
-    var ctx = canvas.getContext("2d");
-    ctx.font = '30px Arial';
-    var socket = io();
-
-    socket.on('update', function(data){
-        Renderer.Render(canvas, ctx, data);
-    });
-
-    socket.on('worldData', function(data){
-        Renderer.SetWorldData(data);
-    });
-
-    socket.on('worldDataAdd', function(data){
-        console.log("dead added")
-        Renderer.AddWorldData(data);
-    });
-
-    socket.on('setPlayerId', function(data){
-        Renderer.SetPlayerId(data);
-    });
-
-    InputManager.SetSocket(socket);
-
-    document.onkeydown = function(event){
-        InputManager.OnKeyDown(event.keyCode);
-    }
-
-    document.onkeyup = function(event){
-        InputManager.OnKeyUp(event.keyCode);
-    }
-
-    document.onkeypress = function(event){
-        InputManager.OnKeyPress(event.keyCode);
-    }
-
-</script>

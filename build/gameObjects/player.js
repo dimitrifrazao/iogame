@@ -13,15 +13,18 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Player = exports.WeaponType = exports.PlayerState = void 0;
+exports.Player = exports.WeaponType = exports.PlayerplayerState = void 0;
 var transform_1 = require("./transform");
+var vector_1 = require("./vector");
+var color_1 = require("./color");
+var imove_1 = require("./interfaces/imove");
 var world_1 = require("../main/world");
-var PlayerState;
-(function (PlayerState) {
-    PlayerState[PlayerState["Alive"] = 0] = "Alive";
-    PlayerState[PlayerState["Stunned"] = 1] = "Stunned";
-    PlayerState[PlayerState["Dead"] = 2] = "Dead";
-})(PlayerState = exports.PlayerState || (exports.PlayerState = {}));
+var PlayerplayerState;
+(function (PlayerplayerState) {
+    PlayerplayerState[PlayerplayerState["Alive"] = 0] = "Alive";
+    PlayerplayerState[PlayerplayerState["Stunned"] = 1] = "Stunned";
+    PlayerplayerState[PlayerplayerState["Dead"] = 2] = "Dead";
+})(PlayerplayerState = exports.PlayerplayerState || (exports.PlayerplayerState = {}));
 var WeaponType;
 (function (WeaponType) {
     WeaponType[WeaponType["default"] = 0] = "default";
@@ -31,27 +34,31 @@ var WeaponType;
 })(WeaponType = exports.WeaponType || (exports.WeaponType = {}));
 var Player = /** @class */ (function (_super) {
     __extends(Player, _super);
-    function Player(id, deadCallback) {
+    function Player(id, name, deadCallback) {
         var _this = _super.call(this) || this;
         _this.hpMax = 11;
         _this.level = 1;
         _this.hp = _this.hpMax;
-        _this.state = PlayerState.Alive;
-        _this.previousPos = new transform_1.Vector();
+        _this.playerState = PlayerplayerState.Alive;
+        _this.previousPos = new vector_1.Vector();
         _this.weaponType = WeaponType.default;
         // from IMove
-        _this.dir = transform_1.DirEnum.None;
+        _this.dir = imove_1.DirEnum.None;
         _this.speed = 1;
-        // from IPlayerSubject
+        _this.push = new vector_1.Vector();
+        // from IBulletManager
         _this.bullets = [];
         _this.size.x = 30;
         _this.size.y = 30;
         _this.id = id;
         _this.deadCallback = deadCallback;
-        _this.SetColor(transform_1.Color.Random());
+        _this.SetColor(color_1.Color.Random());
         _this.type = transform_1.UnitType.Player;
+        _this.name = name;
         return _this;
     }
+    Player.prototype.Push = function (obj) { };
+    ;
     Player.prototype.SetWeaponType = function (weaponType) { this.weaponType = weaponType; };
     ;
     Player.prototype.GetWeaponType = function () { return this.weaponType; };
@@ -79,28 +86,9 @@ var Player = /** @class */ (function (_super) {
         }
         var id = this.GetId();
         var dPack = this.GetDataPack();
-        dPack.SetColor(transform_1.Color.Red);
+        dPack.SetColor(color_1.Color.Red);
         this.deadCallback(id, dPack);
         Player.DeletePlayer(id);
-    };
-    Player.prototype.TakeDamage = function (damage) {
-        if (this.state == PlayerState.Alive) {
-            this.hp -= damage;
-            if (this.hp <= 0) {
-                this.state = PlayerState.Dead;
-                this.RemovePlayer();
-                return true;
-            }
-        }
-        return false;
-    };
-    Player.prototype.AddHp = function (hp) {
-        if (this.state != PlayerState.Dead) {
-            this.hp += hp;
-            if (this.hp > this.hpMax) {
-                this.hp = this.hpMax;
-            }
-        }
     };
     Player.prototype.LevelUp = function () {
         this.level++;
@@ -108,6 +96,36 @@ var Player = /** @class */ (function (_super) {
         this.hp++;
         this.size.x += 5;
         this.size.y += 5;
+    };
+    Player.prototype.AddHp = function (hp) {
+        if (this.playerState != PlayerplayerState.Dead) {
+            this.hp += hp;
+            if (this.hp > this.hpMax) {
+                this.hp = this.hpMax;
+            }
+        }
+    };
+    // from IPlayer
+    Player.prototype.GetId = function () { return this.id; };
+    ;
+    Player.prototype.TakeDamage = function (damage) {
+        if (this.playerState == PlayerplayerState.Alive) {
+            this.hp -= damage;
+            if (this.hp <= 0) {
+                this.playerState = PlayerplayerState.Dead;
+                this.RemovePlayer();
+            }
+        }
+    };
+    Player.prototype.IsAlive = function () { return this.playerState !== PlayerplayerState.Dead; };
+    ;
+    Player.prototype.GetTransform = function () { return this; };
+    ;
+    // player default 
+    Player.prototype.GetDataPack = function () {
+        var dPack = _super.prototype.GetDataPack.call(this);
+        dPack.name = this.name;
+        return dPack;
     };
     Player.prototype.SetDirection = function (dir) {
         this.dir = dir;
@@ -117,36 +135,46 @@ var Player = /** @class */ (function (_super) {
         this.pos.y = this.previousPos.y;
     };
     Player.prototype.UpdatePosition = function (dt) {
-        if (this.state != PlayerState.Alive)
+        if (this.playerState != PlayerplayerState.Alive)
             return;
         this.previousPos.x = this.pos.x;
         this.previousPos.y = this.pos.y;
         switch (this.dir) {
-            case (transform_1.DirEnum.UpLeft):
-                this.pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.UpLeft, this.speed * dt));
+            case (imove_1.DirEnum.UpLeft):
+                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.UpLeft, this.speed * dt));
                 break;
-            case (transform_1.DirEnum.UpRight):
-                this.pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.UpRight, this.speed * dt));
+            case (imove_1.DirEnum.UpRight):
+                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.UpRight, this.speed * dt));
                 break;
-            case transform_1.DirEnum.Up:
+            case imove_1.DirEnum.Up:
                 this.pos.y -= this.speed * dt;
                 break;
-            case (transform_1.DirEnum.DownLeft):
-                this.pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.DownLeft, this.speed * dt));
+            case (imove_1.DirEnum.DownLeft):
+                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.DownLeft, this.speed * dt));
                 break;
-            case (transform_1.DirEnum.DownRight):
-                this.pos.add(transform_1.Vector.ScaleBy(transform_1.Vector.DownRight, this.speed * dt));
+            case (imove_1.DirEnum.DownRight):
+                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.DownRight, this.speed * dt));
                 break;
-            case transform_1.DirEnum.Down:
+            case imove_1.DirEnum.Down:
                 this.pos.y += this.speed * dt;
                 break;
-            case transform_1.DirEnum.Left:
+            case imove_1.DirEnum.Left:
                 this.pos.x -= this.speed * dt;
                 break;
-            case transform_1.DirEnum.Right:
+            case imove_1.DirEnum.Right:
                 this.pos.x += this.speed * dt;
                 break;
         }
+        /*if(this.push.len() > 0.001){
+            if(this.push.len() > 10){
+                this.push.normalize();
+                this.push.scaleBy(10);
+            }
+            this.pos.x += this.push.x * dt;
+            this.pos.y += this.push.y * dt;
+            this.push = Vector.Lerp(this.push, Vector.Zero, dt);
+        }
+        */
     };
     Player.AddPlayer = function (player) {
         Player.PLAYER_LIST[player.GetId()] = player;
@@ -161,6 +189,7 @@ var Player = /** @class */ (function (_super) {
         return null;
     };
     Player.GetPlayers = function () { return Player.PLAYER_LIST; };
+    Player.GetIPlayers = function () { return Player.PLAYER_LIST; };
     Player.UpdatePlayers = function (dt, pack) {
         for (var i in Player.PLAYER_LIST) {
             var player = Player.PLAYER_LIST[i];
@@ -191,10 +220,11 @@ var Player = /** @class */ (function (_super) {
             }
             // back red square
             var playerRedPack = player.GetDataPack();
-            playerRedPack.SetColor(transform_1.Color.Red);
+            playerRedPack.SetColor(color_1.Color.Red);
             pack.push(playerRedPack);
             // main player square that shrinks as hp lowers
             var playerPack = player.GetDataPack();
+            playerPack.name = ""; // erase name so we dont have doubles
             playerPack.sy = player.size.y * (player.hp / player.hpMax);
             playerPack.y += player.size.y - playerPack.sy;
             pack.push(playerPack);

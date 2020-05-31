@@ -1,13 +1,12 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __exportStar = (this && this.__exportStar) || function(m, exports) {
-    for (var p in m) if (p !== "default" && !exports.hasOwnProperty(p)) __createBinding(exports, m, p);
-}
 Object.defineProperty(exports, "__esModule", { value: true });
-__exportStar(require("../gameObjects/transform"), exports);
+var world_1 = require("./world");
+Object.defineProperty(exports, "World", { enumerable: true, get: function () { return world_1.World; } });
+var imove_1 = require("../gameObjects/interfaces/imove");
+Object.defineProperty(exports, "DirEnum", { enumerable: true, get: function () { return imove_1.DirEnum; } });
+var vector_1 = require("../gameObjects/vector");
+Object.defineProperty(exports, "Vector", { enumerable: true, get: function () { return vector_1.Vector; } });
+var player_1 = require("../gameObjects/player");
+Object.defineProperty(exports, "Player", { enumerable: true, get: function () { return player_1.Player; } });
+var bullet_1 = require("../gameObjects/bullet");
+Object.defineProperty(exports, "Bullet", { enumerable: true, get: function () { return bullet_1.Bullet; } });

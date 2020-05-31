@@ -5,8 +5,19 @@ var app = express();
 var serv = require('http').Server(app);
 var path = require('path');
 var indexPath = path.join(__dirname + '/client/index.html');
+var gamePath = path.join(__dirname + '/client/game.html');
 app.get('/', function (req, res) {
     res.sendFile(indexPath);
+});
+var newName = "";
+app.get('/start', function (req, res) {
+    if (typeof req.query.name === "string" && req.query.name != "") {
+        res.sendFile(gamePath);
+        newName = req.query.name;
+    }
+    else {
+        res.sendFile(indexPath);
+    }
 });
 var clientPath = path.join(__dirname + '/client');
 app.use('/client', express.static(clientPath));
@@ -15,6 +26,7 @@ console.log("Server listening");
 var main_1 = require("./main/main");
 var world_1 = require("./main/world");
 main_1.Main.inst.Init();
+console.log("World generated");
 var SOCKET_LIST = {};
 var io = require('socket.io')(serv, {});
 io.sockets.on('connection', function (socket) {
@@ -23,7 +35,8 @@ io.sockets.on('connection', function (socket) {
     socket.emit('worldData', world_1.World.inst.GenerateDataPack());
     socket.emit('setPlayerId', { id: socket.id });
     //console.log("socket id " + socket.id.toString())
-    main_1.Main.inst.AddPlayer(socket.id, EmitDeadPlayer);
+    console.log(newName);
+    main_1.Main.inst.AddPlayer(socket.id, newName, EmitDeadPlayer);
     socket.on('playerDir', function (data) {
         //console.log("press " + data.dir);
         main_1.Main.inst.SetPlayerDir(socket.id, data.dir);
