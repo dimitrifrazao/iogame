@@ -1,7 +1,7 @@
 **ABOUT:**
 
-simple online multiplayer io game that you can play on a browser.<br />
-uses nodejs, express, socket.io and typescript.<br />
+Simple online multiplayer io game that you can play on a browser.<br />
+Uses nodejs, express, socket.io and typescript.<br />
 
 **HOW TO RUN:**
 
@@ -12,21 +12,21 @@ On your terminal navigate to your iogame folder and run this command to build an
 Then navigate to /builds and run this command to start the server:<br />
 `node app.js`<br />
 
-The game is served on port 2000<br />
+The game is served on port 2000.<br />
 If you're running on your local machine then just open a tab in your browser and type:<br />
 localhost:2000<br />
 
-If you have this game running on a server than just go to <ip address>:2000 <br />
+If you have this game running on a server than just go to ipAddress:2000 <br />
 
 **GAME INPUTS & RULES:**
 
-wasd keys move your character around.
-arrow keys shoot bullets.
-keys 1-4 change weapon type.
+wasd keys move your character around.<br />
+arrow keys shoot bullets.<br />
+keys 1-4 change weapon type.<br />
 
-Colorful squares are players.
-Smaller colorful squares are bullets.
-Black square are obstacles (rocks) that players & bullets can't go through.
+Colorful squares are players.<br />
+Smaller colorful squares are bullets.<br />
+Black square are obstacles (rocks) that players & bullets can't go through.<br />
 
 - Each player starts with 11 hp.
 - Each time a player shoots a bullet he/she loses hp (the weapon bullet cost).
@@ -41,7 +41,7 @@ Black square are obstacles (rocks) that players & bullets can't go through.
 
 **WEAPONS:**
 
-You can switch weapons by pressing keys 1,2,3 and 4.
+You can switch weapons by pressing keys 1, 2, 3 and 4.
 
 - 1 default bullet: cost/damage 1hp, speed: 2, size:10, duration: until hits something.
 - 2 big bullet: cost/damage 3hp, speed: 1, size:20, duration: until hits something.
