@@ -28,15 +28,19 @@ var world_1 = require("./main/world");
 main_1.Main.inst.Init();
 console.log("World generated");
 var SOCKET_LIST = {};
+var NAME_LIST = {};
 var io = require('socket.io')(serv, {});
 io.sockets.on('connection', function (socket) {
     console.log('socket connection!');
     SOCKET_LIST[socket.id] = socket;
+    if (NAME_LIST[socket.id] == undefined) {
+        NAME_LIST[socket.id] = newName;
+    }
     socket.emit('worldData', world_1.World.inst.GenerateDataPack());
     socket.emit('setPlayerId', { id: socket.id });
     //console.log("socket id " + socket.id.toString())
     console.log(newName);
-    main_1.Main.inst.AddPlayer(socket.id, newName, EmitDeadPlayer);
+    main_1.Main.inst.AddPlayer(socket.id, NAME_LIST[socket.id], EmitDeadPlayer);
     socket.on('playerDir', function (data) {
         //console.log("press " + data.dir);
         main_1.Main.inst.SetPlayerDir(socket.id, data.dir);

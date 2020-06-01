@@ -201,7 +201,7 @@ var Player = /** @class */ (function (_super) {
             for (var _i = 0, cells_1 = cells; _i < cells_1.length; _i++) {
                 var cell = cells_1[_i];
                 //pack.push(cell.GetDataPack());
-                if (cell.IsRock() && player.CheckCollision(cell) == true) {
+                if (cell !== undefined && cell.IsRock() && player.CheckCollision(cell) == true) {
                     var overlap = player.GetOverlap(cell);
                     // pack.push(overlap.GetDataPack);
                     player.ApplyOverlapPush(overlap);

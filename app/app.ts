@@ -34,18 +34,22 @@ Main.inst.Init();
 console.log("World generated");
 
 const SOCKET_LIST: Record<number, any> = {};
+const NAME_LIST: Record<number, string> = {};
 
 var io = require('socket.io')(serv, {});
 io.sockets.on('connection', function(socket:any){
     console.log('socket connection!');
     SOCKET_LIST[socket.id] = socket;
+    if(NAME_LIST[socket.id] == undefined){
+        NAME_LIST[socket.id] = newName;
+    }
 
     socket.emit('worldData', World.inst.GenerateDataPack());
     socket.emit('setPlayerId', {id:socket.id});
     //console.log("socket id " + socket.id.toString())
 
     console.log(newName);
-    Main.inst.AddPlayer(socket.id, newName, EmitDeadPlayer);
+    Main.inst.AddPlayer(socket.id, NAME_LIST[socket.id], EmitDeadPlayer);
     
     socket.on('playerDir', function(data:any){
         //console.log("press " + data.dir);

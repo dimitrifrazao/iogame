@@ -207,7 +207,7 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
             //console.log(cells.length);
             for(let cell of cells){
                 //pack.push(cell.GetDataPack());
-                if(cell.IsRock() && player.CheckCollision(cell)==true){
+                if(cell !== undefined &&  cell.IsRock() && player.CheckCollision(cell)==true){
                     let overlap = player.GetOverlap(cell);
                     // pack.push(overlap.GetDataPack);
                     player.ApplyOverlapPush(overlap);
