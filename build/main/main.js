@@ -38,19 +38,25 @@ var Main = /** @class */ (function () {
     };
     Main.prototype.Shoot = function (id, dir) {
         var player = player_1.Player.GetPlayerById(id);
-        if (player != null && player.hp >= 1 + player.GetWeaponData().damage) {
-            var pos = vector_1.Vector.Copy(player.GetPos());
-            var bullet = new bullet_1.Bullet(player);
-            pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.GetDirVector(dir), (player.GetSize().x / 2) + (bullet.GetSize().x / 2)));
-            bullet.SetPos(pos);
-            bullet.SetDirection(dir);
-            var damageData = player.GetWeaponData();
-            bullet.damage = damageData.damage;
-            bullet.speed = damageData.speed;
-            bullet.timer = damageData.timer;
-            bullet.SetSize(new vector_1.Vector(damageData.size, damageData.size));
-            bullet_1.Bullet.AddBullet(bullet);
-            player.TakeDamage(damageData.damage);
+        if (player != null) {
+            var hasHP = player.hp >= (1 + player.GetWeaponData().damage);
+            var maxOverHP = (player.bullets.length <= (player.hpMax * 2));
+            if (hasHP && maxOverHP) {
+                var pos = vector_1.Vector.Copy(player.GetPos());
+                var bullet = new bullet_1.Bullet(player);
+                pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.GetDirVector(dir), (player.GetSize().x / 2) + (bullet.GetSize().x / 2)));
+                bullet.SetPos(pos);
+                bullet.SetDirection(dir);
+                var damageData = player.GetWeaponData();
+                bullet.damage = damageData.damage;
+                bullet.speed = damageData.speed;
+                bullet.timer = damageData.timer;
+                bullet.SetSize(new vector_1.Vector(damageData.size, damageData.size));
+                bullet.SetColor(player.GetColor());
+                bullet_1.Bullet.AddBullet(bullet);
+                player.AddBullet(bullet);
+                player.TakeDamage(damageData.damage);
+            }
         }
     };
     Main.prototype.ChangeWeapon = function (id, type) {

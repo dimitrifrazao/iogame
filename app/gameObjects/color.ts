@@ -15,4 +15,15 @@ export class Color{
             (Math.random() * 100) + 100
         )
     };
+
+    static Lerp(start:Color, end:Color, t:number){
+        if(t>1)t=1;
+        else if(t<0)t=0;
+        return new Color(
+            ((start.r * (1-t))+(end.r * t)),
+            ((start.g * (1-t))+(end.g * t)),
+            ((start.b * (1-t))+(end.b * t)),
+            ((start.a * (1-t))+(end.a * t))
+        )
+    }
 }

@@ -4,6 +4,7 @@ import { Vector } from "./vector"
 import {World} from "../main/world"
 import {DirEnum, IMove} from "./interfaces/imove"
 import { IBulletManager, IBulletObserver, IPlayer } from "./interfaces/ishoot"
+import { Color } from "./color"
 
 type bulletMap = Record<number, Bullet>;
 
@@ -12,6 +13,8 @@ export class Bullet extends Transform implements IMove, IBulletObserver
     
     damage:number = 1;
     timer:number = -1;
+    isHP:Boolean = false;
+    prevPos:Vector = new Vector();
 
     constructor(player:IBulletManager)
     {
@@ -42,6 +45,7 @@ export class Bullet extends Transform implements IMove, IBulletObserver
     }
     RemovePlayer():void{
         delete this.player;
+        this.isHP = true;
     }
     RemoveBullet():void{
         let player = this.GetPlayer();
@@ -62,6 +66,9 @@ export class Bullet extends Transform implements IMove, IBulletObserver
 
     UpdatePosition(dt:number)
     {
+        this.prevPos.x = this.pos.x;
+        this.prevPos.y = this.pos.y;
+
         switch(this.dir){
             case(DirEnum.Up):
                 this.pos.y -= this.speed * dt;
@@ -75,6 +82,12 @@ export class Bullet extends Transform implements IMove, IBulletObserver
             case(DirEnum.Right):
                 this.pos.x += this.speed * dt;
                 break;
+        }
+
+        if(this.isHP===true && this.speed > 0){
+            this.speed -= (dt * 0.01);
+            this.color = Color.Lerp(this.color, Color.Red, (dt * 0.01));
+            if(this.speed<0) this.speed = 0;
         }
 
     }
@@ -98,6 +111,12 @@ export class Bullet extends Transform implements IMove, IBulletObserver
             bullet.UpdatePosition(dt);
             bullet.CheckWorldWrap();
 
+            let t = Transform.CreateBulletStretch(bullet, bullet.prevPos);
+            let tPack = t.GetDataPack();
+            //tPack.SetColor(bullet.GetColor());
+            //tPack.id = 
+            //pack.push(tPack); 
+
             let cells = World.inst.GetPossibleCollisions(bullet.pos);
             //console.log(cells.length);
             for(let i in  cells){
@@ -105,9 +124,15 @@ export class Bullet extends Transform implements IMove, IBulletObserver
                 // FIX this, its bad
                 //if(cell !== undefined ) console.log("DEAD CELL at " + i);
                 if(cell !== undefined && cell.IsRock() && bullet.CheckCollision(cell)==true){
+                    
+                    /*let overlap = t.GetOverlap(cell);
+                    pack.push(overlap.GetDataPack()); 
+                    bullet.ApplyBulletOverlapPush(t, overlap);
+                    bullet.dir = Bullet.GetMirrorDir(bullet.dir);*/
                     let overlap = bullet.GetOverlap(cell);
                     bullet.ApplyOverlapPush(overlap);
                     bullet.dir = Bullet.GetMirrorDir(bullet.dir);
+                
                 }
             }
 
@@ -130,15 +155,19 @@ export class Bullet extends Transform implements IMove, IBulletObserver
                 let player = players[i];
                 if(bullet.CheckCollision(player.GetTransform())===true){
                     if(bullet.id!= player.GetId()){
-                        player.TakeDamage(bullet.damage);
-                        if(!player.IsAlive() && bulletPlayer != null) bulletPlayer.LevelUp();
+                        if(bullet.isHP===true){
+                            player.AddHp(bullet.damage);
+                        }
+                        else{
+                            player.TakeDamage(bullet.damage);
+                            if(!player.IsAlive() && bulletPlayer != null) bulletPlayer.LevelUp();
+                        }
                     }
                     deleteBullet = true;
                     //bullet.Push(player);
                 }
             }
             if(bullet.timer >= 0){
-                console.log("timmer works")
                 bullet.timer -= dt;
                 if(bullet.timer <= 0) deleteBullet = true;
             }
@@ -148,6 +177,7 @@ export class Bullet extends Transform implements IMove, IBulletObserver
             }             
         } 
         for(let bullet of deletedBullets){
+            bullet.RemoveBullet();
             Bullet.DeleteBullet(bullet)
         }
     }

@@ -72,9 +72,8 @@ var Vector = /** @class */ (function () {
         return wrappedVec;
     };
     Vector.GetInbetween = function (pos1, pos2) {
-        var pos3 = Vector.Sub(pos2, pos1);
+        var pos3 = Vector.Add(pos2, pos1);
         pos3.scaleBy(0.5);
-        pos3.add(pos1);
         return pos3;
     };
     Vector.Lerp = function (start, end, t) {
@@ -82,7 +81,7 @@ var Vector = /** @class */ (function () {
             t = 1;
         else if (t < 0)
             t = 0;
-        return new Vector(((start.x * (1 - t)) + (end.x * t)) / 2, ((start.y * (1 - t)) + (end.y * t)) / 2);
+        return new Vector(((start.x * (1 - t)) + (end.x * t)), ((start.y * (1 - t)) + (end.y * t)));
     };
     Vector.Up = new Vector(0, -1);
     Vector.Down = new Vector(0, 1);

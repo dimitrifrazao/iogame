@@ -69,7 +69,6 @@ io.sockets.on('connection', function(socket:any){
         delete  SOCKET_LIST[socket.id];
         Main.inst.DeletePlayer(socket.id);
     });
-
     
 });
 

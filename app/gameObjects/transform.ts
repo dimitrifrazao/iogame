@@ -83,6 +83,23 @@ export class Transform extends GameObject{
         return overlap;
     }
 
+    static CreateBulletStretch(bullet:Transform, prePos:Vector):Transform{
+        let offset = Vector.Sub(bullet.GetPos(), prePos);
+        let topLeft = bullet.GetTopLeftPos();
+        let botRight = bullet.GetBotRightPos();
+        let topLeft2 = Vector.Add(botRight, offset);
+        let botRight2 = Vector.Add(botRight, offset);
+
+        let xSize = Math.max(Math.abs(topLeft.x - botRight2.x ), Math.abs(topLeft2.x - botRight.x ));
+        let ySize = Math.max(Math.abs(topLeft.y - botRight2.y ), Math.abs(topLeft2.y - botRight.y ));
+
+        let t = new Transform();
+        t.SetPos(Vector.GetInbetween(bullet.GetPos(), prePos));
+        t.SetSize(new Vector(xSize, ySize))
+        return t;
+
+    }
+
     ApplyOverlapPush(overlap:Transform){
         if(overlap.size.x < overlap.size.y){
             if(overlap.pos.x > this.pos.x){
@@ -99,6 +116,16 @@ export class Transform extends GameObject{
             else{
                 this.pos.y += overlap.size.y;
             }
+        }
+        
+    }
+
+    ApplyBulletOverlapPush(bulletStretch:Transform, overlap:Transform){
+        if(bulletStretch.size.x > bulletStretch.size.y){
+            this.pos.x -= overlap.size.x;
+        }
+        else{
+            this.pos.x -= overlap.size.y;
         }
         
     }

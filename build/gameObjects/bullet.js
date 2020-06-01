@@ -18,12 +18,15 @@ var transform_1 = require("./transform");
 var vector_1 = require("./vector");
 var world_1 = require("../main/world");
 var imove_1 = require("./interfaces/imove");
+var color_1 = require("./color");
 var Bullet = /** @class */ (function (_super) {
     __extends(Bullet, _super);
     function Bullet(player) {
         var _this = _super.call(this) || this;
         _this.damage = 1;
         _this.timer = -1;
+        _this.isHP = false;
+        _this.prevPos = new vector_1.Vector();
         //IMove
         _this.dir = imove_1.DirEnum.None;
         _this.speed = 2;
@@ -48,6 +51,7 @@ var Bullet = /** @class */ (function (_super) {
     };
     Bullet.prototype.RemovePlayer = function () {
         delete this.player;
+        this.isHP = true;
     };
     Bullet.prototype.RemoveBullet = function () {
         var player = this.GetPlayer();
@@ -66,6 +70,8 @@ var Bullet = /** @class */ (function (_super) {
         return -1;
     };
     Bullet.prototype.UpdatePosition = function (dt) {
+        this.prevPos.x = this.pos.x;
+        this.prevPos.y = this.pos.y;
         switch (this.dir) {
             case (imove_1.DirEnum.Up):
                 this.pos.y -= this.speed * dt;
@@ -79,6 +85,12 @@ var Bullet = /** @class */ (function (_super) {
             case (imove_1.DirEnum.Right):
                 this.pos.x += this.speed * dt;
                 break;
+        }
+        if (this.isHP === true && this.speed > 0) {
+            this.speed -= (dt * 0.01);
+            this.color = color_1.Color.Lerp(this.color, color_1.Color.Red, (dt * 0.01));
+            if (this.speed < 0)
+                this.speed = 0;
         }
     };
     Bullet.AddBullet = function (bullet) {
@@ -95,6 +107,11 @@ var Bullet = /** @class */ (function (_super) {
             var bullet = _a[_i];
             bullet.UpdatePosition(dt);
             bullet.CheckWorldWrap();
+            var t = transform_1.Transform.CreateBulletStretch(bullet, bullet.prevPos);
+            var tPack = t.GetDataPack();
+            //tPack.SetColor(bullet.GetColor());
+            //tPack.id = 
+            //pack.push(tPack); 
             var cells = world_1.World.inst.GetPossibleCollisions(bullet.pos);
             //console.log(cells.length);
             for (var i in cells) {
@@ -102,6 +119,10 @@ var Bullet = /** @class */ (function (_super) {
                 // FIX this, its bad
                 //if(cell !== undefined ) console.log("DEAD CELL at " + i);
                 if (cell !== undefined && cell.IsRock() && bullet.CheckCollision(cell) == true) {
+                    /*let overlap = t.GetOverlap(cell);
+                    pack.push(overlap.GetDataPack());
+                    bullet.ApplyBulletOverlapPush(t, overlap);
+                    bullet.dir = Bullet.GetMirrorDir(bullet.dir);*/
                     var overlap = bullet.GetOverlap(cell);
                     bullet.ApplyOverlapPush(overlap);
                     bullet.dir = Bullet.GetMirrorDir(bullet.dir);
@@ -125,16 +146,20 @@ var Bullet = /** @class */ (function (_super) {
                 var player = players[i];
                 if (bullet.CheckCollision(player.GetTransform()) === true) {
                     if (bullet.id != player.GetId()) {
-                        player.TakeDamage(bullet.damage);
-                        if (!player.IsAlive() && bulletPlayer != null)
-                            bulletPlayer.LevelUp();
+                        if (bullet.isHP === true) {
+                            player.AddHp(bullet.damage);
+                        }
+                        else {
+                            player.TakeDamage(bullet.damage);
+                            if (!player.IsAlive() && bulletPlayer != null)
+                                bulletPlayer.LevelUp();
+                        }
                     }
                     deleteBullet = true;
                     //bullet.Push(player);
                 }
             }
             if (bullet.timer >= 0) {
-                console.log("timmer works");
                 bullet.timer -= dt;
                 if (bullet.timer <= 0)
                     deleteBullet = true;
@@ -147,6 +172,7 @@ var Bullet = /** @class */ (function (_super) {
         }
         for (var _f = 0, deletedBullets_1 = deletedBullets; _f < deletedBullets_1.length; _f++) {
             var bullet = deletedBullets_1[_f];
+            bullet.RemoveBullet();
             Bullet.DeleteBullet(bullet);
         }
     };

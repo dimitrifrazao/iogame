@@ -73,9 +73,8 @@ export class Vector{
     }
 
     static GetInbetween(pos1:Vector, pos2:Vector){
-        let pos3 = Vector.Sub(pos2, pos1);
+        let pos3 = Vector.Add(pos2, pos1);
         pos3.scaleBy(0.5)
-        pos3.add(pos1);
         return pos3;
     }
 
@@ -83,8 +82,8 @@ export class Vector{
         if(t>1) t=1;
         else if(t<0) t=0;
         return new Vector(
-            ((start.x * (1-t)) + (end.x*t))/2,
-            ((start.y * (1-t)) + (end.y*t))/2
+            ((start.x * (1-t)) + (end.x*t)),
+            ((start.y * (1-t)) + (end.y*t))
         )
     }
         

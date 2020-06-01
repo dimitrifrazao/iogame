@@ -105,6 +105,19 @@ var Transform = /** @class */ (function (_super) {
         overlap.SetSize(overlapSize);
         return overlap;
     };
+    Transform.CreateBulletStretch = function (bullet, prePos) {
+        var offset = vector_1.Vector.Sub(bullet.GetPos(), prePos);
+        var topLeft = bullet.GetTopLeftPos();
+        var botRight = bullet.GetBotRightPos();
+        var topLeft2 = vector_1.Vector.Add(botRight, offset);
+        var botRight2 = vector_1.Vector.Add(botRight, offset);
+        var xSize = Math.max(Math.abs(topLeft.x - botRight2.x), Math.abs(topLeft2.x - botRight.x));
+        var ySize = Math.max(Math.abs(topLeft.y - botRight2.y), Math.abs(topLeft2.y - botRight.y));
+        var t = new Transform();
+        t.SetPos(vector_1.Vector.GetInbetween(bullet.GetPos(), prePos));
+        t.SetSize(new vector_1.Vector(xSize, ySize));
+        return t;
+    };
     Transform.prototype.ApplyOverlapPush = function (overlap) {
         if (overlap.size.x < overlap.size.y) {
             if (overlap.pos.x > this.pos.x) {
@@ -121,6 +134,14 @@ var Transform = /** @class */ (function (_super) {
             else {
                 this.pos.y += overlap.size.y;
             }
+        }
+    };
+    Transform.prototype.ApplyBulletOverlapPush = function (bulletStretch, overlap) {
+        if (bulletStretch.size.x > bulletStretch.size.y) {
+            this.pos.x -= overlap.size.x;
+        }
+        else {
+            this.pos.x -= overlap.size.y;
         }
     };
     Transform.prototype.GetTopLeftPos = function () {

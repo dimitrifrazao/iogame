@@ -25,5 +25,5 @@ export interface IPlayer{
     TakeDamage(damage:number):void;
     IsAlive():boolean;
     GetTransform():Transform;
-
+    AddHp(hp:number):void;
 }
