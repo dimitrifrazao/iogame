@@ -4,8 +4,11 @@ export interface IMove{
     dir: DirEnum;
     speed: number;
     push:Vector;
+    previousPos:Vector;
     UpdatePosition(dt:number):void;
     Push(obj:IMove):void;
+    GetPreviousPos():Vector;
+    GetMoveVector():Vector;
 }
 
 export enum DirEnum {

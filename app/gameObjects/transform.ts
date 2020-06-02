@@ -1,9 +1,10 @@
 
 import { World } from "../main/world";
-import { Vector } from "./vector"
-import { Color } from "./color"
-import { DirEnum } from "./interfaces/imove"
-import { GameObject } from "./gameObject"
+import { Vector } from "./vector";
+import { Color } from "./color";
+import { DirEnum } from "./interfaces/imove";
+import { GameObject } from "./gameObject";
+import { BoundingBox } from "./boundingBox";
 
 
 export enum UnitType{
@@ -57,6 +58,8 @@ export class Transform extends GameObject{
     SetColor(color:Color){this.color=color;};
     GetColor(){return this.color;};
 
+    GetBoundingBox(){return BoundingBox.MakeFrom(this);};
+
     GetDataPack():DataPack{
         let dPack = new DataPack();
         dPack.SetPos(this.GetTopLeftPos());
@@ -73,51 +76,17 @@ export class Transform extends GameObject{
     };
 
     GetOverlap(trans:Transform):Transform{
-        let overLapPos = Vector.GetInbetween(this.pos, trans.pos);
+        /*let overLapPos = Vector.GetInbetween(this.pos, trans.pos);
         let overlapSize = new Vector();
         overlapSize.x = Math.min( Math.abs(this.GetBotRightPos().x - trans.GetTopLeftPos().x), Math.abs(this.GetTopLeftPos().x - trans.GetBotRightPos().x));
         overlapSize.y = Math.min( Math.abs(this.GetBotRightPos().y - trans.GetTopLeftPos().y), Math.abs(this.GetTopLeftPos().y - trans.GetBotRightPos().y));
         let overlap = new Transform();
         overlap.SetPos(overLapPos);
-        overlap.SetSize(overlapSize);
-        return overlap;
-    }
-
-    static CreateBulletStretch(bullet:Transform, prePos:Vector):Transform{
-        let offset = Vector.Sub(bullet.GetPos(), prePos);
-        let topLeft = bullet.GetTopLeftPos();
-        let botRight = bullet.GetBotRightPos();
-        let topLeft2 = Vector.Add(botRight, offset);
-        let botRight2 = Vector.Add(botRight, offset);
-
-        let xSize = Math.max(Math.abs(topLeft.x - botRight2.x ), Math.abs(topLeft2.x - botRight.x ));
-        let ySize = Math.max(Math.abs(topLeft.y - botRight2.y ), Math.abs(topLeft2.y - botRight.y ));
-
-        let t = new Transform();
-        t.SetPos(Vector.GetInbetween(bullet.GetPos(), prePos));
-        t.SetSize(new Vector(xSize, ySize))
-        return t;
-
-    }
-
-    ApplyOverlapPush(overlap:Transform){
-        if(overlap.size.x < overlap.size.y){
-            if(overlap.pos.x > this.pos.x){
-                this.pos.x -= overlap.size.x;
-            }
-            else{
-                this.pos.x += overlap.size.x;
-            }
-        }
-        else{
-            if(overlap.pos.y > this.pos.y){
-                this.pos.y -= overlap.size.y;
-            }
-            else{
-                this.pos.y += overlap.size.y;
-            }
-        }
-        
+        overlap.SetSize(overlapSize);*/
+        let bb1 = this.GetBoundingBox();
+        let bb2 = trans.GetBoundingBox();
+        let bb3 = BoundingBox.Sub(bb1, bb2);
+        return bb3.GetTransform();
     }
 
     ApplyBulletOverlapPush(bulletStretch:Transform, overlap:Transform){

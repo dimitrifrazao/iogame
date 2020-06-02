@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BoundingBox = exports.GameObject = void 0;
-var vector_1 = require("../gameObjects/vector");
+exports.GameObject = void 0;
 var GameObject = /** @class */ (function () {
     function GameObject() {
         this.state = true;
@@ -31,11 +30,3 @@ var GameObject = /** @class */ (function () {
     return GameObject;
 }());
 exports.GameObject = GameObject;
-var BoundingBox = /** @class */ (function () {
-    function BoundingBox() {
-        this.topLeft = new vector_1.Vector();
-        this.botRight = new vector_1.Vector();
-    }
-    return BoundingBox;
-}());
-exports.BoundingBox = BoundingBox;

@@ -5,6 +5,7 @@ import {World} from "../main/world"
 import {DirEnum, IMove} from "./interfaces/imove"
 import { IBulletManager, IBulletObserver, IPlayer } from "./interfaces/ishoot"
 import { Color } from "./color"
+import { BoundingBox } from "./boundingBox"
 
 type bulletMap = Record<number, Bullet>;
 
@@ -30,11 +31,14 @@ export class Bullet extends Transform implements IMove, IBulletObserver
     dir:DirEnum = DirEnum.None;
     speed:number = 2;
     push:Vector = new Vector();
+    previousPos:Vector = new Vector();
     Push(obj:IMove){
         let vec = Vector.GetDirVector(this.dir);
         vec.scaleBy(3);
         obj.push.add(vec);
     };
+    GetPreviousPos(){return this.previousPos;};
+    GetMoveVector(){return Vector.Sub(this.previousPos, this.pos);};
 
     // IPlayerObserver
     player:IBulletManager;
@@ -66,8 +70,8 @@ export class Bullet extends Transform implements IMove, IBulletObserver
 
     UpdatePosition(dt:number)
     {
-        this.prevPos.x = this.pos.x;
-        this.prevPos.y = this.pos.y;
+        this.previousPos.x = this.pos.x;
+        this.previousPos.y = this.pos.y;
 
         switch(this.dir){
             case(DirEnum.Up):
@@ -111,10 +115,14 @@ export class Bullet extends Transform implements IMove, IBulletObserver
             bullet.UpdatePosition(dt);
             bullet.CheckWorldWrap();
 
-            let t = Transform.CreateBulletStretch(bullet, bullet.prevPos);
-            let tPack = t.GetDataPack();
-            //tPack.SetColor(bullet.GetColor());
-            //tPack.id = 
+            let bb = bullet.GetBoundingBox();
+            let bbOld = bullet.GetBoundingBox();
+
+            bbOld.OffsetBy(Vector.ScaleBy(bullet.GetMoveVector(), -1));
+            let fullBB = BoundingBox.Add(bb, bbOld);
+            let bbTrans = fullBB.GetTransform();
+            let tPack = bbTrans.GetDataPack();
+            tPack.SetColor(Color.Green);
             //pack.push(tPack); 
 
             let cells = World.inst.GetPossibleCollisions(bullet.pos);
@@ -124,14 +132,42 @@ export class Bullet extends Transform implements IMove, IBulletObserver
                 // FIX this, its bad
                 //if(cell !== undefined ) console.log("DEAD CELL at " + i);
                 if(cell !== undefined && cell.IsRock() && bullet.CheckCollision(cell)==true){
+
+                    let overlapBB = BoundingBox.Sub(fullBB, cell.GetBoundingBox())
+                    let overlap = overlapBB.GetTransform();
+
+                    let vec = Vector.ScaleBy( Vector.GetDirVector(bullet.dir), -1);
+                    vec.mul(overlap.GetSize());
+                    bullet.pos.add(vec);
+             
+                    /*if(overlapBB.GetSizeX() < overlapBB.GetSizeY()){
+                        if(bullet.pos.x > cell.GetPos().x) bullet.pos.x += overlapBB.GetSizeX()
+                        else bullet.pos.x -= overlapBB.GetSizeX()
+                    }
+                    else{
+                        if(bullet.pos.y > cell.GetPos().y) bullet.pos.y += overlapBB.GetSizeY()
+                        else bullet.pos.y -= overlapBB.GetSizeY()
+                    }*/
+
+                    bullet.dir = Bullet.GetMirrorDir(bullet.dir)
                     
+                    let oPack = overlap.GetDataPack();
+                    oPack.SetColor(Color.Magenta);
+                    //pack.push(oPack);
+
                     /*let overlap = t.GetOverlap(cell);
                     pack.push(overlap.GetDataPack()); 
                     bullet.ApplyBulletOverlapPush(t, overlap);
-                    bullet.dir = Bullet.GetMirrorDir(bullet.dir);*/
-                    let overlap = bullet.GetOverlap(cell);
-                    bullet.ApplyOverlapPush(overlap);
                     bullet.dir = Bullet.GetMirrorDir(bullet.dir);
+                    let overlap = bullet.GetOverlap(cell);
+                    //bullet.ApplyOverlapPush(overlap);
+                    let moveBack = Vector.ScaleBy(bullet.GetMoveVector(), -1);
+                    let pushBack = moveBack.normal();
+                    pushBack.x *= Math.min(moveBack.x, overlap.GetSize().x);
+                    pushBack.y *= Math.min(moveBack.y, overlap.GetSize().y);
+                    // pack.push(overlap.GetDataPack);
+                    bullet.pos.add(pushBack);
+                    bullet.dir = Bullet.GetMirrorDir(bullet.dir);*/
                 
                 }
             }

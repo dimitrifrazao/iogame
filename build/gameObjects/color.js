@@ -25,11 +25,16 @@ var Color = /** @class */ (function () {
     };
     Color.maxValue = 255;
     Color.Black = new Color(0, 0, 0);
+    Color.White = new Color(255, 255, 255);
     Color.Red = new Color(255, 0, 0);
     Color.Green = new Color(0, 255, 0);
     Color.Blue = new Color(0, 0, 255);
+    Color.Yellow = new Color(255, 255, 0);
+    Color.Cyan = new Color(0, 255, 255);
+    Color.Magenta = new Color(255, 0, 255);
     Color.Grey = new Color(200, 200, 200);
     Color.DarkGrey = new Color(50, 50, 50);
+    Color.Transparent = new Color(0, 0, 0, 0.2);
     return Color;
 }());
 exports.Color = Color;

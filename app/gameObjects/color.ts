@@ -1,11 +1,16 @@
 export class Color{
     static maxValue:number = 255;
     static Black:Color = new Color(0,0,0);
+    static White:Color = new Color(255,255,255);
     static Red:Color = new Color(255,0,0);
     static Green:Color = new Color(0,255,0);
     static Blue:Color = new Color(0,0,255);
+    static Yellow:Color = new Color(255,255,0);
+    static Cyan:Color = new Color(0,255,255);
+    static Magenta:Color = new Color(255,0,255);
     static Grey:Color = new Color(200,200,200);
     static DarkGrey:Color = new Color(50,50,50);
+    static Transparent:Color = new Color(0,0,0, 0.2);
 
     constructor(public r:number=0, public g:number=0, public b:number=0, public a:number=1){}
     static Random(){

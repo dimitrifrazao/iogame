@@ -1,4 +1,5 @@
 import {Vector} from "../gameObjects/vector"
+import { Transform } from "./transform";
 
 export abstract class GameObject{
     private state:boolean = true;
@@ -27,12 +28,5 @@ export abstract class GameObject{
     }
 }
 
-export class BoundingBox{
-    topLeft:Vector = new Vector();
-    botRight:Vector = new Vector();
-    constructor(){}
-}
 
-export interface IBoxCollider{
-    bb:BoundingBox;
-}
+

@@ -63,7 +63,7 @@ class Renderer{
         ctx.beginPath();
         for(var i=0; i<data.length; i++){
             let d = data[i];
-            let rgbText = "rgb(" + d.r+ "," + d.g + "," + d.b + ")";
+            let rgbText = "rgba(" + d.r+ "," + d.g + "," + d.b + "," + d.a + ")";
             if(d.id == Renderer.id && d.type ==2){
                 rgbText = "rgb(255,0,0)";
             }

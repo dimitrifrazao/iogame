@@ -19,13 +19,19 @@ var Vector = /** @class */ (function () {
         this.y -= vec.y;
     };
     ;
+    Vector.prototype.mul = function (vec) {
+        this.x *= vec.x;
+        this.y *= vec.y;
+    };
     Vector.prototype.len = function () { return Math.sqrt((this.x * this.x) + (this.y * this.y)); };
     ;
     Vector.prototype.normal = function () { return new Vector(this.x / this.len(), this.y / this.len()); };
     ;
     Vector.prototype.normalize = function () {
-        this.x /= this.len();
-        this.y /= this.len();
+        if (this.len() > 0) {
+            this.x /= this.len();
+            this.y /= this.len();
+        }
     };
     Vector.prototype.scaleBy = function (scale) {
         this.x *= scale;
@@ -62,9 +68,7 @@ var Vector = /** @class */ (function () {
         return new Vector(vec1.x - vec2.x, vec1.y - vec2.y);
     };
     Vector.ScaleBy = function (vec, scale) {
-        var newVec = new Vector(vec.x, vec.y);
-        newVec.scaleBy(scale);
-        return newVec;
+        return new Vector(vec.x * scale, vec.y * scale);
     };
     Vector.Wrap = function (vec, x, y) {
         var wrappedVec = Vector.Copy(vec);

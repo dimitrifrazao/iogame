@@ -19,6 +19,7 @@ var vector_1 = require("./vector");
 var color_1 = require("./color");
 var imove_1 = require("./interfaces/imove");
 var world_1 = require("../main/world");
+var boundingBox_1 = require("./boundingBox");
 var PlayerplayerState;
 (function (PlayerplayerState) {
     PlayerplayerState[PlayerplayerState["Alive"] = 0] = "Alive";
@@ -40,12 +41,12 @@ var Player = /** @class */ (function (_super) {
         _this.level = 1;
         _this.hp = _this.hpMax;
         _this.playerState = PlayerplayerState.Alive;
-        _this.previousPos = new vector_1.Vector();
         _this.weaponType = WeaponType.default;
         // from IMove
         _this.dir = imove_1.DirEnum.None;
         _this.speed = 1;
         _this.push = new vector_1.Vector();
+        _this.previousPos = new vector_1.Vector();
         // from IBulletManager
         _this.bullets = [];
         _this.size.x = 30;
@@ -58,6 +59,10 @@ var Player = /** @class */ (function (_super) {
         return _this;
     }
     Player.prototype.Push = function (obj) { };
+    ;
+    Player.prototype.GetPreviousPos = function () { return this.previousPos; };
+    ;
+    Player.prototype.GetMoveVector = function () { return vector_1.Vector.Sub(this.pos, this.previousPos); };
     ;
     Player.prototype.SetWeaponType = function (weaponType) { this.weaponType = weaponType; };
     ;
@@ -130,10 +135,6 @@ var Player = /** @class */ (function (_super) {
     Player.prototype.SetDirection = function (dir) {
         this.dir = dir;
     };
-    Player.prototype.RevertPositionUpdate = function () {
-        this.pos.x = this.previousPos.x;
-        this.pos.y = this.previousPos.y;
-    };
     Player.prototype.UpdatePosition = function (dt) {
         if (this.playerState != PlayerplayerState.Alive)
             return;
@@ -202,9 +203,23 @@ var Player = /** @class */ (function (_super) {
                 var cell = cells_1[_i];
                 //pack.push(cell.GetDataPack());
                 if (cell !== undefined && cell.IsRock() && player.CheckCollision(cell) == true) {
-                    var overlap = player.GetOverlap(cell);
-                    // pack.push(overlap.GetDataPack);
-                    player.ApplyOverlapPush(overlap);
+                    var overlapBB = boundingBox_1.BoundingBox.Sub(player.GetBoundingBox(), cell.GetBoundingBox());
+                    var overlap = overlapBB.GetTransform();
+                    if (overlapBB.GetSizeX() < overlapBB.GetSizeY()) {
+                        if (player.pos.x > cell.GetPos().x)
+                            player.pos.x += overlapBB.GetSizeX();
+                        else
+                            player.pos.x -= overlapBB.GetSizeX();
+                    }
+                    else {
+                        if (player.pos.y > cell.GetPos().y)
+                            player.pos.y += overlapBB.GetSizeY();
+                        else
+                            player.pos.y -= overlapBB.GetSizeY();
+                    }
+                    var oPack = overlap.GetDataPack();
+                    oPack.SetColor(color_1.Color.Magenta);
+                    //pack.push(oPack);
                 }
             }
         }

@@ -4,6 +4,7 @@ import { Color } from "./color"
 import { DirEnum, IMove} from "./interfaces/imove"
 import { IBulletManager, IBulletObserver, IPlayer } from "./interfaces/ishoot"
 import { World } from "../main/world";
+import { BoundingBox } from "./boundingBox"
 
 export enum PlayerplayerState{
     Alive=0,
@@ -25,7 +26,6 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
     public level:number = 1;
     public hp:number = this.hpMax;
     public playerState:PlayerplayerState = PlayerplayerState.Alive;
-    public previousPos:Vector = new Vector();
     public deadCallback:any;
     private weaponType: WeaponType = WeaponType.default;
 
@@ -44,7 +44,10 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
     dir:DirEnum = DirEnum.None;
     speed:number = 1;
     push:Vector = new Vector();
+    previousPos:Vector = new Vector();
     Push(obj:IMove){};
+    GetPreviousPos(){return this.previousPos;};
+    GetMoveVector(){return Vector.Sub(this.pos, this.previousPos);};
 
     SetWeaponType(weaponType:WeaponType){this.weaponType=weaponType;};
     GetWeaponType(){return this.weaponType;};
@@ -129,11 +132,6 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
         this.dir = dir;
     }
 
-    RevertPositionUpdate(){
-        this.pos.x = this.previousPos.x;
-        this.pos.y = this.previousPos.y;
-    }
-
     UpdatePosition(dt:number){
         if(this.playerState != PlayerplayerState.Alive) return;
 
@@ -208,9 +206,21 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
             for(let cell of cells){
                 //pack.push(cell.GetDataPack());
                 if(cell !== undefined &&  cell.IsRock() && player.CheckCollision(cell)==true){
-                    let overlap = player.GetOverlap(cell);
-                    // pack.push(overlap.GetDataPack);
-                    player.ApplyOverlapPush(overlap);
+                    let overlapBB = BoundingBox.Sub(player.GetBoundingBox(), cell.GetBoundingBox())
+                    let overlap = overlapBB.GetTransform();
+       
+                    if(overlapBB.GetSizeX() < overlapBB.GetSizeY()){
+                        if(player.pos.x > cell.GetPos().x) player.pos.x += overlapBB.GetSizeX()
+                        else player.pos.x -= overlapBB.GetSizeX()
+                    }
+                    else{
+                        if(player.pos.y > cell.GetPos().y) player.pos.y += overlapBB.GetSizeY()
+                        else player.pos.y -= overlapBB.GetSizeY()
+                    }
+                    
+                    let oPack = overlap.GetDataPack();
+                    oPack.SetColor(Color.Magenta);
+                    //pack.push(oPack);
                 }
             }
         }

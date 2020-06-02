@@ -51,7 +51,7 @@ var Renderer = /** @class */ (function () {
         ctx.beginPath();
         for (var i = 0; i < data.length; i++) {
             var d = data[i];
-            var rgbText = "rgb(" + d.r + "," + d.g + "," + d.b + ")";
+            var rgbText = "rgba(" + d.r + "," + d.g + "," + d.b + "," + d.a + ")";
             if (d.id == Renderer.id && d.type == 2) {
                 rgbText = "rgb(255,0,0)";
             }

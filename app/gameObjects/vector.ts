@@ -10,11 +10,17 @@ export class Vector{
         this.x -= vec.x;
         this.y -= vec.y;
     };
+    mul(vec:Vector){
+        this.x *= vec.x;
+        this.y *= vec.y;
+    }
     len():number{return Math.sqrt( (this.x*this.x) + (this.y*this.y) )};
     normal():Vector{return new Vector(this.x/this.len(), this.y/this.len())};
     normalize():void{
-        this.x /= this.len();
-        this.y /= this.len();
+        if(this.len() > 0){
+            this.x /= this.len();
+            this.y /= this.len();
+        }
     }
     scaleBy(scale:number):void{
         this.x *= scale;
@@ -61,9 +67,7 @@ export class Vector{
     }
 
     static ScaleBy(vec:Vector, scale:number){
-        let newVec = new Vector(vec.x, vec.y);
-        newVec.scaleBy(scale);
-        return newVec;
+        return new Vector(vec.x * scale, vec.y * scale);
     }
 
     static Wrap(vec:Vector, x:number, y:number):Vector{

@@ -19,6 +19,7 @@ var vector_1 = require("./vector");
 var color_1 = require("./color");
 var imove_1 = require("./interfaces/imove");
 var gameObject_1 = require("./gameObject");
+var boundingBox_1 = require("./boundingBox");
 var UnitType;
 (function (UnitType) {
     UnitType[UnitType["None"] = 0] = "None";
@@ -80,6 +81,8 @@ var Transform = /** @class */ (function (_super) {
     ;
     Transform.prototype.GetColor = function () { return this.color; };
     ;
+    Transform.prototype.GetBoundingBox = function () { return boundingBox_1.BoundingBox.MakeFrom(this); };
+    ;
     Transform.prototype.GetDataPack = function () {
         var dPack = new DataPack();
         dPack.SetPos(this.GetTopLeftPos());
@@ -96,45 +99,17 @@ var Transform = /** @class */ (function (_super) {
     };
     ;
     Transform.prototype.GetOverlap = function (trans) {
-        var overLapPos = vector_1.Vector.GetInbetween(this.pos, trans.pos);
-        var overlapSize = new vector_1.Vector();
-        overlapSize.x = Math.min(Math.abs(this.GetBotRightPos().x - trans.GetTopLeftPos().x), Math.abs(this.GetTopLeftPos().x - trans.GetBotRightPos().x));
-        overlapSize.y = Math.min(Math.abs(this.GetBotRightPos().y - trans.GetTopLeftPos().y), Math.abs(this.GetTopLeftPos().y - trans.GetBotRightPos().y));
-        var overlap = new Transform();
+        /*let overLapPos = Vector.GetInbetween(this.pos, trans.pos);
+        let overlapSize = new Vector();
+        overlapSize.x = Math.min( Math.abs(this.GetBotRightPos().x - trans.GetTopLeftPos().x), Math.abs(this.GetTopLeftPos().x - trans.GetBotRightPos().x));
+        overlapSize.y = Math.min( Math.abs(this.GetBotRightPos().y - trans.GetTopLeftPos().y), Math.abs(this.GetTopLeftPos().y - trans.GetBotRightPos().y));
+        let overlap = new Transform();
         overlap.SetPos(overLapPos);
-        overlap.SetSize(overlapSize);
-        return overlap;
-    };
-    Transform.CreateBulletStretch = function (bullet, prePos) {
-        var offset = vector_1.Vector.Sub(bullet.GetPos(), prePos);
-        var topLeft = bullet.GetTopLeftPos();
-        var botRight = bullet.GetBotRightPos();
-        var topLeft2 = vector_1.Vector.Add(botRight, offset);
-        var botRight2 = vector_1.Vector.Add(botRight, offset);
-        var xSize = Math.max(Math.abs(topLeft.x - botRight2.x), Math.abs(topLeft2.x - botRight.x));
-        var ySize = Math.max(Math.abs(topLeft.y - botRight2.y), Math.abs(topLeft2.y - botRight.y));
-        var t = new Transform();
-        t.SetPos(vector_1.Vector.GetInbetween(bullet.GetPos(), prePos));
-        t.SetSize(new vector_1.Vector(xSize, ySize));
-        return t;
-    };
-    Transform.prototype.ApplyOverlapPush = function (overlap) {
-        if (overlap.size.x < overlap.size.y) {
-            if (overlap.pos.x > this.pos.x) {
-                this.pos.x -= overlap.size.x;
-            }
-            else {
-                this.pos.x += overlap.size.x;
-            }
-        }
-        else {
-            if (overlap.pos.y > this.pos.y) {
-                this.pos.y -= overlap.size.y;
-            }
-            else {
-                this.pos.y += overlap.size.y;
-            }
-        }
+        overlap.SetSize(overlapSize);*/
+        var bb1 = this.GetBoundingBox();
+        var bb2 = trans.GetBoundingBox();
+        var bb3 = boundingBox_1.BoundingBox.Sub(bb1, bb2);
+        return bb3.GetTransform();
     };
     Transform.prototype.ApplyBulletOverlapPush = function (bulletStretch, overlap) {
         if (bulletStretch.size.x > bulletStretch.size.y) {
