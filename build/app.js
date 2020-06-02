@@ -37,6 +37,7 @@ io.sockets.on('connection', function (socket) {
         NAME_LIST[socket.id] = newName;
     }
     socket.emit('worldData', world_1.World.inst.GenerateDataPack());
+    socket.emit('worldSize', world_1.World.inst.GetWorldSize());
     socket.emit('setPlayerId', { id: socket.id });
     //console.log("socket id " + socket.id.toString())
     console.log(newName);
@@ -58,9 +59,8 @@ io.sockets.on('connection', function (socket) {
     });
 });
 var EmitDeadPlayer = function (id, data) {
-    console.log("dead callback");
+    //console.log("dead callback")
     //Main.inst.DeletePlayer(id);
-    //World.inst.AddDead(data);
     for (var i in SOCKET_LIST) {
         var socket = SOCKET_LIST[i];
         socket.emit('worldDataAdd', data);
@@ -71,6 +71,9 @@ setInterval(function () {
     var pack = main_1.Main.inst.Update();
     for (var i in SOCKET_LIST) {
         var socket = SOCKET_LIST[i];
+        var player = main_1.Main.inst.GetPlayerPosBy(socket.id);
+        if (player !== null)
+            socket.emit('cameraPos', { pos: player.GetPos() });
         socket.emit('update', pack);
     }
 }, 1000 / 25);

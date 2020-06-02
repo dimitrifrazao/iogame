@@ -130,14 +130,11 @@ var Transform = /** @class */ (function (_super) {
         return this.size.x * this.size.y;
     };
     Transform.prototype.CheckWorldWrap = function () {
-        if (this.pos.x > world_1.World.inst.GetHorizontalUnits())
-            this.pos.x = -this.size.x;
-        if (this.pos.x < -this.size.x)
-            this.pos.x = world_1.World.inst.GetHorizontalUnits();
-        if (this.pos.y > world_1.World.inst.GetVerticalUnits())
-            this.pos.y = -this.size.y;
-        if (this.pos.y < -this.size.y)
-            this.pos.y = world_1.World.inst.GetVerticalUnits();
+        world_1.World.inst.WorldWrap(this.pos);
+        /*if(this.pos.x > World.inst.GetHorizontalSize()) this.pos.x = 0;
+        else if(this.pos.x < 0) this.pos.x = World.inst.GetHorizontalSize();
+        if(this.pos.y > World.inst.GetVerticalSize()) this.pos.y = 0;
+        if(this.pos.y < 0) this.pos.y = World.inst.GetVerticalSize();*/
     };
     Transform.GetMirrorDir = function (dir) {
         switch (dir) {

@@ -33,6 +33,8 @@ export class Main{
         Player.AddPlayer(player);
     };
 
+    GetPlayerPosBy(id:number){return Player.GetPlayerById(id);};
+
     DeletePlayer(id:number){Player.DeletePlayer(id)};
 
     SetPlayerDir(id:number, dir:DirEnum){

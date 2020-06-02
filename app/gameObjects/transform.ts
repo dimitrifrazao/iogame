@@ -112,10 +112,11 @@ export class Transform extends GameObject{
     }
 
     CheckWorldWrap(){
-        if(this.pos.x > World.inst.GetHorizontalUnits()) this.pos.x = -this.size.x;
-        if(this.pos.x < -this.size.x) this.pos.x = World.inst.GetHorizontalUnits();
-        if(this.pos.y > World.inst.GetVerticalUnits()) this.pos.y = -this.size.y;
-        if(this.pos.y < -this.size.y) this.pos.y = World.inst.GetVerticalUnits();
+        World.inst.WorldWrap(this.pos)
+        /*if(this.pos.x > World.inst.GetHorizontalSize()) this.pos.x = 0;
+        else if(this.pos.x < 0) this.pos.x = World.inst.GetHorizontalSize();
+        if(this.pos.y > World.inst.GetVerticalSize()) this.pos.y = 0;
+        if(this.pos.y < 0) this.pos.y = World.inst.GetVerticalSize();*/
     }
 
     static GetMirrorDir(dir:DirEnum){

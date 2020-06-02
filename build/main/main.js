@@ -29,6 +29,8 @@ var Main = /** @class */ (function () {
         player_1.Player.AddPlayer(player);
     };
     ;
+    Main.prototype.GetPlayerPosBy = function (id) { return player_1.Player.GetPlayerById(id); };
+    ;
     Main.prototype.DeletePlayer = function (id) { player_1.Player.DeletePlayer(id); };
     ;
     Main.prototype.SetPlayerDir = function (id, dir) {

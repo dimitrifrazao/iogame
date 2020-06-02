@@ -4,26 +4,42 @@ exports.World = void 0;
 var transform_1 = require("../gameObjects/transform");
 var vector_1 = require("../gameObjects/vector");
 var World = /** @class */ (function () {
-    function World(hUnits, vUnits) {
+    function World(hUnits, vUnits, unitSize) {
         this.hUnits = hUnits;
         this.vUnits = vUnits;
+        this.unitSize = unitSize;
         this.rocks = [];
-        this.deads = [];
         this.cells = [];
     }
-    World.prototype.GetHorizontalUnits = function () { return this.hUnits * World.unitSize; };
+    World.prototype.GetHorizontalUnits = function () { return this.hUnits; };
     ;
-    World.prototype.GetVerticalUnits = function () { return this.vUnits * World.unitSize; };
+    World.prototype.GetVerticalUnits = function () { return this.vUnits; };
+    ;
+    World.prototype.GetUnitSize = function () { return this.unitSize; };
+    ;
+    World.prototype.GetHorizontalSize = function () { return this.hUnits * this.unitSize; };
+    ;
+    World.prototype.GetVerticalSize = function () { return this.vUnits * this.unitSize; };
     ;
     World.prototype.GetCellCount = function () { return this.hUnits * this.vUnits; };
     ;
-    World.prototype.GetXValue = function (i) { return (i % this.hUnits) * World.unitSize; };
+    World.prototype.GetXValue = function (i) { return (i % this.hUnits) * this.unitSize; };
     ;
-    World.prototype.GetYValue = function (i) { return (Math.floor(i / this.hUnits)) * World.unitSize; };
+    World.prototype.GetYValue = function (i) { return (Math.floor(i / this.hUnits)) * this.unitSize; };
     ;
     World.prototype.GetIndex = function (pos) {
-        var wPos = vector_1.Vector.Wrap(pos, this.GetHorizontalUnits(), this.GetVerticalUnits());
-        return (((Math.floor(wPos.y / World.unitSize)) * this.hUnits) + (Math.floor(wPos.x / World.unitSize)));
+        var wPos = vector_1.Vector.Wrap(pos, this.GetHorizontalSize(), this.GetVerticalSize());
+        return (((Math.floor(wPos.y / this.unitSize)) * this.hUnits) + (Math.floor(wPos.x / this.unitSize)));
+    };
+    World.prototype.WorldWrap = function (pos) {
+        if (pos.x > this.GetHorizontalSize())
+            pos.x = 0;
+        else if (pos.x < 0)
+            pos.x = this.GetHorizontalSize();
+        if (pos.y > this.GetVerticalSize())
+            pos.y = 0;
+        else if (pos.y < 0)
+            pos.y = this.GetVerticalSize();
     };
     World.prototype.WrapIndex = function (i) {
         if (i < 0)
@@ -51,11 +67,11 @@ var World = /** @class */ (function () {
     World.prototype.Build = function () {
         var cellsCount = this.GetCellCount();
         for (var i = 0; i < cellsCount; i++) {
-            var x = this.GetXValue(i) + (World.unitSize / 2);
-            var y = this.GetYValue(i) + (World.unitSize / 2);
+            var x = this.GetXValue(i) + (this.unitSize / 2);
+            var y = this.GetYValue(i) + (this.unitSize / 2);
             var c = new transform_1.Cell();
             c.SetPos(new vector_1.Vector(x, y));
-            c.SetSize(new vector_1.Vector(World.unitSize, World.unitSize));
+            c.SetSize(new vector_1.Vector(this.unitSize, this.unitSize));
             if ((Math.random() * 100) > 98) {
                 c.cellType = transform_1.CellType.Rock;
                 this.rocks.push(c);
@@ -65,23 +81,24 @@ var World = /** @class */ (function () {
     };
     World.prototype.GetRocks = function () { return this.rocks; };
     ;
-    World.prototype.AddDead = function (dead) {
-        this.deads.push(dead);
-    };
     World.prototype.GenerateDataPack = function () {
         var pack = [];
         for (var _i = 0, _a = this.rocks; _i < _a.length; _i++) {
             var cell = _a[_i];
             pack.push(cell.GetDataPack());
         }
-        for (var _b = 0, _c = this.deads; _b < _c.length; _b++) {
-            var dead = _c[_b];
-            pack.push(dead);
-        }
         return pack;
     };
-    World.inst = new World(50, 40);
-    World.unitSize = 30.0;
+    World.prototype.GetWorldSize = function () {
+        return {
+            width: World.inst.GetHorizontalSize(),
+            height: World.inst.GetVerticalSize(),
+            horizontalUnits: World.inst.GetHorizontalUnits(),
+            verticalUnits: World.inst.GetVerticalUnits(),
+            size: World.inst.GetUnitSize()
+        };
+    };
+    World.inst = new World(50, 40, 30);
     return World;
 }());
 exports.World = World;

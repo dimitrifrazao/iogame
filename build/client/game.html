@@ -25,13 +25,20 @@
         Renderer.SetWorldData(data);
     });
 
+    socket.on('worldSize', function(data){
+        Renderer.SetWorldSize(data);
+    });
+    
     socket.on('worldDataAdd', function(data){
-        console.log("dead added")
         Renderer.AddWorldData(data);
     });
 
     socket.on('setPlayerId', function(data){
         Renderer.SetPlayerId(data);
+    });
+
+    socket.on('cameraPos', function(data){
+        Renderer.SetCameraPos(data.pos);
     });
 
     InputManager.SetSocket(socket);

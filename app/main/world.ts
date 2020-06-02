@@ -2,24 +2,32 @@ import {Cell, CellType} from "../gameObjects/transform";
 import { Vector } from "../gameObjects/vector"
 
 export class World{
-    public static inst:World = new World(50, 40);
-    public static unitSize = 30.0;
+    public static inst:World = new World(50, 40, 30);
     private rocks:Cell[] = [];
-    private deads:any[] = [];
     private cells:Cell[] = [];
 
-    constructor(private hUnits:number, private vUnits:number){
+    constructor(private hUnits:number, private vUnits:number, private unitSize:number){
     }
     
-    GetHorizontalUnits(){return this.hUnits * World.unitSize;};
-    GetVerticalUnits(){return this.vUnits * World.unitSize;};
+    GetHorizontalUnits(){return this.hUnits;};
+    GetVerticalUnits(){return this.vUnits;};
+    GetUnitSize(){return this.unitSize;};
+    GetHorizontalSize(){return this.hUnits * this.unitSize;};
+    GetVerticalSize(){return this.vUnits * this.unitSize;};
     GetCellCount(){return this.hUnits * this.vUnits;};
 
-    GetXValue(i:number){ return (i% this.hUnits) * World.unitSize;};
-    GetYValue(i:number){ return (Math.floor(i / this.hUnits))*World.unitSize;};
+    GetXValue(i:number){ return (i% this.hUnits) * this.unitSize;};
+    GetYValue(i:number){ return (Math.floor(i / this.hUnits))*this.unitSize;};
     GetIndex(pos:Vector){
-        let wPos = Vector.Wrap(pos, this.GetHorizontalUnits(), this.GetVerticalUnits());
-        return (((Math.floor(wPos.y / World.unitSize)) * this.hUnits) + (Math.floor(wPos.x / World.unitSize)))
+        let wPos = Vector.Wrap(pos, this.GetHorizontalSize(), this.GetVerticalSize());
+        return (((Math.floor(wPos.y / this.unitSize)) * this.hUnits) + (Math.floor(wPos.x / this.unitSize)))
+    }
+
+    WorldWrap(pos:Vector){
+        if(pos.x > this.GetHorizontalSize()) pos.x = 0;
+        else if(pos.x < 0) pos.x = this.GetHorizontalSize();
+        if(pos.y > this.GetVerticalSize()) pos.y = 0;
+        else if(pos.y < 0) pos.y = this.GetVerticalSize();
     }
 
     WrapIndex(i:number){
@@ -50,12 +58,12 @@ export class World{
     Build(){
         let cellsCount = this.GetCellCount();
         for(let i=0; i<cellsCount; i++){
-            let x = this.GetXValue(i) + (World.unitSize/2);
-            let y = this.GetYValue(i) + (World.unitSize/2);
+            let x = this.GetXValue(i) + (this.unitSize/2);
+            let y = this.GetYValue(i) + (this.unitSize/2);
 
             let c = new Cell();
             c.SetPos(new Vector(x,y));
-            c.SetSize(new Vector(World.unitSize, World.unitSize))
+            c.SetSize(new Vector(this.unitSize, this.unitSize))
 
             if( (Math.random() * 100) > 98){
                 c.cellType = CellType.Rock;
@@ -67,20 +75,22 @@ export class World{
     }
 
     GetRocks(){return this.rocks};
-
-    AddDead(dead:any){
-        this.deads.push(dead);
-    }
     
-    GenerateDataPack(){        
+    GenerateDataPack():object[]{        
         let pack:object[] = [];
         for(let cell of this.rocks){
             pack.push(cell.GetDataPack());
         }
-        for(let dead of this.deads){
-            pack.push(dead);
-        }
         return pack;
+    }
+
+    GetWorldSize():object{
+        return {
+            width:World.inst.GetHorizontalSize(), 
+            height:World.inst.GetVerticalSize(),
+            horizontalUnits:World.inst.GetHorizontalUnits(),
+            verticalUnits:World.inst.GetVerticalUnits(),
+            size:World.inst.GetUnitSize()};
     }
 }
 
