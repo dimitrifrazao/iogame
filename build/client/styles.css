@@ -15,13 +15,16 @@ body {
     top: 0; left: 0; bottom: 0; right: 0;
 
     background-color: rgb(175, 175, 175);
-    width: 200px;
-    height: 100px;
+    width: 400px;
+    height: 300px;
     
     font-weight: bold;
     font-size: 20px;
-    text-transform: uppercase;
     color: rgb(70, 70, 70); text-align:center
 
     
+}
+
+#rules {
+    font-size: 15px;
 }
