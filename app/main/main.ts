@@ -45,29 +45,33 @@ export class Main{
     Shoot(id:number, dir:DirEnum){
         let player = Player.GetPlayerById(id);
         if(player != null){
-            let hasHP = player.hp >= (1 + player.GetWeaponData().damage)
+            let damageData = player.GetWeaponData();
+            let hasHP = player.hp >= (1 + damageData.damage)
             let maxOverHP = (player.bullets.length <= (player.hpMax * 2))
-            if(hasHP && maxOverHP){
+            if(hasHP && maxOverHP && !player.IsDashing()){
                 let pos = Vector.Copy(player.GetPos());
+
                 let bullet = new Bullet(player);
+                bullet.SetDamage( damageData.damage);
+                bullet.speed = damageData.speed;
+                bullet.timer = damageData.timer;
+                //bullet.SetSize( new Vector(damageData.size, damageData.size) );
+                bullet.SetColor(player.GetColor());
+
                 pos.add( Vector.ScaleBy( Vector.GetDirVector(dir), (player.GetSize().x/2)+(bullet.GetSize().x/2)) );
                 bullet.SetPos(pos);
                 bullet.SetDirection(dir);
-
-                let damageData = player.GetWeaponData();
-                bullet.damage = damageData.damage;
-                bullet.speed = damageData.speed;
-                bullet.timer = damageData.timer;
-                bullet.SetSize( new Vector(damageData.size, damageData.size) );
-                bullet.SetColor(player.GetColor());
 
                 Bullet.AddBullet(bullet);
                 player.AddBullet(bullet);
                 player.TakeDamage(damageData.damage);
             }
+        }        
+    }
 
-        }
-        
+    Dash(id:number, dashState:boolean){
+        let player = Player.GetPlayerById(id);
+        if(player != null) player.SetDash(dashState);
     }
 
     ChangeWeapon(id:number, type:number){

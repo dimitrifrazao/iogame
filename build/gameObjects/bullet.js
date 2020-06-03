@@ -32,7 +32,6 @@ var Bullet = /** @class */ (function (_super) {
         _this.dir = imove_1.DirEnum.None;
         _this.speed = 2;
         _this.push = new vector_1.Vector();
-        _this.previousPos = new vector_1.Vector();
         _this.size.x = 10;
         _this.size.y = 10;
         _this.player = player;
@@ -40,13 +39,25 @@ var Bullet = /** @class */ (function (_super) {
         _this.type = transform_1.UnitType.Bullet;
         return _this;
     }
+    Bullet.prototype.SetDamage = function (damage) {
+        this.damage = damage;
+        if (damage > 0) {
+            var size = 7.5 + (damage * 2.5);
+            this.size.x = size;
+            this.size.y = size;
+            this.speed = 2 - ((damage - 1) * 0.1);
+            if (this.speed < 0)
+                this.speed = 0;
+        }
+    };
+    ;
+    Bullet.prototype.GetDamage = function () { return this.damage; };
+    ;
     Bullet.prototype.Push = function (obj) {
         var vec = vector_1.Vector.GetDirVector(this.dir);
         vec.scaleBy(3);
         obj.push.add(vec);
     };
-    ;
-    Bullet.prototype.GetPreviousPos = function () { return this.previousPos; };
     ;
     Bullet.prototype.GetMoveVector = function () { return vector_1.Vector.Sub(this.previousPos, this.pos); };
     ;
@@ -76,8 +87,7 @@ var Bullet = /** @class */ (function (_super) {
         return -1;
     };
     Bullet.prototype.UpdatePosition = function (dt) {
-        this.previousPos.x = this.pos.x;
-        this.previousPos.y = this.pos.y;
+        this.SetPreviousPos(this.GetPos());
         switch (this.dir) {
             case (imove_1.DirEnum.Up):
                 this.pos.y -= this.speed * dt;
@@ -111,73 +121,59 @@ var Bullet = /** @class */ (function (_super) {
     Bullet.UpdateBullets = function (dt, pack, players) {
         for (var _i = 0, _a = Bullet.BulletList; _i < _a.length; _i++) {
             var bullet = _a[_i];
+            if (bullet.damage <= 0)
+                continue;
             bullet.UpdatePosition(dt);
             bullet.CheckWorldWrap();
-            var bb = bullet.GetBoundingBox();
-            var bbOld = bullet.GetBoundingBox();
-            bbOld.OffsetBy(vector_1.Vector.ScaleBy(bullet.GetMoveVector(), -1));
-            var fullBB = boundingBox_1.BoundingBox.Add(bb, bbOld);
-            var bbTrans = fullBB.GetTransform();
-            var tPack = bbTrans.GetDataPack();
-            tPack.SetColor(color_1.Color.Green);
-            //pack.push(tPack); 
+            var bbNow = bullet.GetBoundingBox();
+            var bbOld = bullet.GetOldBoundingBox();
+            //bbOld.OffsetBy(Vector.ScaleBy(bullet.GetMoveVector(), -1));
+            var bbCombined = boundingBox_1.BoundingBox.Add(bbNow, bbOld);
+            var bbTrans = bbCombined.GetTransform();
+            if (false) { // render bb
+                var tPack = bbTrans.GetDataPack();
+                tPack.SetColor(color_1.Color.Green);
+                tPack.id = -1;
+                tPack.type = transform_1.UnitType.Bullet;
+                pack.push(tPack);
+            }
             var cells = world_1.World.inst.GetPossibleCollisions(bullet.pos);
             //console.log(cells.length);
             for (var i in cells) {
                 var cell = cells[i];
-                // FIX this, its bad
-                //if(cell !== undefined ) console.log("DEAD CELL at " + i);
-                if (cell !== undefined && cell.IsRock() && bullet.CheckCollision(cell) == true) {
-                    var overlapBB = boundingBox_1.BoundingBox.Sub(fullBB, cell.GetBoundingBox());
+                if (false) { // render cells
+                    var cPack = cell.GetDataPack();
+                    cPack.SetColor(new color_1.Color(0, 0, 0, 0.1));
+                    cPack.type = transform_1.UnitType.Bullet;
+                    pack.push(cPack);
+                }
+                if (cell.IsRock() && cell.CheckCollision(bbTrans) == true) {
+                    var overlapBB = boundingBox_1.BoundingBox.Sub(bbCombined, cell.GetBoundingBox());
                     var overlap = overlapBB.GetTransform();
-                    var vec = vector_1.Vector.ScaleBy(vector_1.Vector.GetDirVector(bullet.dir), -1);
+                    var vec = vector_1.Vector.ScaleBy(vector_1.Vector.GetDirVector(bullet.dir), -1.0001);
                     vec.mul(overlap.GetSize());
                     bullet.pos.add(vec);
-                    /*if(overlapBB.GetSizeX() < overlapBB.GetSizeY()){
-                        if(bullet.pos.x > cell.GetPos().x) bullet.pos.x += overlapBB.GetSizeX()
-                        else bullet.pos.x -= overlapBB.GetSizeX()
+                    if (false) { // render hiting cell
+                        var cPack = cell.GetDataPack();
+                        cPack.SetColor(color_1.Color.Magenta);
+                        cPack.type = transform_1.UnitType.Bullet;
+                        pack.push(cPack);
                     }
-                    else{
-                        if(bullet.pos.y > cell.GetPos().y) bullet.pos.y += overlapBB.GetSizeY()
-                        else bullet.pos.y -= overlapBB.GetSizeY()
-                    }*/
                     bullet.dir = Bullet.GetMirrorDir(bullet.dir);
-                    var oPack = overlap.GetDataPack();
-                    oPack.SetColor(color_1.Color.Magenta);
-                    //pack.push(oPack);
-                    /*let overlap = t.GetOverlap(cell);
-                    pack.push(overlap.GetDataPack());
-                    bullet.ApplyBulletOverlapPush(t, overlap);
-                    bullet.dir = Bullet.GetMirrorDir(bullet.dir);
-                    let overlap = bullet.GetOverlap(cell);
-                    //bullet.ApplyOverlapPush(overlap);
-                    let moveBack = Vector.ScaleBy(bullet.GetMoveVector(), -1);
-                    let pushBack = moveBack.normal();
-                    pushBack.x *= Math.min(moveBack.x, overlap.GetSize().x);
-                    pushBack.y *= Math.min(moveBack.y, overlap.GetSize().y);
-                    // pack.push(overlap.GetDataPack);
-                    bullet.pos.add(pushBack);
-                    bullet.dir = Bullet.GetMirrorDir(bullet.dir);*/
+                    if (false) { // render overlap
+                        var oPack = overlap.GetDataPack();
+                        oPack.SetColor(color_1.Color.Cyan);
+                        pack.push(oPack);
+                    }
+                    break;
                 }
             }
             pack.push(bullet.GetDataPack());
-        }
-        var deletedBullets = [];
-        for (var _b = 0, _c = Bullet.BulletList; _b < _c.length; _b++) {
-            var bullet = _c[_b];
-            var deleteBullet = false;
-            for (var _d = 0, _e = Bullet.BulletList; _d < _e.length; _d++) {
-                var bullet2 = _e[_d];
-                if (bullet !== bullet2 && bullet.CheckCollision(bullet2) === true) {
-                    deleteBullet = true;
-                    continue;
-                }
-            }
             var bulletPlayer = bullet.GetPlayer();
             for (var i in players) {
                 var player = players[i];
                 if (bullet.CheckCollision(player.GetTransform()) === true) {
-                    if (bullet.id != player.GetId()) {
+                    if (bullet.id !== player.GetId()) {
                         if (bullet.isHP === true) {
                             player.AddHp(bullet.damage);
                         }
@@ -187,25 +183,71 @@ var Bullet = /** @class */ (function (_super) {
                                 bulletPlayer.LevelUp();
                         }
                     }
-                    deleteBullet = true;
-                    //bullet.Push(player);
+                    if (bulletPlayer !== null)
+                        bulletPlayer.AddHp(bullet.damage);
+                    bullet.damage = 0;
+                    break;
+                }
+            }
+            if (bullet.damage > 0) {
+                for (var _b = 0, _c = Bullet.BulletList; _b < _c.length; _b++) {
+                    var bullet2 = _c[_b];
+                    if (bullet !== bullet2 && bullet2.damage > 0) {
+                        bbCombined = boundingBox_1.BoundingBox.Add(bullet.GetBoundingBox(), bbOld);
+                        bbTrans = bbCombined.GetTransform();
+                        if (bbTrans.CheckCollision(bullet2) === true) {
+                            var damage1 = bullet.damage;
+                            var damage2 = bullet2.damage;
+                            if (bullet.id !== bullet2.id) {
+                                var bullet2Player = bullet2.GetPlayer();
+                                if (damage1 >= damage2) {
+                                    if (bullet2Player != null)
+                                        bullet2Player.AddHp(damage2);
+                                    bullet2.SetDamage(0);
+                                }
+                                else {
+                                    if (bullet2Player != null)
+                                        bullet2Player.AddHp(damage1);
+                                    bullet2.SetDamage(damage2 - damage1);
+                                }
+                                if (damage2 >= damage1) {
+                                    if (bulletPlayer != null)
+                                        bulletPlayer.AddHp(damage1);
+                                    bullet.SetDamage(0);
+                                    break;
+                                }
+                                else {
+                                    if (bulletPlayer != null)
+                                        bulletPlayer.AddHp(damage2);
+                                    bullet.SetDamage(damage1 - damage2);
+                                }
+                            }
+                            else {
+                                if (damage1 >= damage2) {
+                                    bullet.SetDamage(damage1 + damage2);
+                                    bullet2.SetDamage(0);
+                                }
+                                else {
+                                    bullet.SetDamage(0);
+                                    bullet2.SetDamage(damage1 + damage2);
+                                }
+                            }
+                        }
+                    }
                 }
             }
             if (bullet.timer >= 0) {
                 bullet.timer -= dt;
                 if (bullet.timer <= 0)
-                    deleteBullet = true;
-            }
-            if (deleteBullet) {
-                deletedBullets.push(bullet);
-                if (bulletPlayer != null)
-                    bullet.player.AddHp(bullet.damage);
+                    bullet.damage = 0;
             }
         }
-        for (var _f = 0, deletedBullets_1 = deletedBullets; _f < deletedBullets_1.length; _f++) {
-            var bullet = deletedBullets_1[_f];
-            bullet.RemoveBullet();
-            Bullet.DeleteBullet(bullet);
+        for (var _d = 0, _e = Bullet.BulletList; _d < _e.length; _d++) {
+            var bullet = _e[_d];
+            if (bullet.damage <= 0) {
+                bullet.RemoveBullet();
+                Bullet.DeleteBullet(bullet);
+            }
         }
     };
     Bullet.BulletList = [];

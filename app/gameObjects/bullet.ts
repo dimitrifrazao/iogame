@@ -27,17 +27,30 @@ export class Bullet extends Transform implements IMove, IBulletObserver
         this.type = UnitType.Bullet;
     }
 
+    SetDamage(damage:number){
+        this.damage = damage;
+        if(damage > 0){
+            let size = 7.5 + (damage * 2.5)
+            this.size.x = size;
+            this.size.y = size;
+
+            this.speed = 2 - ((damage-1) * 0.1);
+            if(this.speed<0) this.speed = 0;
+        }
+    };
+    GetDamage(){return this.damage;};
+
     //IMove
     dir:DirEnum = DirEnum.None;
     speed:number = 2;
     push:Vector = new Vector();
-    previousPos:Vector = new Vector();
+
     Push(obj:IMove){
         let vec = Vector.GetDirVector(this.dir);
         vec.scaleBy(3);
         obj.push.add(vec);
     };
-    GetPreviousPos(){return this.previousPos;};
+
     GetMoveVector(){return Vector.Sub(this.previousPos, this.pos);};
 
     // IPlayerObserver
@@ -70,8 +83,7 @@ export class Bullet extends Transform implements IMove, IBulletObserver
 
     UpdatePosition(dt:number)
     {
-        this.previousPos.x = this.pos.x;
-        this.previousPos.y = this.pos.y;
+        this.SetPreviousPos(this.GetPos());
 
         switch(this.dir){
             case(DirEnum.Up):
@@ -112,85 +124,79 @@ export class Bullet extends Transform implements IMove, IBulletObserver
     static UpdateBullets(dt:number, pack:object[], players:Record<number, IPlayer>){
 
         for(let bullet of Bullet.BulletList){
+
+            if(bullet.damage <= 0) continue;
+
             bullet.UpdatePosition(dt);
             bullet.CheckWorldWrap();
 
-            let bb = bullet.GetBoundingBox();
-            let bbOld = bullet.GetBoundingBox();
+            let bbNow = bullet.GetBoundingBox();
+            let bbOld = bullet.GetOldBoundingBox();
 
-            bbOld.OffsetBy(Vector.ScaleBy(bullet.GetMoveVector(), -1));
-            let fullBB = BoundingBox.Add(bb, bbOld);
-            let bbTrans = fullBB.GetTransform();
-            let tPack = bbTrans.GetDataPack();
-            tPack.SetColor(Color.Green);
-            //pack.push(tPack); 
+            //bbOld.OffsetBy(Vector.ScaleBy(bullet.GetMoveVector(), -1));
+            let bbCombined = BoundingBox.Add(bbNow, bbOld);
+            let bbTrans = bbCombined.GetTransform();
+
+            if(false){ // render bb
+                let tPack = bbTrans.GetDataPack();
+                tPack.SetColor(Color.Green);
+                tPack.id = -1;
+                tPack.type = UnitType.Bullet;
+                pack.push(tPack); 
+            }
+            
 
             let cells = World.inst.GetPossibleCollisions(bullet.pos);
             //console.log(cells.length);
             for(let i in  cells){
                 let cell = cells[i];
-                // FIX this, its bad
-                //if(cell !== undefined ) console.log("DEAD CELL at " + i);
-                if(cell !== undefined && cell.IsRock() && bullet.CheckCollision(cell)==true){
 
-                    let overlapBB = BoundingBox.Sub(fullBB, cell.GetBoundingBox())
+                if(false){ // render cells
+                    let cPack = cell.GetDataPack();
+                    cPack.SetColor(new Color(0,0,0,0.1));
+                    cPack.type = UnitType.Bullet;
+                    pack.push(cPack);
+                }
+                
+
+                if(cell.IsRock() && cell.CheckCollision(bbTrans)==true){
+                    
+
+                    let overlapBB = BoundingBox.Sub(bbCombined, cell.GetBoundingBox())
                     let overlap = overlapBB.GetTransform();
 
-                    let vec = Vector.ScaleBy( Vector.GetDirVector(bullet.dir), -1);
+                    let vec = Vector.ScaleBy( Vector.GetDirVector(bullet.dir), -1.0001);
                     vec.mul(overlap.GetSize());
                     bullet.pos.add(vec);
              
-                    /*if(overlapBB.GetSizeX() < overlapBB.GetSizeY()){
-                        if(bullet.pos.x > cell.GetPos().x) bullet.pos.x += overlapBB.GetSizeX()
-                        else bullet.pos.x -= overlapBB.GetSizeX()
+                    if(false){ // render hiting cell
+                        let cPack = cell.GetDataPack();
+                        cPack.SetColor(Color.Magenta);
+                        cPack.type = UnitType.Bullet;
+                        pack.push(cPack);
                     }
-                    else{
-                        if(bullet.pos.y > cell.GetPos().y) bullet.pos.y += overlapBB.GetSizeY()
-                        else bullet.pos.y -= overlapBB.GetSizeY()
-                    }*/
 
                     bullet.dir = Bullet.GetMirrorDir(bullet.dir)
                     
-                    let oPack = overlap.GetDataPack();
-                    oPack.SetColor(Color.Magenta);
-                    //pack.push(oPack);
+                    if(false){ // render overlap
+                        let oPack = overlap.GetDataPack();
+                        oPack.SetColor(Color.Cyan);
+                        pack.push(oPack);
+                    }
+                    
+                    break;
 
-                    /*let overlap = t.GetOverlap(cell);
-                    pack.push(overlap.GetDataPack()); 
-                    bullet.ApplyBulletOverlapPush(t, overlap);
-                    bullet.dir = Bullet.GetMirrorDir(bullet.dir);
-                    let overlap = bullet.GetOverlap(cell);
-                    //bullet.ApplyOverlapPush(overlap);
-                    let moveBack = Vector.ScaleBy(bullet.GetMoveVector(), -1);
-                    let pushBack = moveBack.normal();
-                    pushBack.x *= Math.min(moveBack.x, overlap.GetSize().x);
-                    pushBack.y *= Math.min(moveBack.y, overlap.GetSize().y);
-                    // pack.push(overlap.GetDataPack);
-                    bullet.pos.add(pushBack);
-                    bullet.dir = Bullet.GetMirrorDir(bullet.dir);*/
-                
                 }
             }
 
             pack.push(bullet.GetDataPack()); 
-        }
 
-        let deletedBullets:Bullet[] = []
-
-        for(let bullet of Bullet.BulletList){
-            let deleteBullet:boolean = false;
-            for(let bullet2 of Bullet.BulletList)
-            {
-                if(bullet !== bullet2 && bullet.CheckCollision(bullet2)===true){
-                    deleteBullet = true;
-                    continue;
-                }
-            }
             let bulletPlayer = bullet.GetPlayer();
+
             for(let i in players){
                 let player = players[i];
                 if(bullet.CheckCollision(player.GetTransform())===true){
-                    if(bullet.id!= player.GetId()){
+                    if(bullet.id !== player.GetId()){
                         if(bullet.isHP===true){
                             player.AddHp(bullet.damage);
                         }
@@ -199,22 +205,69 @@ export class Bullet extends Transform implements IMove, IBulletObserver
                             if(!player.IsAlive() && bulletPlayer != null) bulletPlayer.LevelUp();
                         }
                     }
-                    deleteBullet = true;
-                    //bullet.Push(player);
+                    if(bulletPlayer !== null) bulletPlayer.AddHp(bullet.damage);
+                    bullet.damage = 0;
+                    break;
                 }
             }
+
+            if(bullet.damage > 0){
+                for(let bullet2 of Bullet.BulletList){
+                    if(bullet !== bullet2 && bullet2.damage > 0){
+                        bbCombined = BoundingBox.Add(bullet.GetBoundingBox(), bbOld);
+                        bbTrans = bbCombined.GetTransform();
+                        if(bbTrans.CheckCollision(bullet2)===true){
+                            let damage1 = bullet.damage;
+                            let damage2 = bullet2.damage;
+                            if(bullet.id !== bullet2.id){
+                                let bullet2Player = bullet2.GetPlayer();
+                            
+                                if(damage1 >= damage2){
+                                    if(bullet2Player != null) bullet2Player.AddHp(damage2);
+                                    bullet2.SetDamage(0);
+                                }
+                                else{
+                                    if(bullet2Player != null) bullet2Player.AddHp(damage1);
+                                    bullet2.SetDamage(damage2-damage1);
+                                }
+    
+                                if(damage2 >= damage1){
+                                    if(bulletPlayer != null) bulletPlayer.AddHp(damage1);
+                                    bullet.SetDamage(0);
+                                    break;
+                                }
+                                else{
+                                    if(bulletPlayer != null) bulletPlayer.AddHp(damage2);
+                                    bullet.SetDamage(damage1-damage2);
+                                }
+                            }
+                            else{
+                                if(damage1 >= damage2){
+                                    bullet.SetDamage(damage1 + damage2);
+                                    bullet2.SetDamage(0);
+                                }
+                                else{
+                                    bullet.SetDamage(0);
+                                    bullet2.SetDamage(damage1 + damage2);
+                                }
+                            }
+                        }
+
+                    }
+                }
+            }
+
             if(bullet.timer >= 0){
                 bullet.timer -= dt;
-                if(bullet.timer <= 0) deleteBullet = true;
-            }
-            if(deleteBullet){
-                deletedBullets.push(bullet);
-                if(bulletPlayer != null) bullet.player.AddHp(bullet.damage);
-            }             
+                if(bullet.timer <= 0) bullet.damage = 0;
+            }          
         } 
-        for(let bullet of deletedBullets){
-            bullet.RemoveBullet();
-            Bullet.DeleteBullet(bullet)
+
+        for(let bullet of Bullet.BulletList){
+            if(bullet.damage <= 0){
+                bullet.RemoveBullet();
+                Bullet.DeleteBullet(bullet)
+            }
         }
     }
 

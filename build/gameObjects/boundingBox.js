@@ -52,6 +52,14 @@ var BoundingBox = /** @class */ (function () {
         bb.botRight.add(vector_1.Vector.ScaleBy(trans.GetSize(), 0.5));
         return bb;
     };
+    BoundingBox.MakeFromVectorAndSize = function (vec, size) {
+        var bb = new BoundingBox();
+        bb.topLeft = vector_1.Vector.Copy(vec);
+        bb.botRight = vector_1.Vector.Copy(vec);
+        bb.topLeft.sub(vector_1.Vector.ScaleBy(size, 0.5));
+        bb.botRight.add(vector_1.Vector.ScaleBy(size, 0.5));
+        return bb;
+    };
     return BoundingBox;
 }());
 exports.BoundingBox = BoundingBox;

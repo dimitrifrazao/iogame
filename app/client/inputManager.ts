@@ -27,6 +27,7 @@ enum KeyCode{
     Up=38,
     Down=40,
     Space=32,
+    Shift=16,
     N1 = 49,
     N2 = 50,
     N3 = 51,
@@ -41,6 +42,8 @@ class InputManager{
     static d:boolean = false;
 
     static space:boolean = false;
+
+    static weaponCounter = 0;
 
     static socket:any;
 
@@ -132,6 +135,16 @@ class InputManager{
             case KeyCode.N4:
                 InputManager.socket.emit('weaponChange', {type:WeaponType.knife});
                 break;
+
+            case KeyCode.Space:
+                InputManager.socket.emit('dash', {dash:true});
+                break;
+
+            case KeyCode.Shift:
+                InputManager.weaponCounter++
+                if(InputManager.weaponCounter>3)InputManager.weaponCounter=0;
+                InputManager.socket.emit('weaponChange', {type:InputManager.weaponCounter});
+                break;
        
         }
     }
@@ -154,6 +167,10 @@ class InputManager{
             case KeyCode.D:
                 InputManager.d = false;
                 InputManager.EmitPlayerDir();
+                break;
+
+            case KeyCode.Space:
+                InputManager.socket.emit('dash', {dash:false});
                 break;
 
         }

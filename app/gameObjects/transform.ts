@@ -11,6 +11,7 @@ export enum UnitType{
     None=0,
     Player=1,
     Bullet=2,
+    UI=3
 }
 
 export class DataPack{
@@ -44,7 +45,9 @@ export class Transform extends GameObject{
     protected type:UnitType = UnitType.None;
     protected pos:Vector = new Vector();
     protected size:Vector = new Vector(1,1);
-    protected color:Color = Color.Grey;
+    protected color:Color = Color.DarkGrey;
+    protected previousPos:Vector = new Vector();
+
 
     constructor(){super();}
 
@@ -53,12 +56,22 @@ export class Transform extends GameObject{
 
     SetPos(pos:Vector){this.pos = pos;};
     GetPos(){return this.pos;};
+    AddPos(pos:Vector){this.pos.add(pos);};
+
+    SetPreviousPos(pos:Vector){
+        this.previousPos.x = pos.x;
+        this.previousPos.y = pos.y;
+    };
+    AddPreviousPos(pos:Vector){this.previousPos.add(pos);};
+    GetPreviousPos(){return this.previousPos;};
+
     SetSize(size:Vector){this.size = size;};
     GetSize(){return this.size;};
     SetColor(color:Color){this.color=color;};
     GetColor(){return this.color;};
 
     GetBoundingBox(){return BoundingBox.MakeFrom(this);};
+    GetOldBoundingBox(){ return BoundingBox.MakeFromVectorAndSize(this.GetPreviousPos(), this.GetSize());};
 
     GetDataPack():DataPack{
         let dPack = new DataPack();
@@ -71,18 +84,12 @@ export class Transform extends GameObject{
         return dPack;
     }
     CheckCollision(trans:Transform):boolean{
-        return (Math.abs(this.pos.x - trans.pos.x ) < (this.size.x + trans.size.y)/2 ) && 
+        return (Math.abs(this.pos.x - trans.pos.x ) < (this.size.x + trans.size.x)/2 ) && 
         (Math.abs(this.pos.y - trans.pos.y ) < (this.size.y + trans.size.y)/2 );
     };
 
     GetOverlap(trans:Transform):Transform{
-        /*let overLapPos = Vector.GetInbetween(this.pos, trans.pos);
-        let overlapSize = new Vector();
-        overlapSize.x = Math.min( Math.abs(this.GetBotRightPos().x - trans.GetTopLeftPos().x), Math.abs(this.GetTopLeftPos().x - trans.GetBotRightPos().x));
-        overlapSize.y = Math.min( Math.abs(this.GetBotRightPos().y - trans.GetTopLeftPos().y), Math.abs(this.GetTopLeftPos().y - trans.GetBotRightPos().y));
-        let overlap = new Transform();
-        overlap.SetPos(overLapPos);
-        overlap.SetSize(overlapSize);*/
+        
         let bb1 = this.GetBoundingBox();
         let bb2 = trans.GetBoundingBox();
         let bb3 = BoundingBox.Sub(bb1, bb2);
@@ -111,12 +118,8 @@ export class Transform extends GameObject{
         return this.size.x * this.size.y;
     }
 
-    CheckWorldWrap(){
-        World.inst.WorldWrap(this.pos)
-        /*if(this.pos.x > World.inst.GetHorizontalSize()) this.pos.x = 0;
-        else if(this.pos.x < 0) this.pos.x = World.inst.GetHorizontalSize();
-        if(this.pos.y > World.inst.GetVerticalSize()) this.pos.y = 0;
-        if(this.pos.y < 0) this.pos.y = World.inst.GetVerticalSize();*/
+    CheckWorldWrap():void{
+        World.inst.WorldWrapTransform(this);
     }
 
     static GetMirrorDir(dir:DirEnum){

@@ -13,19 +13,19 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Player = exports.WeaponType = exports.PlayerplayerState = void 0;
+exports.Player = exports.WeaponType = exports.PlayerState = void 0;
 var transform_1 = require("./transform");
 var vector_1 = require("./vector");
 var color_1 = require("./color");
 var imove_1 = require("./interfaces/imove");
 var world_1 = require("../main/world");
 var boundingBox_1 = require("./boundingBox");
-var PlayerplayerState;
-(function (PlayerplayerState) {
-    PlayerplayerState[PlayerplayerState["Alive"] = 0] = "Alive";
-    PlayerplayerState[PlayerplayerState["Stunned"] = 1] = "Stunned";
-    PlayerplayerState[PlayerplayerState["Dead"] = 2] = "Dead";
-})(PlayerplayerState = exports.PlayerplayerState || (exports.PlayerplayerState = {}));
+var PlayerState;
+(function (PlayerState) {
+    PlayerState[PlayerState["Alive"] = 0] = "Alive";
+    PlayerState[PlayerState["Stunned"] = 1] = "Stunned";
+    PlayerState[PlayerState["Dead"] = 2] = "Dead";
+})(PlayerState = exports.PlayerState || (exports.PlayerState = {}));
 var WeaponType;
 (function (WeaponType) {
     WeaponType[WeaponType["default"] = 0] = "default";
@@ -40,13 +40,15 @@ var Player = /** @class */ (function (_super) {
         _this.hpMax = 11;
         _this.level = 1;
         _this.hp = _this.hpMax;
-        _this.playerState = PlayerplayerState.Alive;
+        _this.playerState = PlayerState.Alive;
         _this.weaponType = WeaponType.default;
+        _this.dashing = false;
+        _this.dashBuffer = 0;
+        _this.dashBufferMax = 100;
         // from IMove
         _this.dir = imove_1.DirEnum.None;
         _this.speed = 1;
         _this.push = new vector_1.Vector();
-        _this.previousPos = new vector_1.Vector();
         // from IBulletManager
         _this.bullets = [];
         _this.size.x = 30;
@@ -60,8 +62,6 @@ var Player = /** @class */ (function (_super) {
     }
     Player.prototype.Push = function (obj) { };
     ;
-    Player.prototype.GetPreviousPos = function () { return this.previousPos; };
-    ;
     Player.prototype.GetMoveVector = function () { return vector_1.Vector.Sub(this.pos, this.previousPos); };
     ;
     Player.prototype.SetWeaponType = function (weaponType) { this.weaponType = weaponType; };
@@ -71,9 +71,9 @@ var Player = /** @class */ (function (_super) {
     Player.prototype.GetWeaponData = function () {
         switch (this.weaponType) {
             case WeaponType.default: return { damage: 1, speed: 2, size: 10, timer: -1 };
-            case WeaponType.shotgun: return { damage: 3, speed: 1, size: 20, timer: -1 };
-            case WeaponType.drop: return { damage: 5, speed: 0, size: 5, timer: -1 };
-            case WeaponType.knife: return { damage: 10, speed: 1, size: 10, timer: 10 };
+            case WeaponType.shotgun: return { damage: 3, speed: 1.7, size: 15, timer: -1 };
+            case WeaponType.drop: return { damage: 5, speed: 1.4, size: 20, timer: -1 };
+            case WeaponType.knife: return { damage: 7, speed: 1.1, size: 25, timer: -1 };
         }
     };
     Player.prototype.AddBullet = function (bullet) {
@@ -103,7 +103,7 @@ var Player = /** @class */ (function (_super) {
         this.size.y += 5;
     };
     Player.prototype.AddHp = function (hp) {
-        if (this.playerState != PlayerplayerState.Dead) {
+        if (this.playerState != PlayerState.Dead) {
             this.hp += hp;
             if (this.hp > this.hpMax) {
                 this.hp = this.hpMax;
@@ -114,19 +114,29 @@ var Player = /** @class */ (function (_super) {
     Player.prototype.GetId = function () { return this.id; };
     ;
     Player.prototype.TakeDamage = function (damage) {
-        if (this.playerState == PlayerplayerState.Alive) {
+        if (this.playerState == PlayerState.Alive) {
             this.hp -= damage;
             if (this.hp <= 0) {
-                this.playerState = PlayerplayerState.Dead;
+                this.playerState = PlayerState.Dead;
                 this.RemovePlayer();
             }
         }
     };
-    Player.prototype.IsAlive = function () { return this.playerState !== PlayerplayerState.Dead; };
+    Player.prototype.IsAlive = function () { return this.playerState !== PlayerState.Dead; };
     ;
     Player.prototype.GetTransform = function () { return this; };
     ;
     // player default 
+    Player.prototype.SetPlayerState = function (state) { this.playerState = state; };
+    ;
+    Player.prototype.SetDash = function (state) {
+        if (state && this.dashBuffer >= this.dashBufferMax)
+            this.dashing = true;
+        else if (state == false)
+            this.dashing = false;
+    };
+    Player.prototype.IsDashing = function () { return this.dashing; };
+    ;
     Player.prototype.GetDataPack = function () {
         var dPack = _super.prototype.GetDataPack.call(this);
         dPack.name = this.name;
@@ -136,34 +146,49 @@ var Player = /** @class */ (function (_super) {
         this.dir = dir;
     };
     Player.prototype.UpdatePosition = function (dt) {
-        if (this.playerState != PlayerplayerState.Alive)
+        if (this.playerState != PlayerState.Alive)
             return;
-        this.previousPos.x = this.pos.x;
-        this.previousPos.y = this.pos.y;
+        this.SetPreviousPos(this.GetPos());
+        var speed = this.speed;
+        if (this.dashing) {
+            speed = 2;
+            this.dashBuffer -= dt * 0.5;
+            if (this.dashBuffer < 0) {
+                this.dashBuffer = 0;
+                this.dashing = false;
+                speed = this.speed;
+            }
+        }
+        else {
+            this.dashBuffer += dt * 0.05;
+            if (this.dashBuffer >= this.dashBufferMax) {
+                this.dashBuffer = this.dashBufferMax;
+            }
+        }
         switch (this.dir) {
             case (imove_1.DirEnum.UpLeft):
-                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.UpLeft, this.speed * dt));
+                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.UpLeft, speed * dt));
                 break;
             case (imove_1.DirEnum.UpRight):
-                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.UpRight, this.speed * dt));
+                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.UpRight, speed * dt));
                 break;
             case imove_1.DirEnum.Up:
-                this.pos.y -= this.speed * dt;
+                this.pos.y -= speed * dt;
                 break;
             case (imove_1.DirEnum.DownLeft):
-                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.DownLeft, this.speed * dt));
+                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.DownLeft, speed * dt));
                 break;
             case (imove_1.DirEnum.DownRight):
-                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.DownRight, this.speed * dt));
+                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.DownRight, speed * dt));
                 break;
             case imove_1.DirEnum.Down:
-                this.pos.y += this.speed * dt;
+                this.pos.y += speed * dt;
                 break;
             case imove_1.DirEnum.Left:
-                this.pos.x -= this.speed * dt;
+                this.pos.x -= speed * dt;
                 break;
             case imove_1.DirEnum.Right:
-                this.pos.x += this.speed * dt;
+                this.pos.x += speed * dt;
                 break;
         }
         /*if(this.push.len() > 0.001){
@@ -201,10 +226,11 @@ var Player = /** @class */ (function (_super) {
             //console.log(cells.length);
             for (var _i = 0, cells_1 = cells; _i < cells_1.length; _i++) {
                 var cell = cells_1[_i];
-                //pack.push(cell.GetDataPack());
-                if (cell !== undefined && cell.IsRock() && player.CheckCollision(cell) == true) {
+                //let cpack = cell.GetDataPack();
+                //cpack.SetColor(Color.Cyan);
+                //pack.push(cpack);
+                if (cell.IsRock() && player.CheckCollision(cell) == true) {
                     var overlapBB = boundingBox_1.BoundingBox.Sub(player.GetBoundingBox(), cell.GetBoundingBox());
-                    var overlap = overlapBB.GetTransform();
                     if (overlapBB.GetSizeX() < overlapBB.GetSizeY()) {
                         if (player.pos.x > cell.GetPos().x)
                             player.pos.x += overlapBB.GetSizeX();
@@ -217,8 +243,9 @@ var Player = /** @class */ (function (_super) {
                         else
                             player.pos.y -= overlapBB.GetSizeY();
                     }
-                    var oPack = overlap.GetDataPack();
-                    oPack.SetColor(color_1.Color.Magenta);
+                    //let overlap = overlapBB.GetTransform();
+                    //let oPack = overlap.GetDataPack();
+                    //oPack.SetColor(Color.Magenta);
                     //pack.push(oPack);
                 }
             }
@@ -243,6 +270,29 @@ var Player = /** @class */ (function (_super) {
             playerPack.sy = player.size.y * (player.hp / player.hpMax);
             playerPack.y += player.size.y - playerPack.sy;
             pack.push(playerPack);
+            var bulletCounter = new transform_1.Transform();
+            bulletCounter.SetPos(new vector_1.Vector(20 + (50 * (player.dashBuffer / player.dashBufferMax)), 20));
+            bulletCounter.SetColor(color_1.Color.DarkGrey);
+            if (player.dashBuffer >= player.dashBufferMax)
+                bulletCounter.SetColor(color_1.Color.Grey);
+            bulletCounter.SetSize(new vector_1.Vector(100 * (player.dashBuffer / player.dashBufferMax), 20));
+            var bulletCounterPack = bulletCounter.GetDataPack();
+            bulletCounterPack.id = player.id;
+            bulletCounterPack.type = 3;
+            pack.push(bulletCounterPack);
+            var square = new transform_1.Transform();
+            square.SetSize(new vector_1.Vector(20, 20));
+            bulletCounter.SetColor(color_1.Color.DarkGrey);
+            for (var si = 0; si < 4; si++) {
+                square.SetPos(new vector_1.Vector(150 + (si * 40), 20));
+                var sPack = square.GetDataPack();
+                sPack.id = player.id;
+                sPack.type = 3;
+                sPack.SetColor(color_1.Color.DarkGrey);
+                if (si == player.weaponType)
+                    sPack.SetColor(color_1.Color.Grey);
+                pack.push(sPack);
+            }
         }
         for (var _a = 0, deadPlayers_1 = deadPlayers; _a < deadPlayers_1.length; _a++) {
             var deadPlayer = deadPlayers_1[_a];

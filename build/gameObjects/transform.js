@@ -25,6 +25,7 @@ var UnitType;
     UnitType[UnitType["None"] = 0] = "None";
     UnitType[UnitType["Player"] = 1] = "Player";
     UnitType[UnitType["Bullet"] = 2] = "Bullet";
+    UnitType[UnitType["UI"] = 3] = "UI";
 })(UnitType = exports.UnitType || (exports.UnitType = {}));
 var DataPack = /** @class */ (function () {
     function DataPack() {
@@ -61,7 +62,8 @@ var Transform = /** @class */ (function (_super) {
         _this.type = UnitType.None;
         _this.pos = new vector_1.Vector();
         _this.size = new vector_1.Vector(1, 1);
-        _this.color = color_1.Color.Grey;
+        _this.color = color_1.Color.DarkGrey;
+        _this.previousPos = new vector_1.Vector();
         return _this;
     }
     Transform.prototype.GetId = function () { return this.id; };
@@ -73,6 +75,17 @@ var Transform = /** @class */ (function (_super) {
     ;
     Transform.prototype.GetPos = function () { return this.pos; };
     ;
+    Transform.prototype.AddPos = function (pos) { this.pos.add(pos); };
+    ;
+    Transform.prototype.SetPreviousPos = function (pos) {
+        this.previousPos.x = pos.x;
+        this.previousPos.y = pos.y;
+    };
+    ;
+    Transform.prototype.AddPreviousPos = function (pos) { this.previousPos.add(pos); };
+    ;
+    Transform.prototype.GetPreviousPos = function () { return this.previousPos; };
+    ;
     Transform.prototype.SetSize = function (size) { this.size = size; };
     ;
     Transform.prototype.GetSize = function () { return this.size; };
@@ -82,6 +95,8 @@ var Transform = /** @class */ (function (_super) {
     Transform.prototype.GetColor = function () { return this.color; };
     ;
     Transform.prototype.GetBoundingBox = function () { return boundingBox_1.BoundingBox.MakeFrom(this); };
+    ;
+    Transform.prototype.GetOldBoundingBox = function () { return boundingBox_1.BoundingBox.MakeFromVectorAndSize(this.GetPreviousPos(), this.GetSize()); };
     ;
     Transform.prototype.GetDataPack = function () {
         var dPack = new DataPack();
@@ -94,18 +109,11 @@ var Transform = /** @class */ (function (_super) {
         return dPack;
     };
     Transform.prototype.CheckCollision = function (trans) {
-        return (Math.abs(this.pos.x - trans.pos.x) < (this.size.x + trans.size.y) / 2) &&
+        return (Math.abs(this.pos.x - trans.pos.x) < (this.size.x + trans.size.x) / 2) &&
             (Math.abs(this.pos.y - trans.pos.y) < (this.size.y + trans.size.y) / 2);
     };
     ;
     Transform.prototype.GetOverlap = function (trans) {
-        /*let overLapPos = Vector.GetInbetween(this.pos, trans.pos);
-        let overlapSize = new Vector();
-        overlapSize.x = Math.min( Math.abs(this.GetBotRightPos().x - trans.GetTopLeftPos().x), Math.abs(this.GetTopLeftPos().x - trans.GetBotRightPos().x));
-        overlapSize.y = Math.min( Math.abs(this.GetBotRightPos().y - trans.GetTopLeftPos().y), Math.abs(this.GetTopLeftPos().y - trans.GetBotRightPos().y));
-        let overlap = new Transform();
-        overlap.SetPos(overLapPos);
-        overlap.SetSize(overlapSize);*/
         var bb1 = this.GetBoundingBox();
         var bb2 = trans.GetBoundingBox();
         var bb3 = boundingBox_1.BoundingBox.Sub(bb1, bb2);
@@ -130,11 +138,7 @@ var Transform = /** @class */ (function (_super) {
         return this.size.x * this.size.y;
     };
     Transform.prototype.CheckWorldWrap = function () {
-        world_1.World.inst.WorldWrap(this.pos);
-        /*if(this.pos.x > World.inst.GetHorizontalSize()) this.pos.x = 0;
-        else if(this.pos.x < 0) this.pos.x = World.inst.GetHorizontalSize();
-        if(this.pos.y > World.inst.GetVerticalSize()) this.pos.y = 0;
-        if(this.pos.y < 0) this.pos.y = World.inst.GetVerticalSize();*/
+        world_1.World.inst.WorldWrapTransform(this);
     };
     Transform.GetMirrorDir = function (dir) {
         switch (dir) {

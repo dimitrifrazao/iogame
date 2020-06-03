@@ -50,6 +50,10 @@ io.sockets.on('connection', function (socket) {
         //console.log("shoot");
         main_1.Main.inst.Shoot(socket.id, data.dir);
     });
+    socket.on('dash', function (data) {
+        //console.log("shoot");
+        main_1.Main.inst.Dash(socket.id, data.dash);
+    });
     socket.on('weaponChange', function (data) {
         main_1.Main.inst.ChangeWeapon(socket.id, data.type);
     });

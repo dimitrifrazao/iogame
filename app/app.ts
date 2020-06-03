@@ -62,6 +62,11 @@ io.sockets.on('connection', function(socket:any){
         Main.inst.Shoot(socket.id, data.dir);
     });
 
+    socket.on('dash', function(data:any){
+        //console.log("shoot");
+        Main.inst.Dash(socket.id, data.dash);
+    });
+
     socket.on('weaponChange', function(data:any){
         Main.inst.ChangeWeapon(socket.id, data.type);
     });

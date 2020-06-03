@@ -29,6 +29,7 @@ var KeyCode;
     KeyCode[KeyCode["Up"] = 38] = "Up";
     KeyCode[KeyCode["Down"] = 40] = "Down";
     KeyCode[KeyCode["Space"] = 32] = "Space";
+    KeyCode[KeyCode["Shift"] = 16] = "Shift";
     KeyCode[KeyCode["N1"] = 49] = "N1";
     KeyCode[KeyCode["N2"] = 50] = "N2";
     KeyCode[KeyCode["N3"] = 51] = "N3";
@@ -118,6 +119,15 @@ var InputManager = /** @class */ (function () {
             case KeyCode.N4:
                 InputManager.socket.emit('weaponChange', { type: WeaponType.knife });
                 break;
+            case KeyCode.Space:
+                InputManager.socket.emit('dash', { dash: true });
+                break;
+            case KeyCode.Shift:
+                InputManager.weaponCounter++;
+                if (InputManager.weaponCounter > 3)
+                    InputManager.weaponCounter = 0;
+                InputManager.socket.emit('weaponChange', { type: InputManager.weaponCounter });
+                break;
         }
     };
     InputManager.OnKeyUp = function (keyCode) {
@@ -138,6 +148,9 @@ var InputManager = /** @class */ (function () {
                 InputManager.d = false;
                 InputManager.EmitPlayerDir();
                 break;
+            case KeyCode.Space:
+                InputManager.socket.emit('dash', { dash: false });
+                break;
         }
     };
     InputManager.OnKeyPress = function (keyCode) {
@@ -147,5 +160,6 @@ var InputManager = /** @class */ (function () {
     InputManager.s = false;
     InputManager.d = false;
     InputManager.space = false;
+    InputManager.weaponCounter = 0;
     return InputManager;
 }());

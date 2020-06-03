@@ -6,7 +6,7 @@ import { IBulletManager, IBulletObserver, IPlayer } from "./interfaces/ishoot"
 import { World } from "../main/world";
 import { BoundingBox } from "./boundingBox"
 
-export enum PlayerplayerState{
+export enum PlayerState{
     Alive=0,
     Stunned=1,
     Dead=2
@@ -25,9 +25,12 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
     public hpMax:number = 11;
     public level:number = 1;
     public hp:number = this.hpMax;
-    public playerState:PlayerplayerState = PlayerplayerState.Alive;
+    public playerState:PlayerState = PlayerState.Alive;
     public deadCallback:any;
     private weaponType: WeaponType = WeaponType.default;
+    private dashing = false;
+    private dashBuffer = 0;
+    private dashBufferMax = 100;
 
     constructor(id:number, name:string, deadCallback:any){
         super();
@@ -44,9 +47,7 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
     dir:DirEnum = DirEnum.None;
     speed:number = 1;
     push:Vector = new Vector();
-    previousPos:Vector = new Vector();
     Push(obj:IMove){};
-    GetPreviousPos(){return this.previousPos;};
     GetMoveVector(){return Vector.Sub(this.pos, this.previousPos);};
 
     SetWeaponType(weaponType:WeaponType){this.weaponType=weaponType;};
@@ -54,9 +55,9 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
     GetWeaponData():any{
         switch(this.weaponType){
             case WeaponType.default: return {damage:1, speed:2, size:10, timer:-1};
-            case WeaponType.shotgun: return {damage:3, speed:1, size:20, timer:-1};
-            case WeaponType.drop: return {damage:5, speed:0, size:5, timer:-1};
-            case WeaponType.knife: return {damage:10, speed:1, size:10, timer:10};
+            case WeaponType.shotgun: return {damage:3, speed:1.7, size:15, timer:-1};
+            case WeaponType.drop: return {damage:5, speed:1.4, size:20, timer:-1};
+            case WeaponType.knife: return {damage:7, speed:1.1, size:25, timer:-1};
         }
     }
 
@@ -91,7 +92,7 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
     }
 
     AddHp(hp:number){
-        if(this.playerState != PlayerplayerState.Dead){
+        if(this.playerState != PlayerState.Dead){
             this.hp += hp;
             if(this.hp > this.hpMax){
                 this.hp = this.hpMax;
@@ -99,28 +100,32 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
         }
         
     }
-
-    
-
     // from IPlayer
     GetId():number{return this.id};
 
     TakeDamage(damage:number):void{
-        if(this.playerState == PlayerplayerState.Alive){
+        if(this.playerState == PlayerState.Alive){
             this.hp -= damage;
             if(this.hp <= 0 ){
-                this.playerState = PlayerplayerState.Dead;
+                this.playerState = PlayerState.Dead;
                 this.RemovePlayer();
             }
         }
     }
 
-    IsAlive(){return this.playerState !== PlayerplayerState.Dead};
+    IsAlive(){return this.playerState !== PlayerState.Dead};
 
     GetTransform():Transform{return this;};
 
     // player default 
     
+    SetPlayerState(state:PlayerState){this.playerState=state;};
+
+    SetDash(state:boolean){
+        if(state && this.dashBuffer >= this.dashBufferMax) this.dashing = true;
+        else if(state==false) this.dashing = false;
+    }
+    IsDashing(){return this.dashing;};
 
     GetDataPack(){
         let dPack = super.GetDataPack();
@@ -133,34 +138,52 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
     }
 
     UpdatePosition(dt:number){
-        if(this.playerState != PlayerplayerState.Alive) return;
+        if(this.playerState != PlayerState.Alive) return;
 
-        this.previousPos.x = this.pos.x;
-        this.previousPos.y = this.pos.y;
+        this.SetPreviousPos(this.GetPos());
+
+        let speed = this.speed;
+        if(this.dashing){
+            speed = 2;
+            this.dashBuffer -= dt * 0.5;
+            if(this.dashBuffer < 0){
+                this.dashBuffer = 0;
+                this.dashing = false;
+                speed = this.speed;
+            }
+            
+        }
+        else{
+            this.dashBuffer += dt * 0.05;
+            if(this.dashBuffer >= this.dashBufferMax){
+                this.dashBuffer = this.dashBufferMax;
+            }
+        }
+
         switch(this.dir){
             case(DirEnum.UpLeft):
-                this.pos.add( Vector.ScaleBy(Vector.UpLeft, this.speed * dt) );
+                this.pos.add( Vector.ScaleBy(Vector.UpLeft, speed* dt) );
                 break;
             case(DirEnum.UpRight):
-                this.pos.add( Vector.ScaleBy(Vector.UpRight, this.speed * dt) );
+                this.pos.add( Vector.ScaleBy(Vector.UpRight, speed* dt) );
                 break;
             case DirEnum.Up:
-                this.pos.y -= this.speed * dt;
+                this.pos.y -= speed* dt;
                 break;
             case(DirEnum.DownLeft):
-                this.pos.add( Vector.ScaleBy(Vector.DownLeft, this.speed * dt) );
+                this.pos.add( Vector.ScaleBy(Vector.DownLeft, speed* dt) );
                 break;
             case(DirEnum.DownRight):
-                this.pos.add( Vector.ScaleBy(Vector.DownRight, this.speed * dt) );
+                this.pos.add( Vector.ScaleBy(Vector.DownRight, speed* dt) );
                 break;
             case DirEnum.Down:
-                this.pos.y += this.speed * dt;
+                this.pos.y += speed* dt;
                 break;
             case DirEnum.Left:
-                this.pos.x -= this.speed * dt;
+                this.pos.x -= speed* dt;
                 break;
             case DirEnum.Right:
-                this.pos.x += this.speed * dt;
+                this.pos.x += speed* dt;
                 break;
         }
         /*if(this.push.len() > 0.001){
@@ -204,10 +227,12 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
             let cells = World.inst.GetPossibleCollisions(player.pos);
             //console.log(cells.length);
             for(let cell of cells){
-                //pack.push(cell.GetDataPack());
-                if(cell !== undefined &&  cell.IsRock() && player.CheckCollision(cell)==true){
+                //let cpack = cell.GetDataPack();
+                //cpack.SetColor(Color.Cyan);
+                //pack.push(cpack);
+                if(cell.IsRock() && player.CheckCollision(cell)==true){
                     let overlapBB = BoundingBox.Sub(player.GetBoundingBox(), cell.GetBoundingBox())
-                    let overlap = overlapBB.GetTransform();
+                    
        
                     if(overlapBB.GetSizeX() < overlapBB.GetSizeY()){
                         if(player.pos.x > cell.GetPos().x) player.pos.x += overlapBB.GetSizeX()
@@ -218,8 +243,9 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
                         else player.pos.y -= overlapBB.GetSizeY()
                     }
                     
-                    let oPack = overlap.GetDataPack();
-                    oPack.SetColor(Color.Magenta);
+                    //let overlap = overlapBB.GetTransform();
+                    //let oPack = overlap.GetDataPack();
+                    //oPack.SetColor(Color.Magenta);
                     //pack.push(oPack);
                 }
             }
@@ -248,6 +274,29 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
             playerPack.sy = player.size.y * (player.hp/player.hpMax);
             playerPack.y += player.size.y - playerPack.sy;
             pack.push(playerPack);
+
+            let bulletCounter = new Transform();
+            bulletCounter.SetPos(new Vector(20 + (50* (player.dashBuffer/player.dashBufferMax)),20));
+            bulletCounter.SetColor(Color.DarkGrey);
+            if(player.dashBuffer>=player.dashBufferMax) bulletCounter.SetColor(Color.Grey);
+            bulletCounter.SetSize(new Vector(100 * (player.dashBuffer/player.dashBufferMax), 20));
+            let bulletCounterPack = bulletCounter.GetDataPack();
+            bulletCounterPack.id = player.id;
+            bulletCounterPack.type = 3;
+            pack.push(bulletCounterPack);
+
+            let square = new Transform()
+            square.SetSize(new Vector(20,20));
+            bulletCounter.SetColor(Color.DarkGrey);
+            for(let si=0; si<4; si++){
+                square.SetPos(new Vector(150 + (si*40), 20));
+                let sPack = square.GetDataPack();
+                sPack.id = player.id;
+                sPack.type = 3;
+                sPack.SetColor(Color.DarkGrey);
+                if(si == player.weaponType) sPack.SetColor(Color.Grey);
+                pack.push(sPack);
+            }
         }
 
         for(let deadPlayer of deadPlayers){

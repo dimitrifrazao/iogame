@@ -10,6 +10,16 @@ var World = /** @class */ (function () {
         this.unitSize = unitSize;
         this.rocks = [];
         this.cells = [];
+        this.surroundingIndexes = [];
+        this.surroundingIndexes.push(0);
+        this.surroundingIndexes.push(1);
+        this.surroundingIndexes.push(-1);
+        this.surroundingIndexes.push(this.hUnits);
+        this.surroundingIndexes.push(1 + this.hUnits);
+        this.surroundingIndexes.push(-1 + this.hUnits);
+        this.surroundingIndexes.push(-this.hUnits);
+        this.surroundingIndexes.push(1 - this.hUnits);
+        this.surroundingIndexes.push(-1 - this.hUnits);
     }
     World.prototype.GetHorizontalUnits = function () { return this.hUnits; };
     ;
@@ -41,6 +51,25 @@ var World = /** @class */ (function () {
         else if (pos.y < 0)
             pos.y = this.GetVerticalSize();
     };
+    World.prototype.WorldWrapVector = function (pos) {
+        var vec = new vector_1.Vector();
+        if (pos.x > this.GetHorizontalSize())
+            vec.x = -this.GetHorizontalSize();
+        else if (pos.x < 0)
+            vec.x = this.GetHorizontalSize();
+        if (pos.y > this.GetVerticalSize())
+            vec.y = -this.GetVerticalSize();
+        else if (pos.y < 0)
+            vec.y = this.GetVerticalSize();
+        return vec;
+    };
+    World.prototype.WorldWrapTransform = function (trans) {
+        var wrapVec = this.WorldWrapVector(trans.GetPos());
+        if (wrapVec.len() > 1) {
+            trans.AddPos(wrapVec);
+            trans.AddPreviousPos(wrapVec);
+        }
+    };
     World.prototype.WrapIndex = function (i) {
         if (i < 0)
             return this.GetCellCount() + i;
@@ -50,15 +79,12 @@ var World = /** @class */ (function () {
     };
     World.prototype.GetSurroundingCells = function (i) {
         var cells = [];
-        cells.push(this.cells[this.WrapIndex(i)]);
-        cells.push(this.cells[this.WrapIndex(i + 1)]);
-        cells.push(this.cells[this.WrapIndex(i - 1)]);
-        cells.push(this.cells[this.WrapIndex(i - this.hUnits)]);
-        cells.push(this.cells[this.WrapIndex(i - this.hUnits + 1)]);
-        cells.push(this.cells[this.WrapIndex(i - this.hUnits - 1)]);
-        cells.push(this.cells[this.WrapIndex(i + this.hUnits)]);
-        cells.push(this.cells[this.WrapIndex(i + this.hUnits + 1)]);
-        cells.push(this.cells[this.WrapIndex(i + this.hUnits - 1)]);
+        for (var _i = 0, _a = this.surroundingIndexes; _i < _a.length; _i++) {
+            var cellIndex = _a[_i];
+            var cell = this.cells[this.WrapIndex(i + cellIndex)];
+            if (cell != undefined)
+                cells.push(cell);
+        }
         return cells;
     };
     World.prototype.GetPossibleCollisions = function (pos) {

@@ -40,6 +40,7 @@ var Renderer = /** @class */ (function () {
         var topLeftX = (canvasWidth / 2) - Renderer.cameraPos.x;
         var topLeftY = (canvasHeight / 2) - Renderer.cameraPos.y;
         ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        ctx.beginPath();
         for (var x = 1; x <= worldHorizontalUnits; x++) {
             var finalX = topLeftX + (x * Renderer.worldUnitSize);
             ctx.moveTo(finalX, topLeftY);
@@ -88,23 +89,28 @@ var Renderer = /** @class */ (function () {
                 rgbText = "rgb(255,0,0)";
             }
             switch (d.type) {
-                case 0:
+                case 0: // world static
                     d.x += Renderer.cameraPos.x;
                     d.y += Renderer.cameraPos.y;
                     break;
-                case 1:
-                    if (d.id == Renderer.id) {
+                case 1: // players
+                    if (d.id == Renderer.id) { // our player
+                        var offset = (d.sx - d.sy) / 2;
                         d.x = (canvasWidth / 2) - (d.sx / 2);
-                        d.y = (canvasHeight / 2) - (d.sy / 2);
+                        d.y = (canvasHeight / 2) - (d.sy / 2) + offset;
                     }
-                    else {
+                    else { // other players
                         d.x += (canvasWidth / 2) - Renderer.cameraPos.x;
                         d.y += (canvasHeight / 2) - Renderer.cameraPos.y;
                     }
                     break;
-                case 2:
+                case 2: // bullets
                     d.x += (canvasWidth / 2) - Renderer.cameraPos.x;
                     d.y += (canvasHeight / 2) - Renderer.cameraPos.y;
+                    break;
+                case 3: //UI
+                    if (d.id != Renderer.id)
+                        rgbText = "rgba(0,0,0,0)";
                     break;
             }
             ctx.fillStyle = rgbText;
@@ -122,7 +128,7 @@ var Renderer = /** @class */ (function () {
             Renderer.RemoveFromWorldData(d);
         }
     };
-    Renderer.gridColor = "rgba(0,0,255,0.2)"; // transparent blue
+    Renderer.gridColor = "rgba(0,0,255,0.1)"; // transparent blue
     Renderer.worldData = [];
     //static inst:Renderer = new Renderer();
     Renderer.id = -1;

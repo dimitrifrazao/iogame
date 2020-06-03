@@ -41,25 +41,30 @@ var Main = /** @class */ (function () {
     Main.prototype.Shoot = function (id, dir) {
         var player = player_1.Player.GetPlayerById(id);
         if (player != null) {
-            var hasHP = player.hp >= (1 + player.GetWeaponData().damage);
+            var damageData = player.GetWeaponData();
+            var hasHP = player.hp >= (1 + damageData.damage);
             var maxOverHP = (player.bullets.length <= (player.hpMax * 2));
-            if (hasHP && maxOverHP) {
+            if (hasHP && maxOverHP && !player.IsDashing()) {
                 var pos = vector_1.Vector.Copy(player.GetPos());
                 var bullet = new bullet_1.Bullet(player);
+                bullet.SetDamage(damageData.damage);
+                bullet.speed = damageData.speed;
+                bullet.timer = damageData.timer;
+                //bullet.SetSize( new Vector(damageData.size, damageData.size) );
+                bullet.SetColor(player.GetColor());
                 pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.GetDirVector(dir), (player.GetSize().x / 2) + (bullet.GetSize().x / 2)));
                 bullet.SetPos(pos);
                 bullet.SetDirection(dir);
-                var damageData = player.GetWeaponData();
-                bullet.damage = damageData.damage;
-                bullet.speed = damageData.speed;
-                bullet.timer = damageData.timer;
-                bullet.SetSize(new vector_1.Vector(damageData.size, damageData.size));
-                bullet.SetColor(player.GetColor());
                 bullet_1.Bullet.AddBullet(bullet);
                 player.AddBullet(bullet);
                 player.TakeDamage(damageData.damage);
             }
         }
+    };
+    Main.prototype.Dash = function (id, dashState) {
+        var player = player_1.Player.GetPlayerById(id);
+        if (player != null)
+            player.SetDash(dashState);
     };
     Main.prototype.ChangeWeapon = function (id, type) {
         var player = player_1.Player.GetPlayerById(id);

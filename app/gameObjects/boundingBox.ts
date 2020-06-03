@@ -48,4 +48,13 @@ export class BoundingBox{
         bb.botRight.add(Vector.ScaleBy(trans.GetSize(), 0.5));
         return bb;
     }
+
+    static MakeFromVectorAndSize(vec:Vector, size:Vector):BoundingBox{
+        let bb = new BoundingBox();
+        bb.topLeft = Vector.Copy(vec);
+        bb.botRight = Vector.Copy(vec);
+        bb.topLeft.sub(Vector.ScaleBy(size, 0.5));
+        bb.botRight.add(Vector.ScaleBy(size, 0.5));
+        return bb;
+    }
 }

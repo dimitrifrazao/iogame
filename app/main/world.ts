@@ -1,12 +1,24 @@
-import {Cell, CellType} from "../gameObjects/transform";
+import {Cell, CellType, Transform} from "../gameObjects/transform";
 import { Vector } from "../gameObjects/vector"
 
 export class World{
     public static inst:World = new World(50, 40, 30);
     private rocks:Cell[] = [];
     private cells:Cell[] = [];
-
+    private surroundingIndexes: number[] = []
     constructor(private hUnits:number, private vUnits:number, private unitSize:number){
+
+        this.surroundingIndexes.push(0);
+        this.surroundingIndexes.push(1);
+        this.surroundingIndexes.push(-1);
+
+        this.surroundingIndexes.push(this.hUnits);
+        this.surroundingIndexes.push(1 + this.hUnits);
+        this.surroundingIndexes.push(-1 + this.hUnits);
+
+        this.surroundingIndexes.push(-this.hUnits);
+        this.surroundingIndexes.push(1 -this.hUnits);
+        this.surroundingIndexes.push(-1 -this.hUnits);
     }
     
     GetHorizontalUnits(){return this.hUnits;};
@@ -23,11 +35,28 @@ export class World{
         return (((Math.floor(wPos.y / this.unitSize)) * this.hUnits) + (Math.floor(wPos.x / this.unitSize)))
     }
 
-    WorldWrap(pos:Vector){
+    WorldWrap(pos:Vector):void{
         if(pos.x > this.GetHorizontalSize()) pos.x = 0;
         else if(pos.x < 0) pos.x = this.GetHorizontalSize();
         if(pos.y > this.GetVerticalSize()) pos.y = 0;
         else if(pos.y < 0) pos.y = this.GetVerticalSize();
+    }
+
+    WorldWrapVector(pos:Vector):Vector{
+        let vec = new Vector();
+        if(pos.x > this.GetHorizontalSize()) vec.x = -this.GetHorizontalSize()
+        else if(pos.x < 0) vec.x = this.GetHorizontalSize();
+        if(pos.y > this.GetVerticalSize()) vec.y = -this.GetVerticalSize();
+        else if(pos.y < 0) vec.y = this.GetVerticalSize();
+        return vec;
+    }
+    
+    WorldWrapTransform(trans:Transform){
+        let wrapVec = this.WorldWrapVector(trans.GetPos())
+        if(wrapVec.len() > 1){
+            trans.AddPos(wrapVec);
+            trans.AddPreviousPos(wrapVec);
+        }
     }
 
     WrapIndex(i:number){
@@ -38,16 +67,10 @@ export class World{
 
     GetSurroundingCells(i:number):Cell[]{
         let cells:Cell[] = []
-        cells.push(this.cells[this.WrapIndex(i)]);
-        cells.push(this.cells[this.WrapIndex(i+1)]);
-        cells.push(this.cells[this.WrapIndex(i-1)]);
-        cells.push(this.cells[this.WrapIndex(i-this.hUnits)]);
-        cells.push(this.cells[this.WrapIndex(i-this.hUnits+1)]);
-        cells.push(this.cells[this.WrapIndex(i-this.hUnits-1)]);
-        cells.push(this.cells[this.WrapIndex(i+this.hUnits)]);
-        cells.push(this.cells[this.WrapIndex(i+this.hUnits+1)]);
-        cells.push(this.cells[this.WrapIndex(i+this.hUnits-1)]);
-        
+        for(let cellIndex of this.surroundingIndexes){
+            let cell = this.cells[this.WrapIndex(i+cellIndex)];
+            if(cell != undefined) cells.push(cell)
+        }
         return cells;
     }
 
