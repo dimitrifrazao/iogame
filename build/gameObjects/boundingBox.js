@@ -24,9 +24,14 @@ var BoundingBox = /** @class */ (function () {
         t.SetSize(new vector_1.Vector(this.GetSizeX(), this.GetSizeY()));
         return t;
     };
-    BoundingBox.prototype.OffsetBy = function (vec) {
-        this.topLeft.sub(vec);
-        this.botRight.sub(vec);
+    BoundingBox.prototype.CheckCollision = function (bb) {
+        return (Math.abs(this.topLeft.x - bb.botRight.x) < (this.GetSizeX() + bb.GetSizeX())) &&
+            (Math.abs(this.topLeft.y - bb.botRight.y) < (this.GetSizeY() + bb.GetSizeY()));
+    };
+    ;
+    BoundingBox.prototype.CheckVectorCollision = function (vec) {
+        return (vec.x > this.topLeft.x) && (vec.x < this.botRight.x) &&
+            (vec.y > this.topLeft.y) && (vec.y < this.botRight.y);
     };
     BoundingBox.Add = function (bb1, bb2) {
         var bb3 = new BoundingBox();

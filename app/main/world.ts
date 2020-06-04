@@ -2,7 +2,7 @@ import {Cell, CellType, Transform} from "../gameObjects/transform";
 import { Vector } from "../gameObjects/vector"
 
 export class World{
-    public static inst:World = new World(50, 40, 30);
+    public static inst:World = new World(60, 40, 30);
     private rocks:Cell[] = [];
     private cells:Cell[] = [];
     private surroundingIndexes: number[] = []

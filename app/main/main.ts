@@ -29,7 +29,7 @@ export class Main{
 
     AddPlayer(id:number, name:string, EmitDeadPlayer:any){
         var player = new Player(id, name, EmitDeadPlayer);
-        player.SetPos( new Vector(Math.random() * 1000, Math.random() * 500) );
+        player.SetPos( new Vector(Math.random() * World.inst.GetHorizontalSize(), Math.random() * World.inst.GetVerticalSize()) );
         Player.AddPlayer(player);
     };
 

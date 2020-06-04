@@ -16,6 +16,10 @@ var Color = /** @class */ (function () {
         return new Color((Math.random() * 100) + 100, (Math.random() * 100) + 100, (Math.random() * 100) + 100);
     };
     ;
+    Color.RandomPlayerColor = function () {
+        var color = new Color(120, 120, 120);
+        return new Color((Math.random() * 100) + 100, (Math.random() * 100) + 100, (Math.random() * 100) + 100);
+    };
     Color.Lerp = function (start, end, t) {
         if (t > 1)
             t = 1;
@@ -32,9 +36,14 @@ var Color = /** @class */ (function () {
     Color.Yellow = new Color(255, 255, 0);
     Color.Cyan = new Color(0, 255, 255);
     Color.Magenta = new Color(255, 0, 255);
-    Color.Grey = new Color(200, 200, 200);
+    Color.LightGrey = new Color(200, 200, 200);
+    Color.Grey = new Color(100, 100, 100);
     Color.DarkGrey = new Color(50, 50, 50);
     Color.Transparent = new Color(0, 0, 0, 0.2);
+    Color.EmptyPlayer = new Color(150, 0, 0);
+    Color.redish = new Color(180, 120, 120);
+    Color.greenish = new Color(120, 180, 120);
+    Color.blueish = new Color(120, 120, 180);
     return Color;
 }());
 exports.Color = Color;

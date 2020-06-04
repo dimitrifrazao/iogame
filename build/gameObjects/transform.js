@@ -73,6 +73,10 @@ var Transform = /** @class */ (function (_super) {
     ;
     Transform.prototype.SetPos = function (pos) { this.pos = pos; };
     ;
+    Transform.prototype.SetPosValues = function (x, y) {
+        this.pos.x = x;
+        this.pos.y = y;
+    };
     Transform.prototype.GetPos = function () { return this.pos; };
     ;
     Transform.prototype.AddPos = function (pos) { this.pos.add(pos); };
@@ -88,6 +92,10 @@ var Transform = /** @class */ (function (_super) {
     ;
     Transform.prototype.SetSize = function (size) { this.size = size; };
     ;
+    Transform.prototype.SetSizeValues = function (x, y) {
+        this.size.x = x;
+        this.size.y = y;
+    };
     Transform.prototype.GetSize = function () { return this.size; };
     ;
     Transform.prototype.SetColor = function (color) { this.color = color; };

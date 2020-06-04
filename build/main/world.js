@@ -124,7 +124,7 @@ var World = /** @class */ (function () {
             size: World.inst.GetUnitSize()
         };
     };
-    World.inst = new World(50, 40, 30);
+    World.inst = new World(60, 40, 30);
     return World;
 }());
 exports.World = World;

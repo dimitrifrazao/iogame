@@ -55,6 +55,10 @@ export class Transform extends GameObject{
     GetUnitType():UnitType{return this.type;};
 
     SetPos(pos:Vector){this.pos = pos;};
+    SetPosValues(x:number, y:number){
+        this.pos.x = x;
+        this.pos.y = y;
+    }
     GetPos(){return this.pos;};
     AddPos(pos:Vector){this.pos.add(pos);};
 
@@ -66,6 +70,10 @@ export class Transform extends GameObject{
     GetPreviousPos(){return this.previousPos;};
 
     SetSize(size:Vector){this.size = size;};
+    SetSizeValues(x:number, y:number){
+        this.size.x = x;
+        this.size.y = y;
+    }
     GetSize(){return this.size;};
     SetColor(color:Color){this.color=color;};
     GetColor(){return this.color;};

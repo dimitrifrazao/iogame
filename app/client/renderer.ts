@@ -114,10 +114,6 @@ class Renderer{
             let d = data[i];
             let rgbText = "rgba(" + d.r+ "," + d.g + "," + d.b + "," + d.a + ")";
 
-            if(d.id == Renderer.id && d.type ==2){ // bullet
-                rgbText = "rgb(255,0,0)";
-            }
-            
             switch(d.type){
                 case 0: // world static
                     d.x += Renderer.cameraPos.x;
@@ -135,9 +131,13 @@ class Renderer{
                         d.y += (canvasHeight/2) - Renderer.cameraPos.y;
                     }
                     break;
+
                 case 2: // bullets
                     d.x += (canvasWidth/2) - Renderer.cameraPos.x;
                     d.y += (canvasHeight/2) - Renderer.cameraPos.y;
+                    if(d.id == Renderer.id){ // player bullet
+                        rgbText = "rgb(250,0,0)";
+                    }
                     break
 
                 case 3: //UI

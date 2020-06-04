@@ -262,7 +262,7 @@ var Player = /** @class */ (function (_super) {
             }
             // back red square
             var playerRedPack = player.GetDataPack();
-            playerRedPack.SetColor(color_1.Color.Red);
+            playerRedPack.SetColor(color_1.Color.EmptyPlayer);
             pack.push(playerRedPack);
             // main player square that shrinks as hp lowers
             var playerPack = player.GetDataPack();
@@ -270,28 +270,41 @@ var Player = /** @class */ (function (_super) {
             playerPack.sy = player.size.y * (player.hp / player.hpMax);
             playerPack.y += player.size.y - playerPack.sy;
             pack.push(playerPack);
-            var bulletCounter = new transform_1.Transform();
-            bulletCounter.SetPos(new vector_1.Vector(20 + (50 * (player.dashBuffer / player.dashBufferMax)), 20));
-            bulletCounter.SetColor(color_1.Color.DarkGrey);
+            var dashUI = new transform_1.Transform();
+            dashUI.SetPosValues(70, 20);
+            dashUI.SetSizeValues(100, 20);
+            dashUI.SetColor(color_1.Color.DarkGrey);
+            var pashPack = dashUI.GetDataPack();
+            pashPack.id = player.id;
+            pashPack.type = 3;
+            pack.push(pashPack);
+            dashUI.SetColor(color_1.Color.Grey);
             if (player.dashBuffer >= player.dashBufferMax)
-                bulletCounter.SetColor(color_1.Color.Grey);
-            bulletCounter.SetSize(new vector_1.Vector(100 * (player.dashBuffer / player.dashBufferMax), 20));
-            var bulletCounterPack = bulletCounter.GetDataPack();
-            bulletCounterPack.id = player.id;
-            bulletCounterPack.type = 3;
-            pack.push(bulletCounterPack);
+                dashUI.SetColor(color_1.Color.LightGrey);
+            dashUI.SetPosValues(25 + (45 * (player.dashBuffer / player.dashBufferMax)), 20);
+            dashUI.SetSizeValues(90 * (player.dashBuffer / player.dashBufferMax), 10);
+            pashPack = dashUI.GetDataPack();
+            pashPack.id = player.id;
+            pashPack.type = 3;
+            pack.push(pashPack);
             var square = new transform_1.Transform();
-            square.SetSize(new vector_1.Vector(20, 20));
-            bulletCounter.SetColor(color_1.Color.DarkGrey);
             for (var si = 0; si < 4; si++) {
-                square.SetPos(new vector_1.Vector(150 + (si * 40), 20));
+                square.SetSizeValues(20, 20);
+                square.SetColor(color_1.Color.DarkGrey);
+                square.SetPosValues(150 + (si * 40), 20);
                 var sPack = square.GetDataPack();
                 sPack.id = player.id;
                 sPack.type = 3;
-                sPack.SetColor(color_1.Color.DarkGrey);
-                if (si == player.weaponType)
-                    sPack.SetColor(color_1.Color.Grey);
                 pack.push(sPack);
+                if (si == player.weaponType) {
+                    square.SetSizeValues(10, 10);
+                    square.SetColor(color_1.Color.DarkGrey);
+                    square.SetColor(color_1.Color.LightGrey);
+                    sPack = square.GetDataPack();
+                    sPack.id = player.id;
+                    sPack.type = 3;
+                    pack.push(sPack);
+                }
             }
         }
         for (var _a = 0, deadPlayers_1 = deadPlayers; _a < deadPlayers_1.length; _a++) {

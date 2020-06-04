@@ -266,7 +266,7 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
 
             // back red square
             let playerRedPack = player.GetDataPack();
-            playerRedPack.SetColor(Color.Red);
+            playerRedPack.SetColor(Color.EmptyPlayer);
             pack.push(playerRedPack);
             // main player square that shrinks as hp lowers
             let playerPack = player.GetDataPack();
@@ -275,27 +275,45 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
             playerPack.y += player.size.y - playerPack.sy;
             pack.push(playerPack);
 
-            let bulletCounter = new Transform();
-            bulletCounter.SetPos(new Vector(20 + (50* (player.dashBuffer/player.dashBufferMax)),20));
-            bulletCounter.SetColor(Color.DarkGrey);
-            if(player.dashBuffer>=player.dashBufferMax) bulletCounter.SetColor(Color.Grey);
-            bulletCounter.SetSize(new Vector(100 * (player.dashBuffer/player.dashBufferMax), 20));
-            let bulletCounterPack = bulletCounter.GetDataPack();
-            bulletCounterPack.id = player.id;
-            bulletCounterPack.type = 3;
-            pack.push(bulletCounterPack);
+            let dashUI = new Transform();
+            dashUI.SetPosValues(70,20);
+            dashUI.SetSizeValues(100, 20);
+            dashUI.SetColor(Color.DarkGrey);
+            let pashPack = dashUI.GetDataPack();
+            pashPack.id = player.id;
+            pashPack.type = 3;
+            pack.push(pashPack);
+
+            dashUI.SetColor(Color.Grey);
+            if(player.dashBuffer>=player.dashBufferMax) dashUI.SetColor(Color.LightGrey);
+            dashUI.SetPosValues(25 + (45* (player.dashBuffer/player.dashBufferMax)),20);
+            dashUI.SetSizeValues(90 * (player.dashBuffer/player.dashBufferMax), 10);
+
+
+            pashPack = dashUI.GetDataPack();
+            pashPack.id = player.id;
+            pashPack.type = 3;
+            pack.push(pashPack);
+            
 
             let square = new Transform()
-            square.SetSize(new Vector(20,20));
-            bulletCounter.SetColor(Color.DarkGrey);
             for(let si=0; si<4; si++){
-                square.SetPos(new Vector(150 + (si*40), 20));
+                square.SetSizeValues(20,20);
+                square.SetColor(Color.DarkGrey);
+                square.SetPosValues(150 + (si*40), 20);
                 let sPack = square.GetDataPack();
                 sPack.id = player.id;
                 sPack.type = 3;
-                sPack.SetColor(Color.DarkGrey);
-                if(si == player.weaponType) sPack.SetColor(Color.Grey);
                 pack.push(sPack);
+                if(si == player.weaponType) {
+                    square.SetSizeValues(10,10);
+                    square.SetColor(Color.DarkGrey);
+                    square.SetColor(Color.LightGrey);
+                    sPack = square.GetDataPack();
+                    sPack.id = player.id;
+                    sPack.type = 3;
+                    pack.push(sPack);
+                }
             }
         }
 

@@ -25,7 +25,7 @@ var Main = /** @class */ (function () {
     ;
     Main.prototype.AddPlayer = function (id, name, EmitDeadPlayer) {
         var player = new player_1.Player(id, name, EmitDeadPlayer);
-        player.SetPos(new vector_1.Vector(Math.random() * 1000, Math.random() * 500));
+        player.SetPos(new vector_1.Vector(Math.random() * world_1.World.inst.GetHorizontalSize(), Math.random() * world_1.World.inst.GetVerticalSize()));
         player_1.Player.AddPlayer(player);
     };
     ;

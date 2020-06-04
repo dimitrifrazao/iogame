@@ -17,9 +17,15 @@ export class BoundingBox{
         t.SetSize(new Vector(this.GetSizeX(), this.GetSizeY()))
         return t;
     }
-    OffsetBy(vec:Vector){
-        this.topLeft.sub(vec);
-        this.botRight.sub(vec);
+
+    CheckCollision(bb:BoundingBox):boolean{
+        return (Math.abs(this.topLeft.x - bb.botRight.x) < (this.GetSizeX() + bb.GetSizeX())) &&
+        (Math.abs(this.topLeft.y - bb.botRight.y) < (this.GetSizeY() + bb.GetSizeY()))
+    };
+
+    CheckVectorCollision(vec:Vector){
+        return (vec.x > this.topLeft.x) && (vec.x < this.botRight.x) && 
+        (vec.y > this.topLeft.y) && (vec.y < this.botRight.y)
     }
 
     static Add(bb1:BoundingBox, bb2:BoundingBox){
