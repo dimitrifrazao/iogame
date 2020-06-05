@@ -13,9 +13,20 @@ var Color = /** @class */ (function () {
         this.a = a;
     }
     Color.Random = function () {
-        return new Color((Math.random() * 100) + 100, (Math.random() * 100) + 100, (Math.random() * 100) + 100);
+        return new Color((Math.random() * 255), (Math.random() * 255), (Math.random() * 255));
     };
     ;
+    Color.PlayerRandomColor = function () {
+        return Color.HueShift(50, 150, (1 / 3 + Math.random()) % 1);
+    };
+    Color.HueShift = function (min, max, x) {
+        if (min === void 0) { min = 0; }
+        if (max === void 0) { max = 255; }
+        if (min >= max)
+            throw Error("min argument must be smaller than max");
+        x = x % 1;
+        return new Color(min + ((Math.max(Math.min(-6 * Math.abs(x - 1 / 6) + 2, 1), 0) + Math.max(-6 * Math.abs(x - 7 / 6) + 2, 0)) * max), min + (Math.max(Math.min(-6 * Math.abs(x - 1 / 2) + 2, 1), 0) * max), min + (Math.max(Math.min(-6 * Math.abs(x - 5 / 6) + 2, 1), 0) * max));
+    };
     Color.RandomPlayerColor = function () {
         var color = new Color(120, 120, 120);
         return new Color((Math.random() * 100) + 100, (Math.random() * 100) + 100, (Math.random() * 100) + 100);
@@ -41,9 +52,6 @@ var Color = /** @class */ (function () {
     Color.DarkGrey = new Color(50, 50, 50);
     Color.Transparent = new Color(0, 0, 0, 0.2);
     Color.EmptyPlayer = new Color(150, 0, 0);
-    Color.redish = new Color(180, 120, 120);
-    Color.greenish = new Color(120, 180, 120);
-    Color.blueish = new Color(120, 120, 180);
     return Color;
 }());
 exports.Color = Color;

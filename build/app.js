@@ -9,11 +9,11 @@ var gamePath = path.join(__dirname + '/client/game.html');
 app.get('/', function (req, res) {
     res.sendFile(indexPath);
 });
-var newName = "";
+var queryName = "";
 app.get('/start', function (req, res) {
     if (typeof req.query.name === "string" && req.query.name != "") {
         res.sendFile(gamePath);
-        newName = req.query.name;
+        queryName = req.query.name;
     }
     else {
         res.sendFile(indexPath);
@@ -32,16 +32,23 @@ var NAME_LIST = {};
 var io = require('socket.io')(serv, {});
 io.sockets.on('connection', function (socket) {
     console.log('socket connection!');
+    console.log("id: " + socket.id);
+    console.log("querryName = " + queryName);
     SOCKET_LIST[socket.id] = socket;
-    if (NAME_LIST[socket.id] == undefined) {
-        NAME_LIST[socket.id] = newName;
+    var playerName = queryName;
+    if (NAME_LIST[socket.id] === undefined) {
+        NAME_LIST[socket.id] = playerName;
     }
+    else {
+        playerName = NAME_LIST[socket.id];
+    }
+    queryName = "";
     socket.emit('worldData', world_1.World.inst.GenerateDataPack());
     socket.emit('worldSize', world_1.World.inst.GetWorldSize());
     socket.emit('setPlayerId', { id: socket.id });
     //console.log("socket id " + socket.id.toString())
-    console.log(newName);
-    main_1.Main.inst.AddPlayer(socket.id, NAME_LIST[socket.id], EmitDeadPlayer);
+    console.log("playerName " + playerName);
+    main_1.Main.inst.AddPlayer(socket.id, playerName, EmitDeadPlayer);
     socket.on('playerDir', function (data) {
         //console.log("press " + data.dir);
         main_1.Main.inst.SetPlayerDir(socket.id, data.dir);
@@ -58,8 +65,10 @@ io.sockets.on('connection', function (socket) {
         main_1.Main.inst.ChangeWeapon(socket.id, data.type);
     });
     socket.on('disconnect', function () {
-        delete SOCKET_LIST[socket.id];
+        console.log("disconnect " + NAME_LIST[socket.id]);
         main_1.Main.inst.DeletePlayer(socket.id);
+        delete NAME_LIST[socket.id];
+        delete SOCKET_LIST[socket.id];
     });
 });
 var EmitDeadPlayer = function (id, data) {

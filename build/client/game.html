@@ -55,4 +55,11 @@
         InputManager.OnKeyPress(event.keyCode);
     }
 
+    if (window.performance) {
+        if (performance.navigation.type == 1) {
+            socket.disconnect();
+            window.history.back();
+        }
+    }
+  
 </script>

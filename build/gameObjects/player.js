@@ -55,7 +55,7 @@ var Player = /** @class */ (function (_super) {
         _this.size.y = 30;
         _this.id = id;
         _this.deadCallback = deadCallback;
-        _this.SetColor(color_1.Color.Random());
+        _this.SetColor(color_1.Color.PlayerRandomColor());
         _this.type = transform_1.UnitType.Player;
         _this.name = name;
         return _this;
@@ -91,7 +91,7 @@ var Player = /** @class */ (function (_super) {
         }
         var id = this.GetId();
         var dPack = this.GetDataPack();
-        dPack.SetColor(color_1.Color.Red);
+        dPack.SetColor(color_1.Color.EmptyPlayer);
         this.deadCallback(id, dPack);
         Player.DeletePlayer(id);
     };

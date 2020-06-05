@@ -22,15 +22,30 @@ export class Color{
     constructor(public r:number=0, public g:number=0, public b:number=0, public a:number=1){}
     static Random(){
         return new Color(
-            (Math.random() * 100) + 100, 
-            (Math.random() * 100) + 100, 
-            (Math.random() * 100) + 100
+            (Math.random() * 255), 
+            (Math.random() * 255), 
+            (Math.random() * 255)
         )
     };
 
-    static redish = new Color(180, 120, 120);
-    static greenish = new Color(120, 180, 120);
-    static blueish = new Color(120, 120, 180);
+    static PlayerRandomColor(){
+        return Color.HueShift(50,150, Math.random());
+    }
+
+    static HueShift(min:number=0, max:number=255, x:number){
+        if(min >= max) throw Error("min argument must be smaller than max")
+        x = x%1;
+        // im using a clamped reflected absolute function to get the proper rgb value given a shift from 0 to 1
+        // its the same function for each channel but with a horizontal shift of 2/6 to the right
+        // R: --\__/
+        // G: _/--\__
+        // B: \__/--
+        return new Color(
+            min + ((Math.max(Math.min(-6*Math.abs(x-1/6)+2,1),0) + Math.max(-6*Math.abs(x-7/6)+2,0)) * max),
+            min + (Math.max(Math.min(-6*Math.abs(x-1/2)+2,1),0) * max), 
+            min + (Math.max(Math.min(-6*Math.abs(x-5/6)+2,1),0) * max)
+        )
+    }
 
     static RandomPlayerColor(){
         let color = new Color(120,120,120);

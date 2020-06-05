@@ -38,7 +38,7 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
         this.size.y = 30;
         this.id = id;
         this.deadCallback = deadCallback;
-        this.SetColor( Color.Random() );
+        this.SetColor( Color.PlayerRandomColor() );
         this.type = UnitType.Player;
         this.name = name;
     }
@@ -78,7 +78,7 @@ export class Player extends Transform implements IPlayer, IMove, IBulletManager{
         }
         let id = this.GetId();
         let dPack = this.GetDataPack();
-        dPack.SetColor(Color.Red);
+        dPack.SetColor(Color.EmptyPlayer);
         this.deadCallback(id, dPack);
         Player.DeletePlayer(id);
     }

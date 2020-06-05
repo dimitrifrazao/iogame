@@ -3,6 +3,8 @@ import { DirEnum} from "../gameObjects/interfaces/imove"
 import { Vector } from "../gameObjects/vector"
 import { Player } from "../gameObjects/player"
 import { Bullet } from "../gameObjects/bullet"
+import { Color } from "../gameObjects/color"
+
 
 
 export class Main{
