@@ -25,7 +25,8 @@ var clientPath = path.join(__dirname + '/client');
 app.use('/client', express.static(clientPath));
 
 //serv.listen(2000);
-serv.listen(80);
+const PORT = process.env.PORT || 3000;
+serv.listen(PORT);
 
 console.log("Server listening");
 

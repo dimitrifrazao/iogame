@@ -22,7 +22,8 @@ app.get('/start', function (req, res) {
 var clientPath = path.join(__dirname + '/client');
 app.use('/client', express.static(clientPath));
 //serv.listen(2000);
-serv.listen(80);
+var PORT = process.env.PORT || 3000;
+serv.listen(PORT);
 console.log("Server listening");
 var main_1 = require("./main/main");
 var world_1 = require("./main/world");
