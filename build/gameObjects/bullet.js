@@ -67,7 +67,7 @@ var Bullet = /** @class */ (function (_super) {
         return null;
     };
     Bullet.prototype.RemovePlayer = function () {
-        delete this.player;
+        //delete this.player;
         this.isHP = true;
     };
     Bullet.prototype.RemoveBullet = function () {

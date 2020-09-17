@@ -61,7 +61,7 @@ export class Bullet extends Transform implements IMove, IBulletObserver
         return null;
     }
     RemovePlayer():void{
-        delete this.player;
+        //delete this.player;
         this.isHP = true;
     }
     RemoveBullet():void{
