@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Bullet = exports.Player = exports.Vector = exports.DirEnum = exports.World = void 0;
 var world_1 = require("./world");
 Object.defineProperty(exports, "World", { enumerable: true, get: function () { return world_1.World; } });
 var imove_1 = require("../gameObjects/interfaces/imove");

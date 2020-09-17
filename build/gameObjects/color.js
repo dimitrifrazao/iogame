@@ -17,7 +17,7 @@ var Color = /** @class */ (function () {
     };
     ;
     Color.PlayerRandomColor = function () {
-        return Color.HueShift(50, 150, (1 / 3 + Math.random()) % 1);
+        return Color.HueShift(50, 150, Math.random());
     };
     Color.HueShift = function (min, max, x) {
         if (min === void 0) { min = 0; }
@@ -25,6 +25,11 @@ var Color = /** @class */ (function () {
         if (min >= max)
             throw Error("min argument must be smaller than max");
         x = x % 1;
+        // im using a clamped reflected absolute function to get the proper rgb value given a shift from 0 to 1
+        // its the same function for each channel but with a horizontal shift of 2/6 to the right
+        // R: --\__/
+        // G: _/--\__
+        // B: \__/--
         return new Color(min + ((Math.max(Math.min(-6 * Math.abs(x - 1 / 6) + 2, 1), 0) + Math.max(-6 * Math.abs(x - 7 / 6) + 2, 0)) * max), min + (Math.max(Math.min(-6 * Math.abs(x - 1 / 2) + 2, 1), 0) * max), min + (Math.max(Math.min(-6 * Math.abs(x - 5 / 6) + 2, 1), 0) * max));
     };
     Color.RandomPlayerColor = function () {
