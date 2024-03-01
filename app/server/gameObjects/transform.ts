@@ -1,0 +1,160 @@
+import { World } from "../mainGame/world";
+import { Vector } from "../../shared/vector";
+import { Color } from "../../shared/color";
+import { DirEnum } from "../../shared/enums/playerInput";
+import { GameObject } from "./gameObject";
+import { BoundingBox } from "./boundingBox";
+import { UnitType } from "../../shared/enums/unitType";
+import { DataPack } from "../../shared/data";
+
+export class Transform extends GameObject {
+  protected id: number = -1;
+  protected type: UnitType = UnitType.None;
+  protected color: Color = Color.DarkGrey;
+  protected previousPos: Vector = new Vector();
+
+  constructor(
+    protected pos: Vector = new Vector(),
+    protected size: Vector = new Vector(1, 1)
+  ) {
+    super();
+  }
+
+  GetId(): number {
+    return this.id;
+  }
+  GetUnitType(): UnitType {
+    return this.type;
+  }
+
+  SetPos(pos: Vector) {
+    this.pos = pos;
+  }
+  SetPosValues(x: number, y: number) {
+    this.pos.x = x;
+    this.pos.y = y;
+  }
+  GetPos() {
+    return this.pos;
+  }
+  AddPos(pos: Vector) {
+    this.pos.add(pos);
+  }
+
+  SetPreviousPos(pos: Vector) {
+    this.previousPos.x = pos.x;
+    this.previousPos.y = pos.y;
+  }
+  AddPreviousPos(pos: Vector) {
+    this.previousPos.add(pos);
+  }
+  GetPreviousPos() {
+    return this.previousPos;
+  }
+
+  SetSize(size: Vector) {
+    this.size = size;
+  }
+  SetSizeValues(x: number, y: number) {
+    this.size.x = x;
+    this.size.y = y;
+  }
+  GetSize() {
+    return this.size;
+  }
+  SetColor(color: Color) {
+    this.color = color;
+  }
+  GetColor() {
+    return this.color;
+  }
+
+  GetBoundingBox(): BoundingBox {
+    return BoundingBox.MakeFrom(this);
+  }
+  GetOldBoundingBox(): BoundingBox {
+    return BoundingBox.MakeFromVectorAndSize(
+      this.GetPreviousPos(),
+      this.GetSize()
+    );
+  }
+
+  GetCombinedBoundingBox(): BoundingBox {
+    return BoundingBox.Add(this.GetBoundingBox(), this.GetOldBoundingBox());
+  }
+
+  GetDataPack(): DataPack {
+    let dPack = new DataPack();
+    dPack.SetPos(this.GetTopLeftPos());
+    dPack.SetColor(this.GetColor());
+    dPack.sx = this.size.x;
+    dPack.sy = this.size.y;
+    dPack.id = this.GetId();
+    dPack.type = this.GetUnitType();
+    return dPack;
+  }
+  CheckCollision(trans: Transform): boolean {
+    return (
+      Math.abs(this.pos.x - trans.pos.x) < (this.size.x + trans.size.x) / 2 &&
+      Math.abs(this.pos.y - trans.pos.y) < (this.size.y + trans.size.y) / 2
+    );
+  }
+  CheckBBCollision(bb: BoundingBox): boolean {
+    return this.CheckCollision(bb.GetTransform());
+  }
+
+  GetOverlap(trans: Transform): Transform {
+    let bb1 = this.GetBoundingBox();
+    let bb2 = trans.GetBoundingBox();
+    let bb3 = BoundingBox.Sub(bb1, bb2);
+    return bb3.GetTransform();
+  }
+
+  ApplyBulletOverlapPush(bulletStretch: Transform, overlap: Transform) {
+    if (bulletStretch.size.x > bulletStretch.size.y) {
+      this.pos.x -= overlap.size.x;
+    } else {
+      this.pos.x -= overlap.size.y;
+    }
+  }
+
+  GetTopLeftPos() {
+    return new Vector(
+      this.pos.x - this.size.x / 2,
+      this.pos.y - this.size.y / 2
+    );
+  }
+
+  GetBotRightPos() {
+    return new Vector(
+      this.pos.x + this.size.x / 2,
+      this.pos.y + this.size.y / 2
+    );
+  }
+
+  GetArea() {
+    return this.size.x * this.size.y;
+  }
+
+  CheckWorldWrap(): void {
+    World.inst.WorldWrapTransform(this);
+  }
+
+  static GetMirrorDir(dir: DirEnum) {
+    switch (dir) {
+      case DirEnum.Left:
+        return DirEnum.Right;
+      case DirEnum.Right:
+        return DirEnum.Left;
+      case DirEnum.Up:
+        return DirEnum.Down;
+      case DirEnum.Down:
+        return DirEnum.Up;
+      case DirEnum.UpLeft:
+        return DirEnum.DownRight;
+      case DirEnum.UpRight:
+        return DirEnum.DownLeft;
+    }
+    return DirEnum.None;
+  }
+}
