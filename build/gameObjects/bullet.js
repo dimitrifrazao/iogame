@@ -210,8 +210,8 @@ var Bullet = /** @class */ (function (_super) {
                             player.AddHp(bullet.GetDamage());
                             bullet.SetDamage(0);
                             toDeleteBullets.push(bullet);
+                            //console.log("bullet touched own player");
                             break;
-                            console.log("bullet touched own player");
                         }
                         else if (bulletPlayer !== null &&
                             player.GetId() !== bulletPlayer.GetId()) {
@@ -219,20 +219,20 @@ var Bullet = /** @class */ (function (_super) {
                             if (!player.IsAlive())
                                 bulletPlayer.LevelUp();
                             bulletPlayer.AddHp(bullet.GetDamage());
-                            console.log("bullet touched other player");
+                            //console.log("bullet touched other player");
                             bullet.SetDamage(0);
                             toDeleteBullets.push(bullet);
                             break;
                         }
                         else if (bulletPlayer === null) {
-                            console.log("stray bullet touched other player");
+                            //console.log("stray bullet touched other player");
                             player.AddHp(bullet.GetDamage());
                             bullet.SetDamage(0);
                             toDeleteBullets.push(bullet);
                             break;
                         }
                         else {
-                            console.log("hitting bullet to player collision edge case");
+                            //console.log("hitting bullet to player collision edge case");
                         }
                         // bullet collision
                     }

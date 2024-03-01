@@ -85,10 +85,19 @@ var EmitDeadPlayer = function (id, data) {
         socket.emit("worldAddDeadBody", data);
     }
 };
-var FRAME_RATE = 60;
+var FRAME_RATE = 50;
 setInterval(function () {
     main_1.Main.inst.Tick();
-    var pack = main_1.Main.inst.Update();
+    var pack = [];
+    try {
+        pack = main_1.Main.inst.Update();
+    }
+    catch (error) {
+        console.log("UPDATE ERROR");
+        console.log(error);
+    }
+    if (pack.length === 0)
+        return;
     for (var i in SOCKET_LIST) {
         var socket = SOCKET_LIST[i];
         var player = player_1.Player.GetPlayer(socket.id);

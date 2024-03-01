@@ -102,11 +102,18 @@ var EmitDeadPlayer = function (id: number, data: any) {
   }
 };
 
-const FRAME_RATE = 60;
+const FRAME_RATE = 50;
 setInterval(function () {
   Main.inst.Tick();
 
-  let pack: object[] = Main.inst.Update();
+  let pack: object[] = [];
+  try {
+    pack = Main.inst.Update();
+  } catch (error) {
+    console.log("UPDATE ERROR");
+    console.log(error);
+  }
+  if (pack.length === 0) return;
 
   for (var i in SOCKET_LIST) {
     var socket = SOCKET_LIST[i];
