@@ -75,7 +75,7 @@ var InputManager = /** @class */ (function () {
                 playerDir = DirEnum.Right;
             }
         }
-        InputManager.socket.emit('playerDir', { dir: playerDir });
+        InputManager.socket.emit("playerDir", { dir: playerDir });
     };
     InputManager.OnKeyDown = function (keyCode) {
         switch (keyCode) {
@@ -96,37 +96,39 @@ var InputManager = /** @class */ (function () {
                 InputManager.EmitPlayerDir();
                 break;
             case KeyCode.Up:
-                InputManager.socket.emit('shoot', { dir: DirEnum.Up });
+                InputManager.socket.emit("shoot", { dir: DirEnum.Up });
                 break;
             case KeyCode.Down:
-                InputManager.socket.emit('shoot', { dir: DirEnum.Down });
+                InputManager.socket.emit("shoot", { dir: DirEnum.Down });
                 break;
             case KeyCode.Left:
-                InputManager.socket.emit('shoot', { dir: DirEnum.Left });
+                InputManager.socket.emit("shoot", { dir: DirEnum.Left });
                 break;
             case KeyCode.Right:
-                InputManager.socket.emit('shoot', { dir: DirEnum.Right });
+                InputManager.socket.emit("shoot", { dir: DirEnum.Right });
                 break;
             case KeyCode.N1:
-                InputManager.socket.emit('weaponChange', { type: WeaponType.default });
+                InputManager.socket.emit("weaponChange", { type: WeaponType.default });
                 break;
             case KeyCode.N2:
-                InputManager.socket.emit('weaponChange', { type: WeaponType.shotgun });
+                InputManager.socket.emit("weaponChange", { type: WeaponType.shotgun });
                 break;
             case KeyCode.N3:
-                InputManager.socket.emit('weaponChange', { type: WeaponType.drop });
+                InputManager.socket.emit("weaponChange", { type: WeaponType.drop });
                 break;
             case KeyCode.N4:
-                InputManager.socket.emit('weaponChange', { type: WeaponType.knife });
+                InputManager.socket.emit("weaponChange", { type: WeaponType.knife });
                 break;
             case KeyCode.Space:
-                InputManager.socket.emit('dash', { dash: true });
+                InputManager.socket.emit("dash", { dash: true });
                 break;
             case KeyCode.Shift:
                 InputManager.weaponCounter++;
                 if (InputManager.weaponCounter > 3)
                     InputManager.weaponCounter = 0;
-                InputManager.socket.emit('weaponChange', { type: InputManager.weaponCounter });
+                InputManager.socket.emit("weaponChange", {
+                    type: InputManager.weaponCounter,
+                });
                 break;
         }
     };
@@ -149,12 +151,11 @@ var InputManager = /** @class */ (function () {
                 InputManager.EmitPlayerDir();
                 break;
             case KeyCode.Space:
-                InputManager.socket.emit('dash', { dash: false });
+                InputManager.socket.emit("dash", { dash: false });
                 break;
         }
     };
-    InputManager.OnKeyPress = function (keyCode) {
-    };
+    InputManager.OnKeyPress = function (keyCode) { };
     InputManager.w = false;
     InputManager.a = false;
     InputManager.s = false;

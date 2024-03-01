@@ -3,7 +3,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="/client/inputManager.js"></script>
   <script src="/client/renderer.js"></script>
-  <script src="/client/clientSetup.js"></script>
+  <script src="/client/devSetup.js"></script>
 </head>
 <body>
   <canvas id="ctx" style="border: 1px solid #000000"></canvas>
@@ -12,5 +12,5 @@
 <script>
   var canvas = document.getElementById("ctx");
   var socket = io();
-  ClientSetUp(canvas, socket, Renderer, InputManager);
+  DevSetUp(canvas, socket, Renderer, InputManager);
 </script>

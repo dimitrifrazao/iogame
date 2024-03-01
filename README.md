@@ -12,7 +12,7 @@ On your terminal navigate to your iogame folder and run this command to build an
 Then navigate to /builds and run this command to start the server:<br />
 `node app.js`<br />
 
-The game is served on port 2000.<br />
+The game is served on port 3000.<br />
 If you're running on your local machine then just open a tab in your browser and type:<br />
 localhost:2000<br />
 

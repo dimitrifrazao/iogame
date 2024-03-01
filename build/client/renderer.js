@@ -1,8 +1,8 @@
 "use strict";
+//import { DataPack } from "../gameObjects/transform";
 var Renderer = /** @class */ (function () {
     function Renderer() {
     }
-    ;
     Renderer.SetPlayerId = function (data) {
         Renderer.id = data.id;
         //console.log(" id set to " + Renderer.id );
@@ -11,6 +11,7 @@ var Renderer = /** @class */ (function () {
         Renderer.cameraPos = pos;
     };
     Renderer.SetWorldData = function (data) {
+        console.log("set world data");
         Renderer.worldData = data;
     };
     Renderer.SetWorldSize = function (data) {
@@ -20,116 +21,151 @@ var Renderer = /** @class */ (function () {
         Renderer.worldVerticalUnits = data.verticalUnits;
         Renderer.worldUnitSize = data.size;
     };
-    Renderer.AddWorldData = function (data) {
-        console.log("dead added");
-        Renderer.worldData.push(data);
-    };
-    Renderer.RemoveFromWorldData = function (data) {
-        console.log("dead removed");
-        var i = Renderer.worldData.indexOf(data);
-        delete Renderer.worldData[i];
-        Renderer.worldData.splice(i, 1);
+    Renderer.AddDeadBody = function (data) {
+        Renderer.deadBodies.set(data.id.toString(), data);
     };
     Renderer.Render = function (canvas, ctx, data) {
-        var canvasWidth = canvas.width;
-        var canvasHeight = canvas.height;
-        var worldWidth = Renderer.worldWidth;
-        var worldHeight = Renderer.worldHeight;
-        var worldHorizontalUnits = Renderer.worldHorizontalUnits;
-        var worldVerticalUnits = Renderer.worldVerticalUnits;
-        var topLeftX = (canvasWidth / 2) - Renderer.cameraPos.x;
-        var topLeftY = (canvasHeight / 2) - Renderer.cameraPos.y;
-        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
-        ctx.beginPath();
-        for (var x = 1; x <= worldHorizontalUnits; x++) {
-            var finalX = topLeftX + (x * Renderer.worldUnitSize);
+        var dt = data.pop().dt;
+        var topLeftX = canvas.width / 2 - Renderer.cameraPos.x;
+        var topLeftY = canvas.height / 2 - Renderer.cameraPos.y;
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
+        ctx.beginPath(); // draw grid
+        for (var x = 1; x <= Renderer.worldHorizontalUnits; x++) {
+            var finalX = topLeftX + x * Renderer.worldUnitSize;
             ctx.moveTo(finalX, topLeftY);
-            ctx.lineTo(finalX, topLeftY + worldHeight);
+            ctx.lineTo(finalX, topLeftY + Renderer.worldHeight);
         }
-        for (var y = 1; y <= worldVerticalUnits; y++) {
-            var finalY = topLeftY + (y * Renderer.worldUnitSize);
+        for (var y = 1; y <= Renderer.worldVerticalUnits; y++) {
+            var finalY = topLeftY + y * Renderer.worldUnitSize;
             ctx.moveTo(topLeftX, finalY);
-            ctx.lineTo(topLeftX + worldWidth, finalY);
+            ctx.lineTo(topLeftX + Renderer.worldWidth, finalY);
         }
         ctx.strokeStyle = Renderer.gridColor;
         ctx.stroke();
-        ctx.beginPath();
+        ctx.beginPath(); // draw boarders
         ctx.moveTo(topLeftX, topLeftY);
-        ctx.lineTo(topLeftX, topLeftY + worldHeight);
-        ctx.moveTo(topLeftX + worldWidth, topLeftY);
-        ctx.lineTo(topLeftX + worldWidth, topLeftY + worldHeight);
+        ctx.lineTo(topLeftX, topLeftY + Renderer.worldHeight);
+        ctx.moveTo(topLeftX + Renderer.worldWidth, topLeftY);
+        ctx.lineTo(topLeftX + Renderer.worldWidth, topLeftY + Renderer.worldHeight);
         ctx.moveTo(topLeftX, topLeftY);
-        ctx.lineTo(topLeftX + worldWidth, topLeftY);
-        ctx.moveTo(topLeftX, topLeftY + worldHeight);
-        ctx.lineTo(topLeftX + worldWidth, topLeftY + worldHeight);
+        ctx.lineTo(topLeftX + Renderer.worldWidth, topLeftY);
+        ctx.moveTo(topLeftX, topLeftY + Renderer.worldHeight);
+        ctx.lineTo(topLeftX + Renderer.worldWidth, topLeftY + Renderer.worldHeight);
         ctx.lineWidth = 2;
         ctx.strokeStyle = "rgb(0,0,0)";
         ctx.stroke();
         ctx.beginPath();
-        var toRemoveWorldData = [];
-        for (var i = 0; i < Renderer.worldData.length; i++) {
-            var d = Renderer.worldData[i];
-            if (d.type == 1 && d.a > 0) {
-                d.a -= 0.01;
-                if (d.a < 0)
-                    toRemoveWorldData.push(d);
-            }
-            var finalX = (canvasWidth / 2) + d.x - Renderer.cameraPos.x;
-            var finalY = (canvasHeight / 2) + d.y - Renderer.cameraPos.y;
-            var rgbText = "rgba(" + d.r + "," + d.g + "," + d.b + "," + d.a + ")";
-            ctx.fillStyle = rgbText;
-            ctx.fillRect(finalX, finalY, d.sx, d.sy);
-        }
-        ctx.stroke();
+        Renderer.worldData.forEach(function (dataPack) {
+            var finalX = canvas.width / 2 + dataPack.x - Renderer.cameraPos.x;
+            var finalY = canvas.height / 2 + dataPack.y - Renderer.cameraPos.y;
+            ctx.fillStyle = "rgb(0,0,0)";
+            ctx.fillRect(finalX, finalY, dataPack.sx, dataPack.sy);
+        });
         ctx.beginPath();
+        var toRemoveWorldData = [];
+        Renderer.deadBodies.forEach(function (dataPack, id) {
+            dataPack.a -= 0.01;
+            if (dataPack.a <= 0)
+                toRemoveWorldData.push(id);
+            var finalX = canvas.width / 2 + dataPack.x - Renderer.cameraPos.x;
+            var finalY = canvas.height / 2 + dataPack.y - Renderer.cameraPos.y;
+            var rgbText = "rgba(" +
+                dataPack.r +
+                "," +
+                dataPack.g +
+                "," +
+                dataPack.b +
+                "," +
+                dataPack.a +
+                ")";
+            ctx.fillStyle = rgbText;
+            ctx.fillRect(finalX, finalY, dataPack.sx, dataPack.sy);
+        });
+        for (var _i = 0, toRemoveWorldData_1 = toRemoveWorldData; _i < toRemoveWorldData_1.length; _i++) {
+            var id = toRemoveWorldData_1[_i];
+            Renderer.deadBodies.delete(id);
+        }
         for (var i = 0; i < data.length; i++) {
             var d = data[i];
             var rgbText = "rgba(" + d.r + "," + d.g + "," + d.b + "," + d.a + ")";
             switch (d.type) {
-                case 0: // world static
-                    d.x += Renderer.cameraPos.x;
-                    d.y += Renderer.cameraPos.y;
+                case 0: // debug
+                    d.x += canvas.width / 2 - Renderer.cameraPos.x;
+                    d.y += canvas.height / 2 - Renderer.cameraPos.y;
+                    ctx.fillStyle = rgbText;
+                    ctx.fillRect(d.x, d.y, d.sx, d.sy);
                     break;
                 case 1: // players
-                    if (d.id == Renderer.id) { // our player
+                    if (d.id == Renderer.id) {
+                        // our player
                         var offset = (d.sx - d.sy) / 2;
-                        d.x = (canvasWidth / 2) - (d.sx / 2);
-                        d.y = (canvasHeight / 2) - (d.sy / 2) + offset;
+                        d.x = canvas.width / 2 - d.sx / 2;
+                        d.y = canvas.height / 2 - d.sy / 2 + offset;
                     }
-                    else { // other players
-                        d.x += (canvasWidth / 2) - Renderer.cameraPos.x;
-                        d.y += (canvasHeight / 2) - Renderer.cameraPos.y;
+                    else {
+                        // other players
+                        d.x += canvas.width / 2 - Renderer.cameraPos.x;
+                        d.y += canvas.height / 2 - Renderer.cameraPos.y;
+                    }
+                    ctx.fillStyle = rgbText;
+                    ctx.fillRect(d.x, d.y, d.sx, d.sy);
+                    if (d.name !== "") {
+                        ctx.fillStyle = "rgb(100,100,100)";
+                        ctx.font = "15px Arial";
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillText(d.name, d.x + d.sx / 2, d.y - 5);
                     }
                     break;
                 case 2: // bullets
-                    d.x += (canvasWidth / 2) - Renderer.cameraPos.x;
-                    d.y += (canvasHeight / 2) - Renderer.cameraPos.y;
-                    if (d.id == Renderer.id) { // player bullet
+                    d.x += canvas.width / 2 - Renderer.cameraPos.x;
+                    d.y += canvas.height / 2 - Renderer.cameraPos.y;
+                    if (d.id == Renderer.id) {
+                        // player bullet
                         rgbText = "rgb(250,0,0)";
                     }
+                    ctx.fillStyle = rgbText;
+                    ctx.fillRect(d.x, d.y, d.sx, d.sy);
                     break;
                 case 3: //UI
                     if (d.id != Renderer.id)
                         rgbText = "rgba(0,0,0,0)";
+                    ctx.fillStyle = rgbText;
+                    ctx.fillRect(d.x, d.y, d.sx, d.sy);
+                    break;
+                case 4: // QuadTreeNode
+                    d.x += canvas.width / 2 - Renderer.cameraPos.x;
+                    d.y += canvas.height / 2 - Renderer.cameraPos.y;
+                    ctx.beginPath();
+                    ctx.moveTo(d.x, d.y); // left top
+                    ctx.lineTo(d.x + d.sx, d.y); // right top
+                    ctx.lineTo(d.x + d.sx, d.y + d.sy); // right bot
+                    ctx.lineTo(d.x, d.y + d.sy); // left bot
+                    ctx.lineTo(d.x, d.y); // left top
+                    /* ctx.moveTo(d.x - d.sx / 2, d.y - d.sy / 2); // left top
+                    ctx.lineTo(d.x + d.sx / 2, d.y - d.sy / 2); // right top
+                    ctx.lineTo(d.x + d.sx / 2, d.y + d.sy / 2); // right bot
+                    ctx.lineTo(d.x - d.sx / 2, d.y + d.sy / 2); // left bot
+                    ctx.lineTo(d.x - d.sx / 2, d.y - d.sy / 2); // left top */
+                    ctx.closePath(); // Close the path to connect the last point with the first
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = "rgb(0,250,0)";
+                    ctx.stroke();
                     break;
             }
-            ctx.fillStyle = rgbText;
-            ctx.fillRect(d.x, d.y, d.sx, d.sy);
-            if (d.name !== "") {
-                ctx.fillStyle = "rgb(100,100,100)";
-                ;
-                ctx.font = "15px Arial";
-                ctx.fillText(d.name, d.x, d.y);
-            }
         }
-        ctx.stroke();
-        for (var _i = 0, toRemoveWorldData_1 = toRemoveWorldData; _i < toRemoveWorldData_1.length; _i++) {
-            var d = toRemoveWorldData_1[_i];
-            Renderer.RemoveFromWorldData(d);
-        }
+        // FPS draw
+        ctx.font = "15px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "black";
+        var x = canvas.width * 0.95;
+        var y = canvas.height * 0.05;
+        ctx.fillText(dt.toString(), x, y);
     };
     Renderer.gridColor = "rgba(0,0,255,0.1)"; // transparent blue
     Renderer.worldData = [];
+    Renderer.deadBodies = new Map();
     //static inst:Renderer = new Renderer();
     Renderer.id = -1;
     return Renderer;

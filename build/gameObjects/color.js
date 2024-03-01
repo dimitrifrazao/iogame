@@ -13,9 +13,8 @@ var Color = /** @class */ (function () {
         this.a = a;
     }
     Color.Random = function () {
-        return new Color((Math.random() * 255), (Math.random() * 255), (Math.random() * 255));
+        return new Color(Math.random() * 255, Math.random() * 255, Math.random() * 255);
     };
-    ;
     Color.PlayerRandomColor = function () {
         return Color.HueShift(50, 150, Math.random());
     };
@@ -30,18 +29,21 @@ var Color = /** @class */ (function () {
         // R: --\__/
         // G: _/--\__
         // B: \__/--
-        return new Color(min + ((Math.max(Math.min(-6 * Math.abs(x - 1 / 6) + 2, 1), 0) + Math.max(-6 * Math.abs(x - 7 / 6) + 2, 0)) * max), min + (Math.max(Math.min(-6 * Math.abs(x - 1 / 2) + 2, 1), 0) * max), min + (Math.max(Math.min(-6 * Math.abs(x - 5 / 6) + 2, 1), 0) * max));
+        return new Color(min +
+            (Math.max(Math.min(-6 * Math.abs(x - 1 / 6) + 2, 1), 0) +
+                Math.max(-6 * Math.abs(x - 7 / 6) + 2, 0)) *
+                max, min + Math.max(Math.min(-6 * Math.abs(x - 1 / 2) + 2, 1), 0) * max, min + Math.max(Math.min(-6 * Math.abs(x - 5 / 6) + 2, 1), 0) * max);
     };
     Color.RandomPlayerColor = function () {
         var color = new Color(120, 120, 120);
-        return new Color((Math.random() * 100) + 100, (Math.random() * 100) + 100, (Math.random() * 100) + 100);
+        return new Color(Math.random() * 100 + 100, Math.random() * 100 + 100, Math.random() * 100 + 100);
     };
     Color.Lerp = function (start, end, t) {
         if (t > 1)
             t = 1;
         else if (t < 0)
             t = 0;
-        return new Color(((start.r * (1 - t)) + (end.r * t)), ((start.g * (1 - t)) + (end.g * t)), ((start.b * (1 - t)) + (end.b * t)), ((start.a * (1 - t)) + (end.a * t)));
+        return new Color(start.r * (1 - t) + end.r * t, start.g * (1 - t) + end.g * t, start.b * (1 - t) + end.b * t, start.a * (1 - t) + end.a * t);
     };
     Color.maxValue = 255;
     Color.Black = new Color(0, 0, 0);

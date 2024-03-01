@@ -7,6 +7,8 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
@@ -20,19 +22,20 @@ var color_1 = require("./color");
 var imove_1 = require("./interfaces/imove");
 var world_1 = require("../main/world");
 var boundingBox_1 = require("./boundingBox");
+var quadTree_1 = require("./quadTree");
 var PlayerState;
 (function (PlayerState) {
     PlayerState[PlayerState["Alive"] = 0] = "Alive";
     PlayerState[PlayerState["Stunned"] = 1] = "Stunned";
     PlayerState[PlayerState["Dead"] = 2] = "Dead";
-})(PlayerState = exports.PlayerState || (exports.PlayerState = {}));
+})(PlayerState || (exports.PlayerState = PlayerState = {}));
 var WeaponType;
 (function (WeaponType) {
     WeaponType[WeaponType["default"] = 0] = "default";
     WeaponType[WeaponType["shotgun"] = 1] = "shotgun";
     WeaponType[WeaponType["drop"] = 2] = "drop";
     WeaponType[WeaponType["knife"] = 3] = "knife";
-})(WeaponType = exports.WeaponType || (exports.WeaponType = {}));
+})(WeaponType || (exports.WeaponType = WeaponType = {}));
 var Player = /** @class */ (function (_super) {
     __extends(Player, _super);
     function Player(id, name, deadCallback) {
@@ -47,10 +50,10 @@ var Player = /** @class */ (function (_super) {
         _this.dashBufferMax = 100;
         // from IMove
         _this.dir = imove_1.DirEnum.None;
-        _this.speed = 1;
+        _this.speed = Player.defaultSpeed;
         _this.push = new vector_1.Vector();
         // from IBulletManager
-        _this.bullets = [];
+        _this.bullets = new Map();
         _this.size.x = 30;
         _this.size.y = 30;
         _this.id = id;
@@ -58,42 +61,49 @@ var Player = /** @class */ (function (_super) {
         _this.SetColor(color_1.Color.PlayerRandomColor());
         _this.type = transform_1.UnitType.Player;
         _this.name = name;
+        Player.PlayerMap.set(id, _this);
         return _this;
     }
     Player.prototype.Push = function (obj) { };
-    ;
-    Player.prototype.GetMoveVector = function () { return vector_1.Vector.Sub(this.pos, this.previousPos); };
-    ;
-    Player.prototype.SetWeaponType = function (weaponType) { this.weaponType = weaponType; };
-    ;
-    Player.prototype.GetWeaponType = function () { return this.weaponType; };
-    ;
+    Player.prototype.GetMoveVector = function () {
+        return vector_1.Vector.Sub(this.pos, this.previousPos);
+    };
+    Player.prototype.SetWeaponType = function (weaponType) {
+        this.weaponType = weaponType;
+    };
+    Player.prototype.GetWeaponType = function () {
+        return this.weaponType;
+    };
     Player.prototype.GetWeaponData = function () {
         switch (this.weaponType) {
-            case WeaponType.default: return { damage: 1, speed: 2, size: 10, timer: -1 };
-            case WeaponType.shotgun: return { damage: 3, speed: 1.7, size: 15, timer: -1 };
-            case WeaponType.drop: return { damage: 5, speed: 1.4, size: 20, timer: -1 };
-            case WeaponType.knife: return { damage: 7, speed: 1.1, size: 25, timer: -1 };
+            case WeaponType.default:
+                return { damage: 1, speed: 0.4, size: 10, timer: -1 };
+            case WeaponType.shotgun:
+                return { damage: 3, speed: 0.3, size: 15, timer: -1 };
+            case WeaponType.drop:
+                return { damage: 5, speed: 0.2, size: 20, timer: -1 };
+            case WeaponType.knife:
+                return { damage: 7, speed: 0.1, size: 25, timer: -1 };
         }
     };
     Player.prototype.AddBullet = function (bullet) {
-        this.bullets.push(bullet);
+        this.bullets.set(bullet.GetId(), bullet);
     };
     Player.prototype.RemoveBullet = function (bullet) {
-        var i = this.bullets.indexOf(bullet);
-        delete this.bullets[i];
-        this.bullets.splice(i, 1);
+        this.bullets.delete(bullet.GetId());
     };
     Player.prototype.RemovePlayer = function () {
-        for (var _i = 0, _a = this.bullets; _i < _a.length; _i++) {
-            var bullet = _a[_i];
-            bullet.RemovePlayer();
-        }
+        this.bullets.forEach(function (bullet, bulletId) {
+            bullet.Release();
+        });
         var id = this.GetId();
         var dPack = this.GetDataPack();
         dPack.SetColor(color_1.Color.EmptyPlayer);
         this.deadCallback(id, dPack);
-        Player.DeletePlayer(id);
+        if (!Player.PlayerMap.has(id)) {
+            throw Error("trying to delete a non existing Player id");
+        }
+        Player.PlayerMap.delete(id);
     };
     Player.prototype.LevelUp = function () {
         this.level++;
@@ -111,8 +121,9 @@ var Player = /** @class */ (function (_super) {
         }
     };
     // from IPlayer
-    Player.prototype.GetId = function () { return this.id; };
-    ;
+    Player.prototype.GetId = function () {
+        return this.id;
+    };
     Player.prototype.TakeDamage = function (damage) {
         if (this.playerState == PlayerState.Alive) {
             this.hp -= damage;
@@ -122,21 +133,25 @@ var Player = /** @class */ (function (_super) {
             }
         }
     };
-    Player.prototype.IsAlive = function () { return this.playerState !== PlayerState.Dead; };
-    ;
-    Player.prototype.GetTransform = function () { return this; };
-    ;
-    // player default 
-    Player.prototype.SetPlayerState = function (state) { this.playerState = state; };
-    ;
+    Player.prototype.IsAlive = function () {
+        return this.playerState !== PlayerState.Dead;
+    };
+    Player.prototype.GetTransform = function () {
+        return this;
+    };
+    // player default
+    Player.prototype.SetPlayerState = function (state) {
+        this.playerState = state;
+    };
     Player.prototype.SetDash = function (state) {
         if (state && this.dashBuffer >= this.dashBufferMax)
             this.dashing = true;
         else if (state == false)
             this.dashing = false;
     };
-    Player.prototype.IsDashing = function () { return this.dashing; };
-    ;
+    Player.prototype.IsDashing = function () {
+        return this.dashing;
+    };
     Player.prototype.GetDataPack = function () {
         var dPack = _super.prototype.GetDataPack.call(this);
         dPack.name = this.name;
@@ -149,14 +164,13 @@ var Player = /** @class */ (function (_super) {
         if (this.playerState != PlayerState.Alive)
             return;
         this.SetPreviousPos(this.GetPos());
-        var speed = this.speed;
         if (this.dashing) {
-            speed = 2;
+            this.speed = 2 * Player.defaultSpeed;
             this.dashBuffer -= dt * 0.5;
             if (this.dashBuffer < 0) {
                 this.dashBuffer = 0;
                 this.dashing = false;
-                speed = this.speed;
+                this.speed = Player.defaultSpeed;
             }
         }
         else {
@@ -166,71 +180,60 @@ var Player = /** @class */ (function (_super) {
             }
         }
         switch (this.dir) {
-            case (imove_1.DirEnum.UpLeft):
-                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.UpLeft, speed * dt));
+            case imove_1.DirEnum.UpLeft:
+                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.UpLeft, this.speed * dt));
                 break;
-            case (imove_1.DirEnum.UpRight):
-                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.UpRight, speed * dt));
+            case imove_1.DirEnum.UpRight:
+                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.UpRight, this.speed * dt));
                 break;
             case imove_1.DirEnum.Up:
-                this.pos.y -= speed * dt;
+                this.pos.y -= this.speed * dt;
                 break;
-            case (imove_1.DirEnum.DownLeft):
-                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.DownLeft, speed * dt));
+            case imove_1.DirEnum.DownLeft:
+                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.DownLeft, this.speed * dt));
                 break;
-            case (imove_1.DirEnum.DownRight):
-                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.DownRight, speed * dt));
+            case imove_1.DirEnum.DownRight:
+                this.pos.add(vector_1.Vector.ScaleBy(vector_1.Vector.DownRight, this.speed * dt));
                 break;
             case imove_1.DirEnum.Down:
-                this.pos.y += speed * dt;
+                this.pos.y += this.speed * dt;
                 break;
             case imove_1.DirEnum.Left:
-                this.pos.x -= speed * dt;
+                this.pos.x -= this.speed * dt;
                 break;
             case imove_1.DirEnum.Right:
-                this.pos.x += speed * dt;
+                this.pos.x += this.speed * dt;
                 break;
         }
-        /*if(this.push.len() > 0.001){
-            if(this.push.len() > 10){
-                this.push.normalize();
-                this.push.scaleBy(10);
-            }
-            this.pos.x += this.push.x * dt;
-            this.pos.y += this.push.y * dt;
-            this.push = Vector.Lerp(this.push, Vector.Zero, dt);
-        }
-        */
-    };
-    Player.AddPlayer = function (player) {
-        Player.PLAYER_LIST[player.GetId()] = player;
     };
     Player.DeletePlayer = function (id) {
-        delete Player.PLAYER_LIST[id];
+        var player = Player.GetPlayer(id);
+        if (player !== null)
+            player.RemovePlayer();
     };
-    Player.GetPlayerById = function (id) {
-        var player = Player.PLAYER_LIST[id];
+    Player.GetPlayer = function (id) {
+        var player = Player.PlayerMap.get(id);
         if (player !== undefined)
             return player;
         return null;
     };
-    Player.GetPlayers = function () { return Player.PLAYER_LIST; };
-    Player.GetIPlayers = function () { return Player.PLAYER_LIST; };
     Player.UpdatePlayers = function (dt, pack) {
-        for (var i in Player.PLAYER_LIST) {
-            var player = Player.PLAYER_LIST[i];
+        Player.PlayerMap.forEach(function (player, id) {
             player.UpdatePosition(dt);
             player.CheckWorldWrap();
             // check collision against rocks
-            var cells = world_1.World.inst.GetPossibleCollisions(player.pos);
-            //console.log(cells.length);
+            var cells = world_1.World.inst.GetPossibleCollisions(player.GetPos());
             for (var _i = 0, cells_1 = cells; _i < cells_1.length; _i++) {
                 var cell = cells_1[_i];
-                //let cpack = cell.GetDataPack();
-                //cpack.SetColor(Color.Cyan);
-                //pack.push(cpack);
-                if (cell.IsRock() && player.CheckCollision(cell) == true) {
+                if (cell.GetCellType() === world_1.CellType.Rock &&
+                    player.CheckCollision(cell) === true) {
                     var overlapBB = boundingBox_1.BoundingBox.Sub(player.GetBoundingBox(), cell.GetBoundingBox());
+                    var op = overlapBB.GetDataPack();
+                    op.SetColor(color_1.Color.Cyan);
+                    pack.push(op);
+                    var cpack = cell.GetDataPack();
+                    cpack.SetColor(color_1.Color.Cyan);
+                    pack.push(cpack);
                     if (overlapBB.GetSizeX() < overlapBB.GetSizeY()) {
                         if (player.pos.x > cell.GetPos().x)
                             player.pos.x += overlapBB.GetSizeX();
@@ -243,19 +246,23 @@ var Player = /** @class */ (function (_super) {
                         else
                             player.pos.y -= overlapBB.GetSizeY();
                     }
-                    //let overlap = overlapBB.GetTransform();
-                    //let oPack = overlap.GetDataPack();
-                    //oPack.SetColor(Color.Magenta);
-                    //pack.push(oPack);
                 }
             }
-        }
+            quadTree_1.QuadtreeNode.root.Insert(player);
+        });
         var deadPlayers = [];
-        for (var i in Player.PLAYER_LIST) {
-            var player = Player.PLAYER_LIST[i];
-            for (var j in Player.PLAYER_LIST) {
-                var player2 = Player.PLAYER_LIST[j];
-                if (i != j && player.CheckCollision(player2) == true) {
+        Player.PlayerMap.forEach(function (player, id) {
+            //let player = Player.PlayerMap[i];
+            var transSet = new Set();
+            var transforms = quadTree_1.QuadtreeNode.root.Retrieve(player);
+            for (var i = 0; i < transforms.length; i++) {
+                var transform = transforms[i];
+                if (
+                //!transSet.has(transform) &&
+                transform.GetUnitType() === transform_1.UnitType.Player &&
+                    transform.GetId() !== player.id &&
+                    player.CheckCollision(transform)) {
+                    transSet.add(transform);
                     deadPlayers.push(player);
                     continue;
                 }
@@ -266,7 +273,7 @@ var Player = /** @class */ (function (_super) {
             pack.push(playerRedPack);
             // main player square that shrinks as hp lowers
             var playerPack = player.GetDataPack();
-            playerPack.name = ""; // erase name so we dont have doubles
+            playerPack.name = ""; // erase name so we dont have double moving up n down
             playerPack.sy = player.size.y * (player.hp / player.hpMax);
             playerPack.y += player.size.y - playerPack.sy;
             pack.push(playerPack);
@@ -281,7 +288,7 @@ var Player = /** @class */ (function (_super) {
             dashUI.SetColor(color_1.Color.Grey);
             if (player.dashBuffer >= player.dashBufferMax)
                 dashUI.SetColor(color_1.Color.LightGrey);
-            dashUI.SetPosValues(25 + (45 * (player.dashBuffer / player.dashBufferMax)), 20);
+            dashUI.SetPosValues(25 + 45 * (player.dashBuffer / player.dashBufferMax), 20);
             dashUI.SetSizeValues(90 * (player.dashBuffer / player.dashBufferMax), 10);
             pashPack = dashUI.GetDataPack();
             pashPack.id = player.id;
@@ -291,7 +298,7 @@ var Player = /** @class */ (function (_super) {
             for (var si = 0; si < 4; si++) {
                 square.SetSizeValues(20, 20);
                 square.SetColor(color_1.Color.DarkGrey);
-                square.SetPosValues(150 + (si * 40), 20);
+                square.SetPosValues(150 + si * 40, 20);
                 var sPack = square.GetDataPack();
                 sPack.id = player.id;
                 sPack.type = 3;
@@ -306,13 +313,14 @@ var Player = /** @class */ (function (_super) {
                     pack.push(sPack);
                 }
             }
-        }
-        for (var _a = 0, deadPlayers_1 = deadPlayers; _a < deadPlayers_1.length; _a++) {
-            var deadPlayer = deadPlayers_1[_a];
+        });
+        for (var _i = 0, deadPlayers_1 = deadPlayers; _i < deadPlayers_1.length; _i++) {
+            var deadPlayer = deadPlayers_1[_i];
             deadPlayer.TakeDamage(deadPlayer.hp);
         }
     };
-    Player.PLAYER_LIST = {};
+    Player.defaultSpeed = 0.3;
+    Player.PlayerMap = new Map();
     return Player;
 }(transform_1.Transform));
 exports.Player = Player;

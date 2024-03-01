@@ -1,274 +1,319 @@
+import { Transform, UnitType } from "./transform";
+import { Vector } from "./vector";
+import { CellType, World } from "../main/world";
+import { DirEnum, IMove } from "./interfaces/imove";
+import { IBulletManager, IBulletObserver, IPlayer } from "./interfaces/ishoot";
+import { Color } from "./color";
+import { BoundingBox } from "./boundingBox";
+import { QuadtreeNode } from "./quadTree";
+import { Player } from "./player";
 
-import { Transform, UnitType  } from "./transform"
-import { Vector } from "./vector"
-import {World} from "../main/world"
-import {DirEnum, IMove} from "./interfaces/imove"
-import { IBulletManager, IBulletObserver, IPlayer } from "./interfaces/ishoot"
-import { Color } from "./color"
-import { BoundingBox } from "./boundingBox"
+function generateBulletID(): number {
+  const currentDate = new Date();
+  const timestamp = currentDate.getTime();
+  const randomFactor = Math.floor(Math.random() * 10000);
+  return timestamp + randomFactor;
+}
 
-type bulletMap = Record<number, Bullet>;
+export class Bullet extends Transform implements IMove, IBulletObserver {
+  static defaultSpeed: number = 0.4;
 
-export class Bullet extends Transform implements IMove, IBulletObserver
-{
-    
-    damage:number = 1;
-    timer:number = -1;
-    isHP:Boolean = false;
-    prevPos:Vector = new Vector();
+  damage: number = 1;
+  prevPos: Vector = new Vector();
+  //IMove
+  dir: DirEnum = DirEnum.None;
+  speed: number = Bullet.defaultSpeed;
+  push: Vector = new Vector();
 
-    constructor(player:IBulletManager)
-    {
-        super();
-        this.size.x = 10;
-        this.size.y = 10;
-        this.player = player;
-        this.id = this.player.GetId();
-        this.type = UnitType.Bullet;
+  constructor(public player: Player | null) {
+    super();
+    this.size.x = 10;
+    this.size.y = 10;
+    this.type = UnitType.Bullet;
+    this.id = generateBulletID(); //this.player.GetId();
+    let limit = 1000;
+    while (limit >= 0) {
+      if (!Bullet.BulletMap.has(this.id)) break;
+      this.id = generateBulletID();
+      limit -= 1;
+    }
+    if (limit == 0) throw Error("failed to generate bullet id");
+    Bullet.BulletMap.set(this.id, this);
+  }
+
+  SetDamage(damage: number) {
+    this.damage = damage;
+    if (damage > 0) {
+      let size = 7.5 + damage * 2.5;
+      this.size.x = size;
+      this.size.y = size;
+      this.speed = Math.max(Bullet.defaultSpeed - (damage - 1) * 0.1, 0.0);
+    }
+  }
+  GetDamage() {
+    return this.damage;
+  }
+
+  Push(obj: IMove) {
+    let vec = Vector.GetDirVector(this.dir);
+    vec.scaleBy(3);
+    obj.push.add(vec);
+  }
+
+  GetMoveVector() {
+    return Vector.Sub(this.previousPos, this.pos);
+  }
+
+  GetPlayer(): Player | null {
+    return this.player;
+  }
+
+  // IPlayerObserver
+
+  GetPlayerManager() {
+    if (this.player !== null) return this.player as IBulletManager;
+    return null;
+  }
+
+  Release(): void {
+    let playerManager = this.GetPlayerManager();
+    if (playerManager !== null) {
+      playerManager.RemoveBullet(this);
+      this.player = null;
+    }
+  }
+
+  // default
+
+  SetDirection(dir: DirEnum) {
+    this.dir = dir;
+  }
+  GetDirection() {
+    return this.dir;
+  }
+  SetSpeed(speed: number) {
+    this.speed = speed;
+  }
+  GetSpeed() {
+    return this.speed;
+  }
+  GetId() {
+    return this.id;
+  }
+
+  UpdatePosition(dt: number) {
+    this.SetPreviousPos(this.GetPos());
+
+    switch (this.dir) {
+      case DirEnum.Up:
+        this.pos.y -= this.speed * dt;
+        break;
+      case DirEnum.Down:
+        this.pos.y += this.speed * dt;
+        break;
+      case DirEnum.Left:
+        this.pos.x -= this.speed * dt;
+        break;
+      case DirEnum.Right:
+        this.pos.x += this.speed * dt;
+        break;
     }
 
-    SetDamage(damage:number){
-        this.damage = damage;
-        if(damage > 0){
-            let size = 7.5 + (damage * 2.5)
-            this.size.x = size;
-            this.size.y = size;
+    if (this.player === null && this.speed > 0) {
+      this.speed -= dt * 0.01;
+      this.color = Color.Lerp(this.color, Color.Red, dt * 0.01);
+      if (this.speed < 0) this.speed = 0;
+    }
+  }
 
-            this.speed = 2 - ((damage-1) * 0.1);
-            if(this.speed<0) this.speed = 0;
+  static BulletMap = new Map<number, Bullet>();
+
+  static DeleteBullet(bullet: Bullet) {
+    bullet.Release();
+    if (!Bullet.BulletMap.has(bullet.GetId())) {
+      throw Error("tried to delete an non existing bullet id");
+    }
+    Bullet.BulletMap.delete(bullet.GetId());
+  }
+
+  static UpdateBullets(dt: number, pack: object[]) {
+    Bullet.BulletMap.forEach((bullet, id) => {
+      if (bullet.damage > 0) {
+        bullet.UpdatePosition(dt);
+        bullet.CheckWorldWrap();
+
+        let bbCombined = bullet.GetCombinedBoundingBox();
+        let p = bbCombined.GetDataPack();
+        p.SetColor(Color.Blue);
+        //pack.push(p);
+        // check against rocks
+        let dirFlipped = null;
+        let cells = World.inst.GetPossibleCollisions(bullet.GetPos());
+        for (let i = 0; i < cells.length; i++) {
+          let cell = cells[i];
+          if (
+            cell.GetCellType() === CellType.Rock &&
+            cell.CheckCollision(bbCombined.GetTransform()) === true
+          ) {
+            let cpack = cell.GetDataPack();
+            cpack.SetColor(Color.Cyan);
+            pack.push(cpack);
+
+            let overlapBB = BoundingBox.Sub(bbCombined, cell.GetBoundingBox());
+            let overlap = overlapBB.GetTransform();
+
+            let vec = Vector.ScaleBy(Vector.GetDirVector(bullet.dir), -1.0001);
+            vec.mul(overlap.GetSize());
+            bullet.pos.add(vec);
+            if (dirFlipped === null) {
+              dirFlipped = Bullet.GetMirrorDir(bullet.dir);
+            }
+
+            //continue;
+          }
         }
-    };
-    GetDamage(){return this.damage;};
+        if (dirFlipped !== null) bullet.dir = dirFlipped;
+      }
 
-    //IMove
-    dir:DirEnum = DirEnum.None;
-    speed:number = 2;
-    push:Vector = new Vector();
+      QuadtreeNode.root.Insert(bullet);
+      pack.push(bullet.GetDataPack());
+    });
 
-    Push(obj:IMove){
-        let vec = Vector.GetDirVector(this.dir);
-        vec.scaleBy(3);
-        obj.push.add(vec);
-    };
+    // compare to quadtree neighboors
+    let toDeleteBullets: Bullet[] = [];
+    Bullet.BulletMap.forEach((bullet, id) => {
+      if (bullet.GetDamage() === 0) {
+        toDeleteBullets.push(bullet);
+      } else {
+        let bulletPlayer = bullet.GetPlayer();
+        let bbCombined = bullet.GetCombinedBoundingBox();
+        let p = bbCombined.GetDataPack();
+        p.SetColor(Color.Black);
+        //pack.push(p);
 
-    GetMoveVector(){return Vector.Sub(this.previousPos, this.pos);};
+        let transSet = new Set<number>();
+        let transforms = QuadtreeNode.root.Retrieve(bullet);
+        for (let i = 0; i < transforms.length; i++) {
+          let transform = transforms[i];
+          // skip if is same bullet
+          if (transform.GetId() === bullet.GetId()) continue;
+          // skip already visited
+          if (transSet.has(transform.GetId())) continue;
+          transSet.add(transform.GetId());
 
-    // IPlayerObserver
-    player:IBulletManager;
+          // is player collision
+          if (transform.GetUnitType() === UnitType.Player) {
+            // skip if no overlap
+            if (!transform.CheckCollision(bullet)) continue;
 
-    GetPlayer(){
-        if(this.player !== undefined) return this.player;
-        return null;
-    }
-    RemovePlayer():void{
-        //delete this.player;
-        this.isHP = true;
-    }
-    RemoveBullet():void{
-        let player = this.GetPlayer();
-        if(player != null) player.RemoveBullet(this);
-    }
+            let player = transform as Player;
+            if (!player.IsAlive()) continue; // skip if dead
 
-    // default
+            if (
+              bulletPlayer !== null &&
+              player.GetId() === bulletPlayer.GetId()
+            ) {
+              player.AddHp(bullet.GetDamage());
+              bullet.SetDamage(0);
+              toDeleteBullets.push(bullet);
+              break;
+              console.log("bullet touched own player");
+            } else if (
+              bulletPlayer !== null &&
+              player.GetId() !== bulletPlayer.GetId()
+            ) {
+              player.TakeDamage(bullet.GetDamage());
+              if (!player.IsAlive()) bulletPlayer.LevelUp();
+              bulletPlayer.AddHp(bullet.GetDamage());
+              console.log("bullet touched other player");
+              bullet.SetDamage(0);
+              toDeleteBullets.push(bullet);
+              break;
+            } else if (bulletPlayer === null) {
+              console.log("stray bullet touched other player");
+              player.AddHp(bullet.GetDamage());
+              bullet.SetDamage(0);
+              toDeleteBullets.push(bullet);
+              break;
+            } else {
+              console.log("hitting bullet to player collision edge case");
+            }
+            // bullet collision
+          } else if (transform.GetUnitType() === UnitType.Bullet) {
+            let otherBullet = transform as Bullet;
+            // skip if zeroed
+            if (otherBullet.GetDamage() === 0) continue;
+            // skip when not colliding
+            let tbbCombined = transform.GetCombinedBoundingBox();
+            if (
+              !bbCombined
+                .GetTransform()
+                .CheckCollision(tbbCombined.GetTransform())
+            ) {
+              continue;
+            }
 
-    SetDirection(dir:DirEnum){this.dir = dir;}
-    GetDirection(){return this.dir;}
-    SetSpeed(speed:number){this.speed=speed;}
-    GetSpeed(){return this.speed;}
-    GetId(){
-        let player = this.GetPlayer();
-        if(player !== null) return player.GetId();
-        return -1;
-    }
+            // other bullet hit!
+            let bullet2Player = otherBullet.GetPlayer();
+            let damage1 = bullet.GetDamage();
+            let damage2 = otherBullet.GetDamage();
 
-    UpdatePosition(dt:number)
-    {
-        this.SetPreviousPos(this.GetPos());
-
-        switch(this.dir){
-            case(DirEnum.Up):
-                this.pos.y -= this.speed * dt;
+            // one or two are stray, combine!
+            if (bulletPlayer === null && bullet2Player === null) {
+              otherBullet.SetDamage(damage1 + damage2);
+              bullet.SetDamage(0);
+              toDeleteBullets.push(bullet);
+              break;
+            } else if (bulletPlayer === null) {
+              otherBullet.SetDamage(damage1 + damage2);
+              bullet.SetDamage(0);
+              toDeleteBullets.push(bullet);
+              break;
+            } else if (bullet2Player === null) {
+              bullet.SetDamage(damage1 + damage2);
+              bullet.SetDamage(0);
+              toDeleteBullets.push(bullet);
+              break;
+            } else {
+              // both have players
+              if (bulletPlayer.GetId() !== bullet2Player.GetId()) {
+                if (damage1 > damage2) {
+                  if (bullet2Player !== null) bullet2Player.AddHp(damage2);
+                  if (bulletPlayer !== null) bulletPlayer.AddHp(damage2);
+                  otherBullet.SetDamage(0);
+                  bullet.SetDamage(damage1 - damage2);
+                } else if (damage1 < damage2) {
+                  if (bullet2Player !== null) bullet2Player.AddHp(damage1);
+                  if (bulletPlayer !== null) bulletPlayer.AddHp(damage1);
+                  otherBullet.SetDamage(damage2 - damage1);
+                  bullet.SetDamage(0);
+                  toDeleteBullets.push(bullet);
+                  break;
+                } else {
+                  if (bullet2Player !== null) bullet2Player.AddHp(damage2);
+                  if (bulletPlayer !== null) bulletPlayer.AddHp(damage1);
+                  otherBullet.SetDamage(0);
+                  bullet.SetDamage(0);
+                  toDeleteBullets.push(bullet);
+                  break;
+                }
+              } else {
+                // hitting same player bullet
+                otherBullet.SetDamage(damage1 + damage2);
+                bullet.SetDamage(0);
+                toDeleteBullets.push(bullet);
                 break;
-            case(DirEnum.Down):
-                this.pos.y += this.speed * dt;
-                break;
-            case(DirEnum.Left):
-                this.pos.x -= this.speed * dt;
-                break;
-            case(DirEnum.Right):
-                this.pos.x += this.speed * dt;
-                break;
+              }
+            }
+          } else {
+            console.log("bullet hitting uknown type");
+            console.log(transform);
+          }
         }
-
-        if(this.isHP===true && this.speed > 0){
-            this.speed -= (dt * 0.01);
-            this.color = Color.Lerp(this.color, Color.Red, (dt * 0.01));
-            if(this.speed<0) this.speed = 0;
-        }
-
+      }
+    });
+    for (let bullet of toDeleteBullets) {
+      Bullet.DeleteBullet(bullet);
     }
-
-    static BulletList: Bullet[] = [];
-
-    static AddBullet(bullet:Bullet){
-        Bullet.BulletList.push(bullet);
-    }
-    static DeleteBullet(bullet:Bullet){
-        let index = Bullet.BulletList.indexOf(bullet);
-        delete Bullet.BulletList[index];
-        Bullet.BulletList.splice(index, 1);
-    }
-
-    static GetBullets(){return Bullet.BulletList;}
-
-    static UpdateBullets(dt:number, pack:object[], players:Record<number, IPlayer>){
-
-        for(let bullet of Bullet.BulletList){
-
-            if(bullet.damage <= 0) continue;
-
-            bullet.UpdatePosition(dt);
-            bullet.CheckWorldWrap();
-
-            let bbNow = bullet.GetBoundingBox();
-            let bbOld = bullet.GetOldBoundingBox();
-
-            //bbOld.OffsetBy(Vector.ScaleBy(bullet.GetMoveVector(), -1));
-            let bbCombined = BoundingBox.Add(bbNow, bbOld);
-            let bbTrans = bbCombined.GetTransform();
-
-            if(false){ // render bb
-                let tPack = bbTrans.GetDataPack();
-                tPack.SetColor(Color.Green);
-                tPack.id = -1;
-                tPack.type = UnitType.Bullet;
-                pack.push(tPack); 
-            }
-            
-
-            let cells = World.inst.GetPossibleCollisions(bullet.pos);
-            //console.log(cells.length);
-            for(let i in  cells){
-                let cell = cells[i];
-
-                if(false){ // render cells
-                    let cPack = cell.GetDataPack();
-                    cPack.SetColor(new Color(0,0,0,0.1));
-                    cPack.type = UnitType.Bullet;
-                    pack.push(cPack);
-                }
-                
-
-                if(cell.IsRock() && cell.CheckCollision(bbTrans)==true){
-                    
-
-                    let overlapBB = BoundingBox.Sub(bbCombined, cell.GetBoundingBox())
-                    let overlap = overlapBB.GetTransform();
-
-                    let vec = Vector.ScaleBy( Vector.GetDirVector(bullet.dir), -1.0001);
-                    vec.mul(overlap.GetSize());
-                    bullet.pos.add(vec);
-             
-                    if(false){ // render hiting cell
-                        let cPack = cell.GetDataPack();
-                        cPack.SetColor(Color.Magenta);
-                        cPack.type = UnitType.Bullet;
-                        pack.push(cPack);
-                    }
-
-                    bullet.dir = Bullet.GetMirrorDir(bullet.dir)
-                    
-                    if(false){ // render overlap
-                        let oPack = overlap.GetDataPack();
-                        oPack.SetColor(Color.Cyan);
-                        pack.push(oPack);
-                    }
-                    
-                    break;
-
-                }
-            }
-
-            pack.push(bullet.GetDataPack()); 
-
-            let bulletPlayer = bullet.GetPlayer();
-
-            for(let i in players){
-                let player = players[i];
-                if(bullet.CheckCollision(player.GetTransform())===true){
-                    if(bullet.id !== player.GetId()){
-                        if(bullet.isHP===true){
-                            player.AddHp(bullet.damage);
-                        }
-                        else{
-                            player.TakeDamage(bullet.damage);
-                            if(!player.IsAlive() && bulletPlayer != null) bulletPlayer.LevelUp();
-                        }
-                    }
-                    if(bulletPlayer !== null) bulletPlayer.AddHp(bullet.damage);
-                    bullet.damage = 0;
-                    break;
-                }
-            }
-
-            if(bullet.damage > 0){
-                for(let bullet2 of Bullet.BulletList){
-                    if(bullet !== bullet2 && bullet2.damage > 0){
-                        bbCombined = BoundingBox.Add(bullet.GetBoundingBox(), bbOld);
-                        bbTrans = bbCombined.GetTransform();
-                        if(bbTrans.CheckCollision(bullet2)===true){
-                            let damage1 = bullet.damage;
-                            let damage2 = bullet2.damage;
-                            if(bullet.id !== bullet2.id){
-                                let bullet2Player = bullet2.GetPlayer();
-                            
-                                if(damage1 >= damage2){
-                                    if(bullet2Player != null) bullet2Player.AddHp(damage2);
-                                    bullet2.SetDamage(0);
-                                }
-                                else{
-                                    if(bullet2Player != null) bullet2Player.AddHp(damage1);
-                                    bullet2.SetDamage(damage2-damage1);
-                                }
-    
-                                if(damage2 >= damage1){
-                                    if(bulletPlayer != null) bulletPlayer.AddHp(damage1);
-                                    bullet.SetDamage(0);
-                                    break;
-                                }
-                                else{
-                                    if(bulletPlayer != null) bulletPlayer.AddHp(damage2);
-                                    bullet.SetDamage(damage1-damage2);
-                                }
-                            }
-                            else{
-                                if(damage1 >= damage2){
-                                    bullet.SetDamage(damage1 + damage2);
-                                    bullet2.SetDamage(0);
-                                }
-                                else{
-                                    bullet.SetDamage(0);
-                                    bullet2.SetDamage(damage1 + damage2);
-                                }
-                            }
-                        }
-
-                    }
-                }
-            }
-
-            if(bullet.timer >= 0){
-                bullet.timer -= dt;
-                if(bullet.timer <= 0) bullet.damage = 0;
-            }          
-        } 
-
-        for(let bullet of Bullet.BulletList){
-            if(bullet.damage <= 0){
-                bullet.RemoveBullet();
-                Bullet.DeleteBullet(bullet)
-            }
-        }
-    }
-
+  }
 }

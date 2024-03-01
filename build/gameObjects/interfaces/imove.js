@@ -12,4 +12,4 @@ var DirEnum;
     DirEnum[DirEnum["UpRight"] = 6] = "UpRight";
     DirEnum[DirEnum["DownLeft"] = 7] = "DownLeft";
     DirEnum[DirEnum["DownRight"] = 8] = "DownRight";
-})(DirEnum = exports.DirEnum || (exports.DirEnum = {}));
+})(DirEnum || (exports.DirEnum = DirEnum = {}));

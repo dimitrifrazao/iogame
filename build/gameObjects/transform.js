@@ -7,13 +7,15 @@ var __extends = (this && this.__extends) || (function () {
         return extendStatics(d, b);
     };
     return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CellType = exports.Cell = exports.Transform = exports.DataPack = exports.UnitType = void 0;
+exports.Transform = exports.DataPack = exports.UnitType = void 0;
 var world_1 = require("../main/world");
 var vector_1 = require("./vector");
 var color_1 = require("./color");
@@ -26,7 +28,8 @@ var UnitType;
     UnitType[UnitType["Player"] = 1] = "Player";
     UnitType[UnitType["Bullet"] = 2] = "Bullet";
     UnitType[UnitType["UI"] = 3] = "UI";
-})(UnitType = exports.UnitType || (exports.UnitType = {}));
+    UnitType[UnitType["QT"] = 4] = "QT";
+})(UnitType || (exports.UnitType = UnitType = {}));
 var DataPack = /** @class */ (function () {
     function DataPack() {
         this.x = 0;
@@ -34,7 +37,7 @@ var DataPack = /** @class */ (function () {
         this.r = 0;
         this.g = 0;
         this.b = 0;
-        this.a = 1;
+        this.a = 255;
         this.sx = 0;
         this.sy = 0;
         this.id = 0;
@@ -56,71 +59,89 @@ var DataPack = /** @class */ (function () {
 exports.DataPack = DataPack;
 var Transform = /** @class */ (function (_super) {
     __extends(Transform, _super);
-    function Transform() {
+    function Transform(pos, size) {
+        if (pos === void 0) { pos = new vector_1.Vector(); }
+        if (size === void 0) { size = new vector_1.Vector(1, 1); }
         var _this = _super.call(this) || this;
+        _this.pos = pos;
+        _this.size = size;
         _this.id = -1;
         _this.type = UnitType.None;
-        _this.pos = new vector_1.Vector();
-        _this.size = new vector_1.Vector(1, 1);
         _this.color = color_1.Color.DarkGrey;
         _this.previousPos = new vector_1.Vector();
         return _this;
     }
-    Transform.prototype.GetId = function () { return this.id; };
-    ;
-    ;
-    Transform.prototype.GetUnitType = function () { return this.type; };
-    ;
-    Transform.prototype.SetPos = function (pos) { this.pos = pos; };
-    ;
+    Transform.prototype.GetId = function () {
+        return this.id;
+    };
+    Transform.prototype.GetUnitType = function () {
+        return this.type;
+    };
+    Transform.prototype.SetPos = function (pos) {
+        this.pos = pos;
+    };
     Transform.prototype.SetPosValues = function (x, y) {
         this.pos.x = x;
         this.pos.y = y;
     };
-    Transform.prototype.GetPos = function () { return this.pos; };
-    ;
-    Transform.prototype.AddPos = function (pos) { this.pos.add(pos); };
-    ;
+    Transform.prototype.GetPos = function () {
+        return this.pos;
+    };
+    Transform.prototype.AddPos = function (pos) {
+        this.pos.add(pos);
+    };
     Transform.prototype.SetPreviousPos = function (pos) {
         this.previousPos.x = pos.x;
         this.previousPos.y = pos.y;
     };
-    ;
-    Transform.prototype.AddPreviousPos = function (pos) { this.previousPos.add(pos); };
-    ;
-    Transform.prototype.GetPreviousPos = function () { return this.previousPos; };
-    ;
-    Transform.prototype.SetSize = function (size) { this.size = size; };
-    ;
+    Transform.prototype.AddPreviousPos = function (pos) {
+        this.previousPos.add(pos);
+    };
+    Transform.prototype.GetPreviousPos = function () {
+        return this.previousPos;
+    };
+    Transform.prototype.SetSize = function (size) {
+        this.size = size;
+    };
     Transform.prototype.SetSizeValues = function (x, y) {
         this.size.x = x;
         this.size.y = y;
     };
-    Transform.prototype.GetSize = function () { return this.size; };
-    ;
-    Transform.prototype.SetColor = function (color) { this.color = color; };
-    ;
-    Transform.prototype.GetColor = function () { return this.color; };
-    ;
-    Transform.prototype.GetBoundingBox = function () { return boundingBox_1.BoundingBox.MakeFrom(this); };
-    ;
-    Transform.prototype.GetOldBoundingBox = function () { return boundingBox_1.BoundingBox.MakeFromVectorAndSize(this.GetPreviousPos(), this.GetSize()); };
-    ;
+    Transform.prototype.GetSize = function () {
+        return this.size;
+    };
+    Transform.prototype.SetColor = function (color) {
+        this.color = color;
+    };
+    Transform.prototype.GetColor = function () {
+        return this.color;
+    };
+    Transform.prototype.GetBoundingBox = function () {
+        return boundingBox_1.BoundingBox.MakeFrom(this);
+    };
+    Transform.prototype.GetOldBoundingBox = function () {
+        return boundingBox_1.BoundingBox.MakeFromVectorAndSize(this.GetPreviousPos(), this.GetSize());
+    };
+    Transform.prototype.GetCombinedBoundingBox = function () {
+        return boundingBox_1.BoundingBox.Add(this.GetBoundingBox(), this.GetOldBoundingBox());
+    };
     Transform.prototype.GetDataPack = function () {
         var dPack = new DataPack();
         dPack.SetPos(this.GetTopLeftPos());
         dPack.SetColor(this.GetColor());
-        dPack.sx = this.size.x,
-            dPack.sy = this.size.y,
-            dPack.id = this.GetId(),
-            dPack.type = this.GetUnitType();
+        dPack.sx = this.size.x;
+        dPack.sy = this.size.y;
+        dPack.id = this.GetId();
+        dPack.type = this.GetUnitType();
         return dPack;
     };
     Transform.prototype.CheckCollision = function (trans) {
-        return (Math.abs(this.pos.x - trans.pos.x) < (this.size.x + trans.size.x) / 2) &&
-            (Math.abs(this.pos.y - trans.pos.y) < (this.size.y + trans.size.y) / 2);
+        return (Math.abs(this.pos.x - trans.pos.x) < (this.size.x + trans.size.x) / 2 &&
+            Math.abs(this.pos.y - trans.pos.y) < (this.size.y + trans.size.y) / 2);
     };
-    ;
+    Transform.prototype.CheckBBCollision = function (bb) {
+        return this.CheckCollision(bb.GetTransform());
+    };
     Transform.prototype.GetOverlap = function (trans) {
         var bb1 = this.GetBoundingBox();
         var bb2 = trans.GetBoundingBox();
@@ -136,11 +157,10 @@ var Transform = /** @class */ (function (_super) {
         }
     };
     Transform.prototype.GetTopLeftPos = function () {
-        return new vector_1.Vector(this.pos.x - (this.size.x / 2), this.pos.y - (this.size.y / 2));
+        return new vector_1.Vector(this.pos.x - this.size.x / 2, this.pos.y - this.size.y / 2);
     };
-    ;
     Transform.prototype.GetBotRightPos = function () {
-        return new vector_1.Vector(this.pos.x + (this.size.x / 2), this.pos.y + (this.size.y / 2));
+        return new vector_1.Vector(this.pos.x + this.size.x / 2, this.pos.y + this.size.y / 2);
     };
     Transform.prototype.GetArea = function () {
         return this.size.x * this.size.y;
@@ -150,37 +170,21 @@ var Transform = /** @class */ (function (_super) {
     };
     Transform.GetMirrorDir = function (dir) {
         switch (dir) {
-            case imove_1.DirEnum.Left: return imove_1.DirEnum.Right;
-            case imove_1.DirEnum.Right: return imove_1.DirEnum.Left;
-            case imove_1.DirEnum.Up: return imove_1.DirEnum.Down;
-            case imove_1.DirEnum.Down: return imove_1.DirEnum.Up;
-            case imove_1.DirEnum.UpLeft: return imove_1.DirEnum.DownRight;
-            case imove_1.DirEnum.UpRight: return imove_1.DirEnum.DownLeft;
+            case imove_1.DirEnum.Left:
+                return imove_1.DirEnum.Right;
+            case imove_1.DirEnum.Right:
+                return imove_1.DirEnum.Left;
+            case imove_1.DirEnum.Up:
+                return imove_1.DirEnum.Down;
+            case imove_1.DirEnum.Down:
+                return imove_1.DirEnum.Up;
+            case imove_1.DirEnum.UpLeft:
+                return imove_1.DirEnum.DownRight;
+            case imove_1.DirEnum.UpRight:
+                return imove_1.DirEnum.DownLeft;
         }
         return imove_1.DirEnum.None;
     };
     return Transform;
 }(gameObject_1.GameObject));
 exports.Transform = Transform;
-var Cell = /** @class */ (function (_super) {
-    __extends(Cell, _super);
-    function Cell() {
-        var _this = _super.call(this) || this;
-        _this.cellType = CellType.Empty;
-        return _this;
-    }
-    ;
-    Cell.prototype.IsRock = function () { return this.cellType == CellType.Rock; };
-    Cell.prototype.GetDataPack = function () {
-        var dPack = _super.prototype.GetDataPack.call(this);
-        dPack.SetColor(color_1.Color.Black);
-        return dPack;
-    };
-    return Cell;
-}(Transform));
-exports.Cell = Cell;
-var CellType;
-(function (CellType) {
-    CellType[CellType["Empty"] = 0] = "Empty";
-    CellType[CellType["Rock"] = 1] = "Rock";
-})(CellType = exports.CellType || (exports.CellType = {}));
