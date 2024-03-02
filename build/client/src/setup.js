@@ -7,7 +7,6 @@ function ClientSetUp(canvas, socket) {
     canvas.width = document.body.clientWidth;
     canvas.height = document.body.clientHeight;
     var ctx = canvas.getContext("2d");
-    renderer_1.Renderer.id = socket.id;
     socket.on("update", function (data) {
         renderer_1.Renderer.Render(canvas, ctx, data);
     });
@@ -22,6 +21,9 @@ function ClientSetUp(canvas, socket) {
     });
     socket.on("cameraPos", function (data) {
         renderer_1.Renderer.SetCameraPos(data.pos);
+    });
+    socket.on("setPlayerId", function (data) {
+        renderer_1.Renderer.SetPlayerId(data.id);
     });
     input_1.InputManager.SetSocket(socket);
     document.onkeydown = function (event) {

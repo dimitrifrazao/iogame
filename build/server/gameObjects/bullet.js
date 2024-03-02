@@ -91,8 +91,8 @@ var Bullet = /** @class */ (function (_super) {
         var playerManager = this.GetPlayerManager();
         if (playerManager !== null) {
             playerManager.RemoveBullet(this);
-            this.player = null;
         }
+        this.player = null;
     };
     // default
     Bullet.prototype.SetDirection = function (dir) {
@@ -136,7 +136,7 @@ var Bullet = /** @class */ (function (_super) {
     Bullet.DeleteBullet = function (bullet) {
         bullet.Release();
         if (!Bullet.BulletMap.has(bullet.GetId())) {
-            throw Error("tried to delete an non existing bullet id");
+            console.log("ERROR: tried to delete an non existing bullet id");
         }
         Bullet.BulletMap.delete(bullet.GetId());
     };
@@ -260,10 +260,16 @@ var Bullet = /** @class */ (function (_super) {
                         var damage2 = otherBullet.GetDamage();
                         // one or two are stray, combine!
                         if (bulletPlayer === null && bullet2Player === null) {
-                            otherBullet.SetDamage(damage1 + damage2);
-                            bullet.SetDamage(0);
-                            toDeleteBullets.push(bullet);
-                            break;
+                            if (damage1 > damage2) {
+                                bullet.SetDamage(damage1 + damage2);
+                                otherBullet.SetDamage(0);
+                            }
+                            else {
+                                otherBullet.SetDamage(damage1 + damage2);
+                                bullet.SetDamage(0);
+                                toDeleteBullets.push(bullet);
+                                break;
+                            }
                         }
                         else if (bulletPlayer === null) {
                             otherBullet.SetDamage(damage1 + damage2);
@@ -273,9 +279,7 @@ var Bullet = /** @class */ (function (_super) {
                         }
                         else if (bullet2Player === null) {
                             bullet.SetDamage(damage1 + damage2);
-                            bullet.SetDamage(0);
-                            toDeleteBullets.push(bullet);
-                            break;
+                            otherBullet.SetDamage(0);
                         }
                         else {
                             // both have players
@@ -311,10 +315,16 @@ var Bullet = /** @class */ (function (_super) {
                             }
                             else {
                                 // hitting same player bullet
-                                otherBullet.SetDamage(damage1 + damage2);
-                                bullet.SetDamage(0);
-                                toDeleteBullets.push(bullet);
-                                break;
+                                if (damage1 > damage2) {
+                                    bullet.SetDamage(damage1 + damage2);
+                                    otherBullet.SetDamage(0);
+                                }
+                                else {
+                                    otherBullet.SetDamage(damage1 + damage2);
+                                    bullet.SetDamage(0);
+                                    toDeleteBullets.push(bullet);
+                                    break;
+                                }
                             }
                         }
                     }
@@ -323,11 +333,13 @@ var Bullet = /** @class */ (function (_super) {
                         console.log(transform);
                     }
                 }
+                transforms.length = 0;
             }
         });
-        for (var _i = 0, toDeleteBullets_1 = toDeleteBullets; _i < toDeleteBullets_1.length; _i++) {
-            var bullet = toDeleteBullets_1[_i];
-            Bullet.DeleteBullet(bullet);
+        while (toDeleteBullets.length > 0) {
+            var toDeleteBullet = toDeleteBullets.pop();
+            if (toDeleteBullet !== undefined)
+                Bullet.DeleteBullet(toDeleteBullet);
         }
     };
     Bullet.defaultSpeed = 0.4;

@@ -1,6 +1,8 @@
 import { Transform } from "./transform";
 import { Vector } from "../../shared/vector";
 import { UnitType } from "../../shared/enums/unitType";
+import { DataPack } from "../../shared/data";
+import { Color } from "../../shared/color";
 
 export class QuadtreeNode extends Transform {
   static root: QuadtreeNode;
@@ -19,11 +21,11 @@ export class QuadtreeNode extends Transform {
   }
 
   Clear() {
-    this.transforms.length = 0;
     let size = this.children.length;
     for (let i = 0; i < size; i++) {
       this.children[i].Clear();
     }
+    this.transforms.length = 0;
     this.children.length = 0;
   }
 
@@ -35,11 +37,9 @@ export class QuadtreeNode extends Transform {
 
   private RetrieveRec(transform: Transform, neighbours: Transform[]) {
     if (!this.CheckCollision(transform)) return;
-    if (this.children.length > 0) {
-      this.children.forEach((child) => {
-        child.RetrieveRec(transform, neighbours);
-      });
-    }
+    this.children.forEach((child) => {
+      child.RetrieveRec(transform, neighbours);
+    });
     this.transforms.forEach((transform) => {
       neighbours.push(transform);
     });
@@ -69,11 +69,11 @@ export class QuadtreeNode extends Transform {
 
   // Subdivide the node into four children quadrants
   subdivide() {
-    const center = this.GetPos();
-    const size = this.GetSize();
-    const halfSize = size.newScaleBy(0.5);
-    const quarterSize = size.newScaleBy(0.25);
-    const flipped = quarterSize.copy();
+    let center = this.GetPos();
+    let size = this.GetSize();
+    let halfSize = size.newScaleBy(0.5);
+    let quarterSize = size.newScaleBy(0.25);
+    let flipped = quarterSize.copy();
     flipped.x *= -1.0;
     let newDepth = this.depth + 1;
 
@@ -91,9 +91,10 @@ export class QuadtreeNode extends Transform {
     );
   }
 
-  AddDataPacks(packs: object[]) {
+  AddDataPacks(packs: DataPack[]) {
     let p = super.GetDataPack();
-    p.type = UnitType.QT;
+    p.type = UnitType.QuadTree;
+    p.SetColor(Color.Green);
     packs.push(p);
     this.children.forEach((child) => {
       child.AddDataPacks(packs);

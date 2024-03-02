@@ -19,6 +19,7 @@ exports.QuadtreeNode = void 0;
 var transform_1 = require("./transform");
 var vector_1 = require("../../shared/vector");
 var unitType_1 = require("../../shared/enums/unitType");
+var color_1 = require("../../shared/color");
 var QuadtreeNode = /** @class */ (function (_super) {
     __extends(QuadtreeNode, _super);
     function QuadtreeNode(pos, size, depth) {
@@ -33,11 +34,11 @@ var QuadtreeNode = /** @class */ (function (_super) {
         //console.log("quad data", pos, size, depth);
     }
     QuadtreeNode.prototype.Clear = function () {
-        this.transforms.length = 0;
         var size = this.children.length;
         for (var i = 0; i < size; i++) {
             this.children[i].Clear();
         }
+        this.transforms.length = 0;
         this.children.length = 0;
     };
     QuadtreeNode.prototype.Retrieve = function (transform) {
@@ -48,11 +49,9 @@ var QuadtreeNode = /** @class */ (function (_super) {
     QuadtreeNode.prototype.RetrieveRec = function (transform, neighbours) {
         if (!this.CheckCollision(transform))
             return;
-        if (this.children.length > 0) {
-            this.children.forEach(function (child) {
-                child.RetrieveRec(transform, neighbours);
-            });
-        }
+        this.children.forEach(function (child) {
+            child.RetrieveRec(transform, neighbours);
+        });
         this.transforms.forEach(function (transform) {
             neighbours.push(transform);
         });
@@ -93,7 +92,8 @@ var QuadtreeNode = /** @class */ (function (_super) {
     };
     QuadtreeNode.prototype.AddDataPacks = function (packs) {
         var p = _super.prototype.GetDataPack.call(this);
-        p.type = unitType_1.UnitType.QT;
+        p.type = unitType_1.UnitType.QuadTree;
+        p.SetColor(color_1.Color.Green);
         packs.push(p);
         this.children.forEach(function (child) {
             child.AddDataPacks(packs);

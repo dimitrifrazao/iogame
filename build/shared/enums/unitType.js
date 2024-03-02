@@ -7,5 +7,5 @@ var UnitType;
     UnitType[UnitType["Player"] = 1] = "Player";
     UnitType[UnitType["Bullet"] = 2] = "Bullet";
     UnitType[UnitType["UI"] = 3] = "UI";
-    UnitType[UnitType["QT"] = 4] = "QT";
+    UnitType[UnitType["QuadTree"] = 4] = "QuadTree";
 })(UnitType || (exports.UnitType = UnitType = {}));

@@ -9,8 +9,8 @@ var BoundingBox = /** @class */ (function () {
         if (botRight === void 0) { botRight = new vector_1.Vector(); }
         this.topLeft = topLeft;
         this.botRight = botRight;
-        if (topLeft.x >= botRight.x || topLeft.y >= botRight.y) {
-            throw Error("bounding box topLeft and bottomRight crossing");
+        if (topLeft.x > botRight.x || topLeft.y > botRight.y) {
+            console.log("ERROR: bounding box topLeft and bottomRight crossing");
         }
     }
     BoundingBox.prototype.GetTopLeft = function () {

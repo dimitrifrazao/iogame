@@ -6,6 +6,7 @@ import { Bullet } from "../gameObjects/bullet";
 import { QuadtreeNode } from "../gameObjects/quadTree";
 import { ClientRequestEnum } from "../../shared/enums/clientRequests";
 import { Global } from "./global";
+import { DataPack } from "../../shared/data";
 
 export class Game {
   static inst: Game = new Game();
@@ -18,6 +19,7 @@ export class Game {
     let h = 60;
     let v = 40;
     let s = 30;
+    Global.unitSize = s;
     World.inst = new World(h, v, s);
     World.inst.Build();
     let center = World.inst.GetWorldCenter();
@@ -105,8 +107,8 @@ export class Game {
     }
   }
 
-  Update(): object[] {
-    let pack: object[] = [];
+  Update(): DataPack[] {
+    let pack: DataPack[] = [];
     let dt = this.GetDeltaTime();
     QuadtreeNode.root.Clear();
     Player.UpdatePlayers(dt, pack);
@@ -114,7 +116,7 @@ export class Game {
     if (Global.debugToggle) {
       QuadtreeNode.root.AddDataPacks(pack); // draw quad tree
     }
-    pack.push({ dt: dt });
+    //pack.push({ dt: dt });
     return pack;
   }
 }

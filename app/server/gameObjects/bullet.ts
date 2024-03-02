@@ -82,8 +82,8 @@ export class Bullet extends Transform implements IMove, IBulletObserver {
     let playerManager = this.GetPlayerManager();
     if (playerManager !== null) {
       playerManager.RemoveBullet(this);
-      this.player = null;
     }
+    this.player = null;
   }
 
   // default
@@ -134,7 +134,7 @@ export class Bullet extends Transform implements IMove, IBulletObserver {
   static DeleteBullet(bullet: Bullet) {
     bullet.Release();
     if (!Bullet.BulletMap.has(bullet.GetId())) {
-      throw Error("tried to delete an non existing bullet id");
+      console.log("ERROR: tried to delete an non existing bullet id");
     }
     Bullet.BulletMap.delete(bullet.GetId());
   }
@@ -267,10 +267,15 @@ export class Bullet extends Transform implements IMove, IBulletObserver {
 
             // one or two are stray, combine!
             if (bulletPlayer === null && bullet2Player === null) {
-              otherBullet.SetDamage(damage1 + damage2);
-              bullet.SetDamage(0);
-              toDeleteBullets.push(bullet);
-              break;
+              if (damage1 > damage2) {
+                bullet.SetDamage(damage1 + damage2);
+                otherBullet.SetDamage(0);
+              } else {
+                otherBullet.SetDamage(damage1 + damage2);
+                bullet.SetDamage(0);
+                toDeleteBullets.push(bullet);
+                break;
+              }
             } else if (bulletPlayer === null) {
               otherBullet.SetDamage(damage1 + damage2);
               bullet.SetDamage(0);
@@ -278,9 +283,7 @@ export class Bullet extends Transform implements IMove, IBulletObserver {
               break;
             } else if (bullet2Player === null) {
               bullet.SetDamage(damage1 + damage2);
-              bullet.SetDamage(0);
-              toDeleteBullets.push(bullet);
-              break;
+              otherBullet.SetDamage(0);
             } else {
               // both have players
               if (bulletPlayer.GetId() !== bullet2Player.GetId()) {
@@ -306,10 +309,15 @@ export class Bullet extends Transform implements IMove, IBulletObserver {
                 }
               } else {
                 // hitting same player bullet
-                otherBullet.SetDamage(damage1 + damage2);
-                bullet.SetDamage(0);
-                toDeleteBullets.push(bullet);
-                break;
+                if (damage1 > damage2) {
+                  bullet.SetDamage(damage1 + damage2);
+                  otherBullet.SetDamage(0);
+                } else {
+                  otherBullet.SetDamage(damage1 + damage2);
+                  bullet.SetDamage(0);
+                  toDeleteBullets.push(bullet);
+                  break;
+                }
               }
             }
           } else {
@@ -317,10 +325,12 @@ export class Bullet extends Transform implements IMove, IBulletObserver {
             console.log(transform);
           }
         }
+        transforms.length = 0;
       }
     });
-    for (let bullet of toDeleteBullets) {
-      Bullet.DeleteBullet(bullet);
+    while (toDeleteBullets.length > 0) {
+      let toDeleteBullet = toDeleteBullets.pop();
+      if (toDeleteBullet !== undefined) Bullet.DeleteBullet(toDeleteBullet);
     }
   }
 }

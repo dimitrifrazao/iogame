@@ -32,6 +32,7 @@ export class Player
   private dashBuffer = 0;
   private dashBufferMax = 100;
   static defaultSpeed: number = 0.3;
+  private static startSize = 30;
 
   constructor(id: number, name: string, deadCallback: any) {
     super();
@@ -86,13 +87,15 @@ export class Player
     this.bullets.forEach((bullet, bulletId) => {
       bullet.Release();
     });
+    this.bullets.clear();
     let id = this.GetId();
     let dPack = this.GetDataPack();
     dPack.SetColor(Color.EmptyPlayer);
     this.deadCallback(id, dPack);
     if (!Player.PlayerMap.has(id)) {
-      throw Error("trying to delete a non existing Player id");
+      console.log("ERROR: trying to delete a non existing Player id");
     }
+    console.log("Removing player: " + this.name);
     Player.PlayerMap.delete(id);
   }
 
@@ -207,7 +210,7 @@ export class Player
     }
   }
 
-  static PlayerMap: Map<number, Player> = new Map<number, Player>();
+  private static PlayerMap: Map<number, Player> = new Map<number, Player>();
 
   static DeletePlayer(id: number) {
     let player = Player.GetPlayer(id);
@@ -262,7 +265,6 @@ export class Player
     let deadPlayers: Player[] = [];
 
     Player.PlayerMap.forEach((player, id) => {
-      //let player = Player.PlayerMap[i];
       let transSet = new Set<Transform>();
       let transforms = QuadtreeNode.root.Retrieve(player);
       for (let i = 0; i < transforms.length; i++) {
@@ -278,17 +280,19 @@ export class Player
           continue;
         }
       }
+      transforms.length = 0;
 
       // back red square
       let playerRedPack = player.GetDataPack();
       playerRedPack.SetColor(Color.EmptyPlayer);
+      playerRedPack.id = -1;
       pack.push(playerRedPack);
 
       // main player square that shrinks as hp lowers
       let playerPack = player.GetDataPack();
       playerPack.name = ""; // erase name so we dont have double moving up n down
       playerPack.sy = player.size.y * (player.hp / player.hpMax);
-      playerPack.y += player.size.y - playerPack.sy;
+      playerPack.y += playerPack.sx - playerPack.sy;
       pack.push(playerPack);
 
       let dashUI = new Transform();
@@ -335,8 +339,9 @@ export class Player
       }
     });
 
-    for (let deadPlayer of deadPlayers) {
-      deadPlayer.TakeDamage(deadPlayer.hp);
+    while (deadPlayers.length > 0) {
+      let deadPlayer = deadPlayers.pop();
+      if (deadPlayer !== undefined) deadPlayer.TakeDamage(deadPlayer.hp);
     }
   }
 }

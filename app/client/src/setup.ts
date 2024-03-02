@@ -1,12 +1,11 @@
 import { Renderer } from "./renderer";
 import { InputManager } from "./input";
+import { DataPack } from "../../shared/data";
 
 export function ClientSetUp(canvas: any, socket: any) {
   canvas.width = document.body.clientWidth;
   canvas.height = document.body.clientHeight;
   var ctx: CanvasRenderingContext2D | null = canvas.getContext("2d");
-
-  Renderer.id = socket.id;
 
   socket.on("update", function (data: any) {
     Renderer.Render(canvas, ctx, data);
@@ -26,6 +25,10 @@ export function ClientSetUp(canvas: any, socket: any) {
 
   socket.on("cameraPos", function (data: any) {
     Renderer.SetCameraPos(data.pos);
+  });
+
+  socket.on("setPlayerId", function (data: any) {
+    Renderer.SetPlayerId(data.id);
   });
 
   InputManager.SetSocket(socket);

@@ -1,9 +1,12 @@
 import { Color } from "../../shared/color";
+import { DataPack } from "../../shared/data";
+import { UnitType } from "../../shared/enums/unitType";
+import { Vector } from "../../shared/vector";
 
 export class Renderer {
   static gridColor: string = "rgba(0,0,255,0.1)"; // transparent blue
   static worldData: any[] = [];
-  static deadBodies = new Map<string, any>();
+  static deadBodies = new Map<number, any>();
   //static inst:Renderer = new Renderer();
   static id: number;
   static cameraPos: any;
@@ -12,9 +15,12 @@ export class Renderer {
   static worldUnitSize: number;
   static worldHorizontalUnits: number;
   static worldVerticalUnits: number;
-  static canvas: HTMLCanvasElement;
-  static ctx: CanvasRenderingContext2D;
+  static topLeftPos: Vector;
   constructor() {}
+
+  static SetPlayerId(id: number) {
+    Renderer.id = id;
+  }
 
   static SetCameraPos(pos: any) {
     Renderer.cameraPos = pos;
@@ -34,14 +40,62 @@ export class Renderer {
   }
 
   static AddDeadBody(data: any) {
-    Renderer.deadBodies.set(data.id.toString(), data);
+    Renderer.deadBodies.set(data.id, data);
   }
 
-  static Render(canvas: HTMLCanvasElement, ctx: any, data: any) {
-    let dt = data.pop().dt;
+  static GetTopLeftVector() {
+    return Renderer.topLeftPos;
+  }
+
+  static DrawSquare(ctx: any, data: DataPack, worldSpace: boolean = true) {
+    let pos = data.GetPos();
+    if (worldSpace) {
+      pos.add(Renderer.GetTopLeftVector());
+    }
+    ctx.fillStyle = data.GetColor().ToString();
+    ctx.fillRect(pos.x, pos.y, data.sx, data.sy);
+  }
+
+  static DrawSquareLine(ctx: any, data: DataPack, worldSpace: boolean = true) {
+    let pos = data.GetPos();
+    if (worldSpace) {
+      pos.add(Renderer.GetTopLeftVector());
+    }
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y); // left top
+    ctx.lineTo(pos.x + data.sx, pos.y); // right top
+    ctx.lineTo(pos.x + data.sx, pos.y + data.sy); // right bot
+    ctx.lineTo(pos.x, pos.y + data.sy); // left bot
+    ctx.lineTo(pos.x, pos.y); // left top
+    ctx.closePath(); // Close the path to connect the last point with the first
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = data.GetColor().ToString();
+    ctx.stroke();
+  }
+
+  static DrawText(
+    ctx: any,
+    data: DataPack,
+    size: number,
+    worldSpace: boolean = true
+  ) {
+    let pos = data.GetPos();
+    if (worldSpace) {
+      pos.add(Renderer.GetTopLeftVector());
+    }
+    ctx.fillStyle = data.GetColor().ToString();
+    ctx.font = size.toString() + "px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(data.name, pos.x, pos.y);
+  }
+
+  static Render(canvas: HTMLCanvasElement, ctx: any, serverData: any) {
+    let dt = 0; //serverData.pop().dt;
 
     let topLeftX = canvas.width / 2 - Renderer.cameraPos.x;
     let topLeftY = canvas.height / 2 - Renderer.cameraPos.y;
+    Renderer.topLeftPos = new Vector(topLeftX, topLeftY);
 
     ctx.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
 
@@ -58,7 +112,6 @@ export class Renderer {
       ctx.moveTo(topLeftX, finalY);
       ctx.lineTo(topLeftX + Renderer.worldWidth, finalY);
     }
-
     ctx.strokeStyle = Renderer.gridColor;
     ctx.stroke();
 
@@ -79,112 +132,62 @@ export class Renderer {
     ctx.stroke();
 
     // draw rocks
-    ctx.beginPath();
-    Renderer.worldData.forEach((dataPack) => {
-      let finalX = canvas.width / 2 + dataPack.x - Renderer.cameraPos.x;
-      let finalY = canvas.height / 2 + dataPack.y - Renderer.cameraPos.y;
-      ctx.fillStyle = Color.Black.ToString();
-      ctx.fillRect(finalX, finalY, dataPack.sx, dataPack.sy);
+    Renderer.worldData.forEach((data) => {
+      let dataPack = DataPack.Cast(data);
+      Renderer.DrawSquare(ctx, dataPack);
     });
 
-    ctx.beginPath();
-    let toRemoveWorldData: string[] = [];
-    Renderer.deadBodies.forEach((dataPack, id) => {
-      dataPack.a -= 0.01;
-      if (dataPack.a <= 0) toRemoveWorldData.push(id);
-
-      let finalX = canvas.width / 2 + dataPack.x - Renderer.cameraPos.x;
-      let finalY = canvas.height / 2 + dataPack.y - Renderer.cameraPos.y;
-
-      let rgbText =
-        "rgba(" +
-        dataPack.r +
-        "," +
-        dataPack.g +
-        "," +
-        dataPack.b +
-        "," +
-        dataPack.a +
-        ")";
-      ctx.fillStyle = rgbText;
-      ctx.fillRect(finalX, finalY, dataPack.sx, dataPack.sy);
+    let toRemoveWorldData: number[] = [];
+    Renderer.deadBodies.forEach((data, id) => {
+      data.a -= 0.01;
+      if (data.a <= 0) toRemoveWorldData.push(id);
+      else Renderer.DrawSquare(ctx, DataPack.Cast(data));
     });
-
+    if (toRemoveWorldData.length > 0) {
+      console.log("deleting dead bodies");
+    }
     for (let id of toRemoveWorldData) {
       Renderer.deadBodies.delete(id);
     }
 
-    for (var i = 0; i < data.length; i++) {
-      let d = data[i];
-      let rgbText = "rgba(" + d.r + "," + d.g + "," + d.b + "," + d.a + ")";
+    for (var i = 0; i < serverData.length; i++) {
+      let data = DataPack.Cast(serverData[i]);
+      let rgbText = data.GetColor().ToString();
 
-      switch (d.type) {
-        case 0: // debug
-          d.x += canvas.width / 2 - Renderer.cameraPos.x;
-          d.y += canvas.height / 2 - Renderer.cameraPos.y;
-          ctx.fillStyle = rgbText;
-          ctx.fillRect(d.x, d.y, d.sx, d.sy);
+      switch (data.type) {
+        case UnitType.None: // debug
+          Renderer.DrawSquare(ctx, data);
           break;
 
-        case 1: // players
-          if (d.id == Renderer.id) {
+        case UnitType.Player:
+          if (data.id == Renderer.id) {
             // our player
-            let offset = (d.sx - d.sy) / 2;
-            d.x = canvas.width / 2 - d.sx / 2;
-            d.y = canvas.height / 2 - d.sy / 2 + offset;
+            data.x = canvas.width / 2 - data.sx / 2;
+            data.y = canvas.height / 2 - data.sy / 2;
+            data.y += (data.sx - data.sy) / 2;
+            Renderer.DrawSquare(ctx, data, false);
           } else {
             // other players
-            d.x += canvas.width / 2 - Renderer.cameraPos.x;
-            d.y += canvas.height / 2 - Renderer.cameraPos.y;
-          }
-          ctx.fillStyle = rgbText;
-          ctx.fillRect(d.x, d.y, d.sx, d.sy);
-
-          if (d.name !== "") {
-            ctx.fillStyle = "rgb(100,100,100)";
-            ctx.font = "15px Arial";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(d.name, d.x + d.sx / 2, d.y - 5);
+            Renderer.DrawSquare(ctx, data);
+            data.x += data.sx / 2;
+            data.y -= 5;
+            Renderer.DrawText(ctx, data, 15);
           }
           break;
 
-        case 2: // bullets
-          d.x += canvas.width / 2 - Renderer.cameraPos.x;
-          d.y += canvas.height / 2 - Renderer.cameraPos.y;
-          if (d.id == Renderer.id) {
-            // player bullet
-            rgbText = "rgb(250,0,0)";
-          }
-          ctx.fillStyle = rgbText;
-          ctx.fillRect(d.x, d.y, d.sx, d.sy);
+        case UnitType.Bullet:
+          if (data.id == Renderer.id) data.SetColor(Color.Red);
+          Renderer.DrawSquare(ctx, data);
           break;
 
-        case 3: //UI
-          if (d.id != Renderer.id) rgbText = "rgba(0,0,0,0)";
+        case UnitType.UI:
+          if (data.id != Renderer.id) continue;
           ctx.fillStyle = rgbText;
-          ctx.fillRect(d.x, d.y, d.sx, d.sy);
+          ctx.fillRect(data.x, data.y, data.sx, data.sy);
           break;
 
-        case 4: // QuadTreeNode
-          d.x += canvas.width / 2 - Renderer.cameraPos.x;
-          d.y += canvas.height / 2 - Renderer.cameraPos.y;
-          ctx.beginPath();
-          ctx.moveTo(d.x, d.y); // left top
-          ctx.lineTo(d.x + d.sx, d.y); // right top
-          ctx.lineTo(d.x + d.sx, d.y + d.sy); // right bot
-          ctx.lineTo(d.x, d.y + d.sy); // left bot
-          ctx.lineTo(d.x, d.y); // left top
-
-          /* ctx.moveTo(d.x - d.sx / 2, d.y - d.sy / 2); // left top
-          ctx.lineTo(d.x + d.sx / 2, d.y - d.sy / 2); // right top
-          ctx.lineTo(d.x + d.sx / 2, d.y + d.sy / 2); // right bot
-          ctx.lineTo(d.x - d.sx / 2, d.y + d.sy / 2); // left bot
-          ctx.lineTo(d.x - d.sx / 2, d.y - d.sy / 2); // left top */
-          ctx.closePath(); // Close the path to connect the last point with the first
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = "rgb(0,250,0)";
-          ctx.stroke();
+        case UnitType.QuadTree: // QuadTreeNode
+          Renderer.DrawSquareLine(ctx, data);
           break;
       }
     }
@@ -196,6 +199,6 @@ export class Renderer {
     ctx.fillStyle = "black";
     var x = canvas.width * 0.95;
     var y = canvas.height * 0.05;
-    ctx.fillText(dt.toString(), x, y);
+    ctx.fillText("FR: " + dt.toString(), x, y);
   }
 }

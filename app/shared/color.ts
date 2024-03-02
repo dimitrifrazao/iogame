@@ -24,7 +24,7 @@ export class Color {
     public r: number = 0,
     public g: number = 0,
     public b: number = 0,
-    public a: number = 255
+    public a: number = 1 // alpha goes from 0 to 1
   ) {}
   static Random() {
     return new Color(
@@ -61,7 +61,6 @@ export class Color {
   }
 
   static RandomPlayerColor() {
-    let color = new Color(120, 120, 120);
     return new Color(
       Math.random() * 100 + 100,
       Math.random() * 100 + 100,

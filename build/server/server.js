@@ -50,8 +50,7 @@ io.sockets.on("connection", function (socket) {
     PlayerNames.add(queryName);
     socket.emit("worldData", world_1.World.inst.GenerateDataPack());
     socket.emit("worldSize", world_1.World.inst.GetWorldSizeData());
-    //socket.emit("setPlayerId", { id: socket.id });
-    //console.log("socket id " + socket.id.toString())
+    socket.emit("setPlayerId", { id: socket.id });
     console.log("Adding player: " + queryName);
     game_1.Game.inst.AddPlayer(socket.id, queryName, EmitDeadPlayer);
     socket.on("playerDir", function (data) {
@@ -76,18 +75,22 @@ io.sockets.on("connection", function (socket) {
         var name = NAME_LIST.get(socket.id);
         if (name !== undefined) {
             console.log("disconnecting " + name);
-            if (PlayerNames.has(name))
-                PlayerNames.delete(name);
+            PlayerNames.delete(name);
         }
         player_1.Player.DeletePlayer(socket.id);
         NAME_LIST.delete(socket.id);
         SOCKET_LIST.delete(socket.id);
     });
 });
-var EmitDeadPlayer = function (id, data) {
+var EmitDeadPlayer = function (dead_id, data) {
     SOCKET_LIST.forEach(function (socket, id) {
         socket.emit("worldAddDeadBody", data);
     });
+    var name = NAME_LIST.get(dead_id);
+    if (name !== undefined)
+        PlayerNames.delete(name);
+    NAME_LIST.delete(dead_id);
+    console.log("releasing name: " + name);
 };
 var FRAME_RATE = 50;
 setInterval(function () {
@@ -100,8 +103,6 @@ setInterval(function () {
         console.log("UPDATE ERROR");
         console.log(error);
     }
-    if (pack.length === 0)
-        return;
     SOCKET_LIST.forEach(function (socket, id) {
         var player = player_1.Player.GetPlayer(socket.id);
         if (player !== null)

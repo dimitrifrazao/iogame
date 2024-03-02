@@ -92,13 +92,15 @@ var Player = /** @class */ (function (_super) {
         this.bullets.forEach(function (bullet, bulletId) {
             bullet.Release();
         });
+        this.bullets.clear();
         var id = this.GetId();
         var dPack = this.GetDataPack();
         dPack.SetColor(color_1.Color.EmptyPlayer);
         this.deadCallback(id, dPack);
         if (!Player.PlayerMap.has(id)) {
-            throw Error("trying to delete a non existing Player id");
+            console.log("ERROR: trying to delete a non existing Player id");
         }
+        console.log("Removing player: " + this.name);
         Player.PlayerMap.delete(id);
     };
     Player.prototype.LevelUp = function () {
@@ -250,7 +252,6 @@ var Player = /** @class */ (function (_super) {
         });
         var deadPlayers = [];
         Player.PlayerMap.forEach(function (player, id) {
-            //let player = Player.PlayerMap[i];
             var transSet = new Set();
             var transforms = quadTree_1.QuadtreeNode.root.Retrieve(player);
             for (var i = 0; i < transforms.length; i++) {
@@ -265,15 +266,17 @@ var Player = /** @class */ (function (_super) {
                     continue;
                 }
             }
+            transforms.length = 0;
             // back red square
             var playerRedPack = player.GetDataPack();
             playerRedPack.SetColor(color_1.Color.EmptyPlayer);
+            playerRedPack.id = -1;
             pack.push(playerRedPack);
             // main player square that shrinks as hp lowers
             var playerPack = player.GetDataPack();
             playerPack.name = ""; // erase name so we dont have double moving up n down
             playerPack.sy = player.size.y * (player.hp / player.hpMax);
-            playerPack.y += player.size.y - playerPack.sy;
+            playerPack.y += playerPack.sx - playerPack.sy;
             pack.push(playerPack);
             var dashUI = new transform_1.Transform();
             dashUI.SetPosValues(70, 20);
@@ -312,12 +315,14 @@ var Player = /** @class */ (function (_super) {
                 }
             }
         });
-        for (var _i = 0, deadPlayers_1 = deadPlayers; _i < deadPlayers_1.length; _i++) {
-            var deadPlayer = deadPlayers_1[_i];
-            deadPlayer.TakeDamage(deadPlayer.hp);
+        while (deadPlayers.length > 0) {
+            var deadPlayer = deadPlayers.pop();
+            if (deadPlayer !== undefined)
+                deadPlayer.TakeDamage(deadPlayer.hp);
         }
     };
     Player.defaultSpeed = 0.3;
+    Player.startSize = 30;
     Player.PlayerMap = new Map();
     return Player;
 }(transform_1.Transform));

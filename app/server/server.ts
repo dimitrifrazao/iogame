@@ -36,6 +36,7 @@ console.log("Server listening on port " + PORT);
 import { Game } from "./mainGame/game";
 import { World } from "./mainGame/world";
 import { Player } from "./gameObjects/player";
+import { DataPack } from "../shared/data";
 
 Game.inst.Init();
 
@@ -59,8 +60,7 @@ io.sockets.on("connection", function (socket: any) {
 
   socket.emit("worldData", World.inst.GenerateDataPack());
   socket.emit("worldSize", World.inst.GetWorldSizeData());
-  //socket.emit("setPlayerId", { id: socket.id });
-  //console.log("socket id " + socket.id.toString())
+  socket.emit("setPlayerId", { id: socket.id });
 
   console.log("Adding player: " + queryName);
   Game.inst.AddPlayer(socket.id, queryName, EmitDeadPlayer);
@@ -92,7 +92,7 @@ io.sockets.on("connection", function (socket: any) {
     let name = NAME_LIST.get(socket.id);
     if (name !== undefined) {
       console.log("disconnecting " + name);
-      if (PlayerNames.has(name)) PlayerNames.delete(name);
+      PlayerNames.delete(name);
     }
     Player.DeletePlayer(socket.id);
     NAME_LIST.delete(socket.id);
@@ -100,17 +100,21 @@ io.sockets.on("connection", function (socket: any) {
   });
 });
 
-var EmitDeadPlayer = function (id: number, data: any) {
+var EmitDeadPlayer = function (dead_id: number, data: any) {
   SOCKET_LIST.forEach((socket, id) => {
     socket.emit("worldAddDeadBody", data);
   });
+  let name = NAME_LIST.get(dead_id);
+  if (name !== undefined) PlayerNames.delete(name);
+  NAME_LIST.delete(dead_id);
+  console.log("releasing name: " + name);
 };
 
 const FRAME_RATE = 50;
 setInterval(function () {
   Game.inst.Tick();
 
-  let pack: object[] = [];
+  let pack: DataPack[] = [];
   try {
     pack = Game.inst.Update();
   } catch (error) {

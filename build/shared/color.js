@@ -2,11 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Color = void 0;
 var Color = /** @class */ (function () {
-    function Color(r, g, b, a) {
+    function Color(r, g, b, a // alpha goes from 0 to 1
+    ) {
         if (r === void 0) { r = 0; }
         if (g === void 0) { g = 0; }
         if (b === void 0) { b = 0; }
-        if (a === void 0) { a = 255; }
+        if (a === void 0) { a = 1; }
         this.r = r;
         this.g = g;
         this.b = b;
@@ -38,7 +39,6 @@ var Color = /** @class */ (function () {
                 max, min + Math.max(Math.min(-6 * Math.abs(x - 1 / 2) + 2, 1), 0) * max, min + Math.max(Math.min(-6 * Math.abs(x - 5 / 6) + 2, 1), 0) * max);
     };
     Color.RandomPlayerColor = function () {
-        var color = new Color(120, 120, 120);
         return new Color(Math.random() * 100 + 100, Math.random() * 100 + 100, Math.random() * 100 + 100);
     };
     Color.Lerp = function (start, end, t) {

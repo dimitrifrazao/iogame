@@ -2214,7 +2214,7 @@ var socket = (0, socket_io_client_1.io)();
 (0, setup_1.ClientSetUp)(canvas, socket);
 console.log("bundle loaded");
 
-},{"./src/setup":8,"socket.io-client":38}],6:[function(require,module,exports){
+},{"./src/setup":8,"socket.io-client":41}],6:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InputManager = void 0;
@@ -2375,14 +2375,20 @@ var InputManager = /** @class */ (function () {
 }());
 exports.InputManager = InputManager;
 
-},{"../../shared/enums/clientRequests":10,"../../shared/enums/playerInput":11,"../../shared/enums/weapons":12}],7:[function(require,module,exports){
+},{"../../shared/enums/clientRequests":11,"../../shared/enums/playerInput":12,"../../shared/enums/weapons":14}],7:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Renderer = void 0;
 var color_1 = require("../../shared/color");
+var data_1 = require("../../shared/data");
+var unitType_1 = require("../../shared/enums/unitType");
+var vector_1 = require("../../shared/vector");
 var Renderer = /** @class */ (function () {
     function Renderer() {
     }
+    Renderer.SetPlayerId = function (id) {
+        Renderer.id = id;
+    };
     Renderer.SetCameraPos = function (pos) {
         Renderer.cameraPos = pos;
     };
@@ -2398,12 +2404,54 @@ var Renderer = /** @class */ (function () {
         Renderer.worldUnitSize = data.size;
     };
     Renderer.AddDeadBody = function (data) {
-        Renderer.deadBodies.set(data.id.toString(), data);
+        Renderer.deadBodies.set(data.id, data);
     };
-    Renderer.Render = function (canvas, ctx, data) {
-        var dt = data.pop().dt;
+    Renderer.GetTopLeftVector = function () {
+        return Renderer.topLeftPos;
+    };
+    Renderer.DrawSquare = function (ctx, data, worldSpace) {
+        if (worldSpace === void 0) { worldSpace = true; }
+        var pos = data.GetPos();
+        if (worldSpace) {
+            pos.add(Renderer.GetTopLeftVector());
+        }
+        ctx.fillStyle = data.GetColor().ToString();
+        ctx.fillRect(pos.x, pos.y, data.sx, data.sy);
+    };
+    Renderer.DrawSquareLine = function (ctx, data, worldSpace) {
+        if (worldSpace === void 0) { worldSpace = true; }
+        var pos = data.GetPos();
+        if (worldSpace) {
+            pos.add(Renderer.GetTopLeftVector());
+        }
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y); // left top
+        ctx.lineTo(pos.x + data.sx, pos.y); // right top
+        ctx.lineTo(pos.x + data.sx, pos.y + data.sy); // right bot
+        ctx.lineTo(pos.x, pos.y + data.sy); // left bot
+        ctx.lineTo(pos.x, pos.y); // left top
+        ctx.closePath(); // Close the path to connect the last point with the first
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = data.GetColor().ToString();
+        ctx.stroke();
+    };
+    Renderer.DrawText = function (ctx, data, size, worldSpace) {
+        if (worldSpace === void 0) { worldSpace = true; }
+        var pos = data.GetPos();
+        if (worldSpace) {
+            pos.add(Renderer.GetTopLeftVector());
+        }
+        ctx.fillStyle = data.GetColor().ToString();
+        ctx.font = size.toString() + "px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(data.name, pos.x, pos.y);
+    };
+    Renderer.Render = function (canvas, ctx, serverData) {
+        var dt = 0; //serverData.pop().dt;
         var topLeftX = canvas.width / 2 - Renderer.cameraPos.x;
         var topLeftY = canvas.height / 2 - Renderer.cameraPos.y;
+        Renderer.topLeftPos = new vector_1.Vector(topLeftX, topLeftY);
         ctx.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
         ctx.beginPath(); // draw grid
         for (var x = 1; x <= Renderer.worldHorizontalUnits; x++) {
@@ -2431,103 +2479,61 @@ var Renderer = /** @class */ (function () {
         ctx.strokeStyle = color_1.Color.Black.ToString();
         ctx.stroke();
         // draw rocks
-        ctx.beginPath();
-        Renderer.worldData.forEach(function (dataPack) {
-            var finalX = canvas.width / 2 + dataPack.x - Renderer.cameraPos.x;
-            var finalY = canvas.height / 2 + dataPack.y - Renderer.cameraPos.y;
-            ctx.fillStyle = color_1.Color.Black.ToString();
-            ctx.fillRect(finalX, finalY, dataPack.sx, dataPack.sy);
+        Renderer.worldData.forEach(function (data) {
+            var dataPack = data_1.DataPack.Cast(data);
+            Renderer.DrawSquare(ctx, dataPack);
         });
-        ctx.beginPath();
         var toRemoveWorldData = [];
-        Renderer.deadBodies.forEach(function (dataPack, id) {
-            dataPack.a -= 0.01;
-            if (dataPack.a <= 0)
+        Renderer.deadBodies.forEach(function (data, id) {
+            data.a -= 0.01;
+            if (data.a <= 0)
                 toRemoveWorldData.push(id);
-            var finalX = canvas.width / 2 + dataPack.x - Renderer.cameraPos.x;
-            var finalY = canvas.height / 2 + dataPack.y - Renderer.cameraPos.y;
-            var rgbText = "rgba(" +
-                dataPack.r +
-                "," +
-                dataPack.g +
-                "," +
-                dataPack.b +
-                "," +
-                dataPack.a +
-                ")";
-            ctx.fillStyle = rgbText;
-            ctx.fillRect(finalX, finalY, dataPack.sx, dataPack.sy);
+            else
+                Renderer.DrawSquare(ctx, data_1.DataPack.Cast(data));
         });
+        if (toRemoveWorldData.length > 0) {
+            console.log("deleting dead bodies");
+        }
         for (var _i = 0, toRemoveWorldData_1 = toRemoveWorldData; _i < toRemoveWorldData_1.length; _i++) {
             var id = toRemoveWorldData_1[_i];
             Renderer.deadBodies.delete(id);
         }
-        for (var i = 0; i < data.length; i++) {
-            var d = data[i];
-            var rgbText = "rgba(" + d.r + "," + d.g + "," + d.b + "," + d.a + ")";
-            switch (d.type) {
-                case 0: // debug
-                    d.x += canvas.width / 2 - Renderer.cameraPos.x;
-                    d.y += canvas.height / 2 - Renderer.cameraPos.y;
-                    ctx.fillStyle = rgbText;
-                    ctx.fillRect(d.x, d.y, d.sx, d.sy);
+        for (var i = 0; i < serverData.length; i++) {
+            var data = data_1.DataPack.Cast(serverData[i]);
+            var rgbText = data.GetColor().ToString();
+            switch (data.type) {
+                case unitType_1.UnitType.None: // debug
+                    Renderer.DrawSquare(ctx, data);
                     break;
-                case 1: // players
-                    if (d.id == Renderer.id) {
+                case unitType_1.UnitType.Player:
+                    if (data.id == Renderer.id) {
                         // our player
-                        var offset = (d.sx - d.sy) / 2;
-                        d.x = canvas.width / 2 - d.sx / 2;
-                        d.y = canvas.height / 2 - d.sy / 2 + offset;
+                        data.x = canvas.width / 2 - data.sx / 2;
+                        data.y = canvas.height / 2 - data.sy / 2;
+                        data.y += (data.sx - data.sy) / 2;
+                        Renderer.DrawSquare(ctx, data, false);
                     }
                     else {
                         // other players
-                        d.x += canvas.width / 2 - Renderer.cameraPos.x;
-                        d.y += canvas.height / 2 - Renderer.cameraPos.y;
-                    }
-                    ctx.fillStyle = rgbText;
-                    ctx.fillRect(d.x, d.y, d.sx, d.sy);
-                    if (d.name !== "") {
-                        ctx.fillStyle = "rgb(100,100,100)";
-                        ctx.font = "15px Arial";
-                        ctx.textAlign = "center";
-                        ctx.textBaseline = "middle";
-                        ctx.fillText(d.name, d.x + d.sx / 2, d.y - 5);
+                        Renderer.DrawSquare(ctx, data);
+                        data.x += data.sx / 2;
+                        data.y -= 5;
+                        Renderer.DrawText(ctx, data, 15);
                     }
                     break;
-                case 2: // bullets
-                    d.x += canvas.width / 2 - Renderer.cameraPos.x;
-                    d.y += canvas.height / 2 - Renderer.cameraPos.y;
-                    if (d.id == Renderer.id) {
-                        // player bullet
-                        rgbText = "rgb(250,0,0)";
-                    }
-                    ctx.fillStyle = rgbText;
-                    ctx.fillRect(d.x, d.y, d.sx, d.sy);
+                case unitType_1.UnitType.Bullet:
+                    if (data.id == Renderer.id)
+                        data.SetColor(color_1.Color.Red);
+                    Renderer.DrawSquare(ctx, data);
                     break;
-                case 3: //UI
-                    if (d.id != Renderer.id)
-                        rgbText = "rgba(0,0,0,0)";
+                case unitType_1.UnitType.UI:
+                    if (data.id != Renderer.id)
+                        continue;
                     ctx.fillStyle = rgbText;
-                    ctx.fillRect(d.x, d.y, d.sx, d.sy);
+                    ctx.fillRect(data.x, data.y, data.sx, data.sy);
                     break;
-                case 4: // QuadTreeNode
-                    d.x += canvas.width / 2 - Renderer.cameraPos.x;
-                    d.y += canvas.height / 2 - Renderer.cameraPos.y;
-                    ctx.beginPath();
-                    ctx.moveTo(d.x, d.y); // left top
-                    ctx.lineTo(d.x + d.sx, d.y); // right top
-                    ctx.lineTo(d.x + d.sx, d.y + d.sy); // right bot
-                    ctx.lineTo(d.x, d.y + d.sy); // left bot
-                    ctx.lineTo(d.x, d.y); // left top
-                    /* ctx.moveTo(d.x - d.sx / 2, d.y - d.sy / 2); // left top
-                    ctx.lineTo(d.x + d.sx / 2, d.y - d.sy / 2); // right top
-                    ctx.lineTo(d.x + d.sx / 2, d.y + d.sy / 2); // right bot
-                    ctx.lineTo(d.x - d.sx / 2, d.y + d.sy / 2); // left bot
-                    ctx.lineTo(d.x - d.sx / 2, d.y - d.sy / 2); // left top */
-                    ctx.closePath(); // Close the path to connect the last point with the first
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = "rgb(0,250,0)";
-                    ctx.stroke();
+                case unitType_1.UnitType.QuadTree: // QuadTreeNode
+                    Renderer.DrawSquareLine(ctx, data);
                     break;
             }
         }
@@ -2538,7 +2544,7 @@ var Renderer = /** @class */ (function () {
         ctx.fillStyle = "black";
         var x = canvas.width * 0.95;
         var y = canvas.height * 0.05;
-        ctx.fillText(dt.toString(), x, y);
+        ctx.fillText("FR: " + dt.toString(), x, y);
     };
     Renderer.gridColor = "rgba(0,0,255,0.1)"; // transparent blue
     Renderer.worldData = [];
@@ -2547,7 +2553,7 @@ var Renderer = /** @class */ (function () {
 }());
 exports.Renderer = Renderer;
 
-},{"../../shared/color":9}],8:[function(require,module,exports){
+},{"../../shared/color":9,"../../shared/data":10,"../../shared/enums/unitType":13,"../../shared/vector":15}],8:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClientSetUp = void 0;
@@ -2557,7 +2563,6 @@ function ClientSetUp(canvas, socket) {
     canvas.width = document.body.clientWidth;
     canvas.height = document.body.clientHeight;
     var ctx = canvas.getContext("2d");
-    renderer_1.Renderer.id = socket.id;
     socket.on("update", function (data) {
         renderer_1.Renderer.Render(canvas, ctx, data);
     });
@@ -2572,6 +2577,9 @@ function ClientSetUp(canvas, socket) {
     });
     socket.on("cameraPos", function (data) {
         renderer_1.Renderer.SetCameraPos(data.pos);
+    });
+    socket.on("setPlayerId", function (data) {
+        renderer_1.Renderer.SetPlayerId(data.id);
     });
     input_1.InputManager.SetSocket(socket);
     document.onkeydown = function (event) {
@@ -2598,11 +2606,12 @@ exports.ClientSetUp = ClientSetUp;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Color = void 0;
 var Color = /** @class */ (function () {
-    function Color(r, g, b, a) {
+    function Color(r, g, b, a // alpha goes from 0 to 1
+    ) {
         if (r === void 0) { r = 0; }
         if (g === void 0) { g = 0; }
         if (b === void 0) { b = 0; }
-        if (a === void 0) { a = 255; }
+        if (a === void 0) { a = 1; }
         this.r = r;
         this.g = g;
         this.b = b;
@@ -2634,7 +2643,6 @@ var Color = /** @class */ (function () {
                 max, min + Math.max(Math.min(-6 * Math.abs(x - 1 / 2) + 2, 1), 0) * max, min + Math.max(Math.min(-6 * Math.abs(x - 5 / 6) + 2, 1), 0) * max);
     };
     Color.RandomPlayerColor = function () {
-        var color = new Color(120, 120, 120);
         return new Color(Math.random() * 100 + 100, Math.random() * 100 + 100, Math.random() * 100 + 100);
     };
     Color.Lerp = function (start, end, t) {
@@ -2666,13 +2674,75 @@ exports.Color = Color;
 },{}],10:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.DataPack = exports.DataType = void 0;
+var unitType_1 = require("./enums/unitType");
+var vector_1 = require("./vector");
+var color_1 = require("./color");
+var DataType;
+(function (DataType) {
+})(DataType || (exports.DataType = DataType = {}));
+var DataPack = /** @class */ (function () {
+    function DataPack() {
+        this.x = 0;
+        this.y = 0;
+        this.r = 0;
+        this.g = 0;
+        this.b = 0;
+        this.a = 1;
+        this.sx = 0;
+        this.sy = 0;
+        this.id = 0;
+        this.type = unitType_1.UnitType.None;
+        this.name = "";
+    }
+    DataPack.prototype.SetPos = function (pos) {
+        this.x = pos.x;
+        this.y = pos.y;
+    };
+    DataPack.prototype.GetPos = function () {
+        return new vector_1.Vector(this.x, this.y);
+    };
+    DataPack.prototype.GetSize = function () {
+        return new vector_1.Vector(this.sx, this.sy);
+    };
+    DataPack.prototype.SetColor = function (color) {
+        this.r = color.r;
+        this.g = color.g;
+        this.b = color.b;
+        this.a = color.a;
+    };
+    DataPack.prototype.GetColor = function () {
+        return new color_1.Color(this.r, this.g, this.b, this.a);
+    };
+    DataPack.Cast = function (obj) {
+        var dp = new DataPack();
+        dp.x = obj.x;
+        dp.y = obj.y;
+        dp.r = obj.r;
+        dp.g = obj.g;
+        dp.b = obj.b;
+        dp.a = obj.a;
+        dp.sx = obj.sx;
+        dp.sy = obj.sy;
+        dp.id = obj.id;
+        dp.type = obj.type;
+        dp.name = obj.name;
+        return dp;
+    };
+    return DataPack;
+}());
+exports.DataPack = DataPack;
+
+},{"./color":9,"./enums/unitType":13,"./vector":15}],11:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClientRequestEnum = void 0;
 var ClientRequestEnum;
 (function (ClientRequestEnum) {
     ClientRequestEnum[ClientRequestEnum["debugToggle"] = 0] = "debugToggle";
 })(ClientRequestEnum || (exports.ClientRequestEnum = ClientRequestEnum = {}));
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DirEnum = void 0;
@@ -2689,7 +2759,20 @@ var DirEnum;
     DirEnum[DirEnum["DownRight"] = 8] = "DownRight";
 })(DirEnum || (exports.DirEnum = DirEnum = {}));
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UnitType = void 0;
+var UnitType;
+(function (UnitType) {
+    UnitType[UnitType["None"] = 0] = "None";
+    UnitType[UnitType["Player"] = 1] = "Player";
+    UnitType[UnitType["Bullet"] = 2] = "Bullet";
+    UnitType[UnitType["UI"] = 3] = "UI";
+    UnitType[UnitType["QuadTree"] = 4] = "QuadTree";
+})(UnitType || (exports.UnitType = UnitType = {}));
+
+},{}],14:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WeaponType = void 0;
@@ -2701,7 +2784,134 @@ var WeaponType;
     WeaponType[WeaponType["knife"] = 3] = "knife";
 })(WeaponType || (exports.WeaponType = WeaponType = {}));
 
-},{}],13:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Vector = void 0;
+var playerInput_1 = require("./enums/playerInput");
+var Vector = /** @class */ (function () {
+    function Vector(x, y) {
+        if (x === void 0) { x = 0; }
+        if (y === void 0) { y = 0; }
+        this.x = x;
+        this.y = y;
+    }
+    Vector.prototype.add = function (vec) {
+        this.x += vec.x;
+        this.y += vec.y;
+    };
+    Vector.prototype.sub = function (vec) {
+        this.x -= vec.x;
+        this.y -= vec.y;
+    };
+    Vector.prototype.mul = function (vec) {
+        this.x *= vec.x;
+        this.y *= vec.y;
+    };
+    Vector.prototype.newAdd = function (vec) {
+        var v = new Vector(this.x, this.y);
+        v.add(vec);
+        return v;
+    };
+    Vector.prototype.newSub = function (vec) {
+        var v = new Vector(this.x, this.y);
+        v.sub(vec);
+        return v;
+    };
+    Vector.prototype.newMul = function (vec) {
+        var v = new Vector(this.x, this.y);
+        v.mul(vec);
+        return v;
+    };
+    Vector.prototype.newScaleBy = function (value) {
+        var v = new Vector(this.x, this.y);
+        v.scaleBy(value);
+        return v;
+    };
+    Vector.prototype.len = function () {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+    };
+    Vector.prototype.normal = function () {
+        return new Vector(this.x / this.len(), this.y / this.len());
+    };
+    Vector.prototype.normalize = function () {
+        if (this.len() > 0) {
+            this.x /= this.len();
+            this.y /= this.len();
+        }
+    };
+    Vector.prototype.scaleBy = function (scale) {
+        this.x *= scale;
+        this.y *= scale;
+    };
+    Vector.prototype.distaceTo = function (target) {
+        return Vector.Sub(target, this).len();
+    };
+    Vector.prototype.wrap = function (x, y) {
+        if (this.x < 0)
+            this.x += x;
+        else
+            this.x = this.x % x;
+        if (this.y < 0)
+            this.y += y;
+        else
+            this.y = this.y % y;
+    };
+    Vector.prototype.copy = function () {
+        return Vector.Copy(this);
+    };
+    Vector.GetDirVector = function (dir) {
+        switch (dir) {
+            case playerInput_1.DirEnum.Up:
+                return Vector.Up;
+            case playerInput_1.DirEnum.Down:
+                return Vector.Down;
+            case playerInput_1.DirEnum.Left:
+                return Vector.Left;
+            case playerInput_1.DirEnum.Right:
+                return Vector.Right;
+            default:
+                return new Vector();
+        }
+    };
+    Vector.Copy = function (vec) {
+        return new Vector(vec.x, vec.y);
+    };
+    Vector.Add = function (vec1, vec2) {
+        return new Vector(vec1.x + vec2.x, vec1.y + vec2.y);
+    };
+    Vector.Sub = function (vec1, vec2) {
+        return new Vector(vec1.x - vec2.x, vec1.y - vec2.y);
+    };
+    Vector.ScaleBy = function (vec, scale) {
+        return new Vector(vec.x * scale, vec.y * scale);
+    };
+    Vector.Wrap = function (vec, x, y) {
+        var wrappedVec = Vector.Copy(vec);
+        wrappedVec.wrap(x, y);
+        return wrappedVec;
+    };
+    Vector.Lerp = function (start, end, t) {
+        if (t > 1)
+            t = 1;
+        else if (t < 0)
+            t = 0;
+        return new Vector(start.x * (1 - t) + end.x * t, start.y * (1 - t) + end.y * t);
+    };
+    Vector.Up = new Vector(0, -1);
+    Vector.Down = new Vector(0, 1);
+    Vector.Left = new Vector(-1, 0);
+    Vector.Right = new Vector(1, 0);
+    Vector.UpLeft = new Vector(-1, -1).normal();
+    Vector.UpRight = new Vector(1, -1).normal();
+    Vector.DownLeft = new Vector(-1, 1).normal();
+    Vector.DownRight = new Vector(1, 1).normal();
+    Vector.Zero = new Vector();
+    return Vector;
+}());
+exports.Vector = Vector;
+
+},{"./enums/playerInput":12}],16:[function(require,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -2879,7 +3089,7 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],14:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hasCORS = void 0;
@@ -2895,7 +3105,7 @@ catch (err) {
 }
 exports.hasCORS = value;
 
-},{}],15:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 // imported from https://github.com/galkn/querystring
 /**
@@ -2936,7 +3146,7 @@ function decode(qs) {
 }
 exports.decode = decode;
 
-},{}],16:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parse = void 0;
@@ -3006,7 +3216,7 @@ function queryKey(uri, query) {
     return data;
 }
 
-},{}],17:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 // imported from https://github.com/unshiftio/yeast
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -3063,7 +3273,7 @@ exports.yeast = yeast;
 for (; i < length; i++)
     map[alphabet[i]] = i;
 
-},{}],18:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.globalThisShim = void 0;
@@ -3079,7 +3289,7 @@ exports.globalThisShim = (() => {
     }
 })();
 
-},{}],19:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.nextTick = exports.parse = exports.installTimerFunctions = exports.transports = exports.TransportError = exports.Transport = exports.protocol = exports.Socket = void 0;
@@ -3098,7 +3308,7 @@ Object.defineProperty(exports, "parse", { enumerable: true, get: function () { r
 var websocket_constructor_js_1 = require("./transports/websocket-constructor.js");
 Object.defineProperty(exports, "nextTick", { enumerable: true, get: function () { return websocket_constructor_js_1.nextTick; } });
 
-},{"./contrib/parseuri.js":16,"./socket.js":20,"./transport.js":21,"./transports/index.js":22,"./transports/websocket-constructor.js":24,"./util.js":28}],20:[function(require,module,exports){
+},{"./contrib/parseuri.js":19,"./socket.js":23,"./transport.js":24,"./transports/index.js":25,"./transports/websocket-constructor.js":27,"./util.js":31}],23:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -3726,7 +3936,7 @@ class Socket extends component_emitter_1.Emitter {
 exports.Socket = Socket;
 Socket.protocol = engine_io_parser_1.protocol;
 
-},{"./contrib/parseqs.js":15,"./contrib/parseuri.js":16,"./transports/index.js":22,"./transports/websocket-constructor.js":24,"./util.js":28,"@socket.io/component-emitter":13,"debug":29,"engine.io-parser":36}],21:[function(require,module,exports){
+},{"./contrib/parseqs.js":18,"./contrib/parseuri.js":19,"./transports/index.js":25,"./transports/websocket-constructor.js":27,"./util.js":31,"@socket.io/component-emitter":16,"debug":32,"engine.io-parser":39}],24:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -3880,7 +4090,7 @@ class Transport extends component_emitter_1.Emitter {
 }
 exports.Transport = Transport;
 
-},{"./contrib/parseqs.js":15,"./util.js":28,"@socket.io/component-emitter":13,"debug":29,"engine.io-parser":36}],22:[function(require,module,exports){
+},{"./contrib/parseqs.js":18,"./util.js":31,"@socket.io/component-emitter":16,"debug":32,"engine.io-parser":39}],25:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transports = void 0;
@@ -3893,7 +4103,7 @@ exports.transports = {
     polling: polling_js_1.Polling,
 };
 
-},{"./polling.js":23,"./websocket.js":25,"./webtransport.js":26}],23:[function(require,module,exports){
+},{"./polling.js":26,"./websocket.js":28,"./webtransport.js":29}],26:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -4309,7 +4519,7 @@ function unloadHandler() {
     }
 }
 
-},{"../contrib/yeast.js":17,"../globalThis.js":18,"../transport.js":21,"../util.js":28,"./xmlhttprequest.js":27,"@socket.io/component-emitter":13,"debug":29,"engine.io-parser":36}],24:[function(require,module,exports){
+},{"../contrib/yeast.js":20,"../globalThis.js":21,"../transport.js":24,"../util.js":31,"./xmlhttprequest.js":30,"@socket.io/component-emitter":16,"debug":32,"engine.io-parser":39}],27:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.defaultBinaryType = exports.usingBrowserWebSocket = exports.WebSocket = exports.nextTick = void 0;
@@ -4327,7 +4537,7 @@ exports.WebSocket = globalThis_js_1.globalThisShim.WebSocket || globalThis_js_1.
 exports.usingBrowserWebSocket = true;
 exports.defaultBinaryType = "arraybuffer";
 
-},{"../globalThis.js":18}],25:[function(require,module,exports){
+},{"../globalThis.js":21}],28:[function(require,module,exports){
 (function (Buffer){(function (){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
@@ -4493,7 +4703,7 @@ class WS extends transport_js_1.Transport {
 exports.WS = WS;
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../contrib/yeast.js":17,"../transport.js":21,"../util.js":28,"./websocket-constructor.js":24,"buffer":2,"debug":29,"engine.io-parser":36}],26:[function(require,module,exports){
+},{"../contrib/yeast.js":20,"../transport.js":24,"../util.js":31,"./websocket-constructor.js":27,"buffer":2,"debug":32,"engine.io-parser":39}],29:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -4580,7 +4790,7 @@ class WT extends transport_js_1.Transport {
 }
 exports.WT = WT;
 
-},{"../transport.js":21,"./websocket-constructor.js":24,"debug":29,"engine.io-parser":36}],27:[function(require,module,exports){
+},{"../transport.js":24,"./websocket-constructor.js":27,"debug":32,"engine.io-parser":39}],30:[function(require,module,exports){
 "use strict";
 // browser shim for xmlhttprequest module
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -4607,7 +4817,7 @@ exports.XHR = XHR;
 function createCookieJar() { }
 exports.createCookieJar = createCookieJar;
 
-},{"../contrib/has-cors.js":14,"../globalThis.js":18}],28:[function(require,module,exports){
+},{"../contrib/has-cors.js":17,"../globalThis.js":21}],31:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.byteLength = exports.installTimerFunctions = exports.pick = void 0;
@@ -4667,7 +4877,7 @@ function utf8Length(str) {
     return length;
 }
 
-},{"./globalThis.js":18}],29:[function(require,module,exports){
+},{"./globalThis.js":21}],32:[function(require,module,exports){
 (function (process){(function (){
 /* eslint-env browser */
 
@@ -4940,7 +5150,7 @@ formatters.j = function (v) {
 };
 
 }).call(this)}).call(this,require('_process'))
-},{"./common":30,"_process":4}],30:[function(require,module,exports){
+},{"./common":33,"_process":4}],33:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -5216,7 +5426,7 @@ function setup(env) {
 
 module.exports = setup;
 
-},{"ms":31}],31:[function(require,module,exports){
+},{"ms":34}],34:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -5380,7 +5590,7 @@ function plural(ms, msAbs, n, name) {
   return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
 }
 
-},{}],32:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ERROR_PACKET = exports.PACKET_TYPES_REVERSE = exports.PACKET_TYPES = void 0;
@@ -5401,7 +5611,7 @@ Object.keys(PACKET_TYPES).forEach((key) => {
 const ERROR_PACKET = { type: "error", data: "parser error" };
 exports.ERROR_PACKET = ERROR_PACKET;
 
-},{}],33:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decode = exports.encode = void 0;
@@ -5451,7 +5661,7 @@ const decode = (base64) => {
 };
 exports.decode = decode;
 
-},{}],34:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decodePacket = void 0;
@@ -5519,7 +5729,7 @@ const mapBinary = (data, binaryType) => {
     }
 };
 
-},{"./commons.js":32,"./contrib/base64-arraybuffer.js":33}],35:[function(require,module,exports){
+},{"./commons.js":35,"./contrib/base64-arraybuffer.js":36}],38:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.encodePacket = exports.encodePacketToBinary = void 0;
@@ -5593,7 +5803,7 @@ function encodePacketToBinary(packet, callback) {
 }
 exports.encodePacketToBinary = encodePacketToBinary;
 
-},{"./commons.js":32}],36:[function(require,module,exports){
+},{"./commons.js":35}],39:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decodePayload = exports.decodePacket = exports.encodePayload = exports.encodePacket = exports.protocol = exports.createPacketDecoderStream = exports.createPacketEncoderStream = void 0;
@@ -5761,7 +5971,7 @@ function createPacketDecoderStream(maxPayload, binaryType) {
 exports.createPacketDecoderStream = createPacketDecoderStream;
 exports.protocol = 4;
 
-},{"./commons.js":32,"./decodePacket.js":34,"./encodePacket.js":35}],37:[function(require,module,exports){
+},{"./commons.js":35,"./decodePacket.js":37,"./encodePacket.js":38}],40:[function(require,module,exports){
 "use strict";
 /**
  * Initialize backoff timer with `opts`.
@@ -5833,7 +6043,7 @@ Backoff.prototype.setJitter = function (jitter) {
     this.jitter = jitter;
 };
 
-},{}],38:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -5904,7 +6114,7 @@ Object.defineProperty(exports, "protocol", { enumerable: true, get: function () 
 
 module.exports = lookup;
 
-},{"./manager.js":39,"./socket.js":41,"./url.js":42,"debug":43,"socket.io-parser":47}],39:[function(require,module,exports){
+},{"./manager.js":42,"./socket.js":44,"./url.js":45,"debug":46,"socket.io-parser":50}],42:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -6309,7 +6519,7 @@ class Manager extends component_emitter_1.Emitter {
 }
 exports.Manager = Manager;
 
-},{"./contrib/backo2.js":37,"./on.js":40,"./socket.js":41,"@socket.io/component-emitter":13,"debug":43,"engine.io-client":19,"socket.io-parser":47}],40:[function(require,module,exports){
+},{"./contrib/backo2.js":40,"./on.js":43,"./socket.js":44,"@socket.io/component-emitter":16,"debug":46,"engine.io-client":22,"socket.io-parser":50}],43:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.on = void 0;
@@ -6321,7 +6531,7 @@ function on(obj, ev, fn) {
 }
 exports.on = on;
 
-},{}],41:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -7189,7 +7399,7 @@ class Socket extends component_emitter_1.Emitter {
 }
 exports.Socket = Socket;
 
-},{"./on.js":40,"@socket.io/component-emitter":13,"debug":43,"socket.io-parser":47}],42:[function(require,module,exports){
+},{"./on.js":43,"@socket.io/component-emitter":16,"debug":46,"socket.io-parser":50}],45:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -7261,13 +7471,13 @@ function url(uri, path = "", loc) {
 }
 exports.url = url;
 
-},{"debug":43,"engine.io-client":19}],43:[function(require,module,exports){
-arguments[4][29][0].apply(exports,arguments)
-},{"./common":44,"_process":4,"dup":29}],44:[function(require,module,exports){
-arguments[4][30][0].apply(exports,arguments)
-},{"dup":30,"ms":45}],45:[function(require,module,exports){
-arguments[4][31][0].apply(exports,arguments)
-},{"dup":31}],46:[function(require,module,exports){
+},{"debug":46,"engine.io-client":22}],46:[function(require,module,exports){
+arguments[4][32][0].apply(exports,arguments)
+},{"./common":47,"_process":4,"dup":32}],47:[function(require,module,exports){
+arguments[4][33][0].apply(exports,arguments)
+},{"dup":33,"ms":48}],48:[function(require,module,exports){
+arguments[4][34][0].apply(exports,arguments)
+},{"dup":34}],49:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.reconstructPacket = exports.deconstructPacket = void 0;
@@ -7357,7 +7567,7 @@ function _reconstructPacket(data, buffers) {
     return data;
 }
 
-},{"./is-binary.js":48}],47:[function(require,module,exports){
+},{"./is-binary.js":51}],50:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Decoder = exports.Encoder = exports.PacketType = exports.protocol = void 0;
@@ -7680,7 +7890,7 @@ class BinaryReconstructor {
     }
 }
 
-},{"./binary.js":46,"./is-binary.js":48,"@socket.io/component-emitter":13,"debug":49}],48:[function(require,module,exports){
+},{"./binary.js":49,"./is-binary.js":51,"@socket.io/component-emitter":16,"debug":52}],51:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hasBinary = exports.isBinary = void 0;
@@ -7737,10 +7947,10 @@ function hasBinary(obj, toJSON) {
 }
 exports.hasBinary = hasBinary;
 
-},{}],49:[function(require,module,exports){
-arguments[4][29][0].apply(exports,arguments)
-},{"./common":50,"_process":4,"dup":29}],50:[function(require,module,exports){
-arguments[4][30][0].apply(exports,arguments)
-},{"dup":30,"ms":51}],51:[function(require,module,exports){
-arguments[4][31][0].apply(exports,arguments)
-},{"dup":31}]},{},[5]);
+},{}],52:[function(require,module,exports){
+arguments[4][32][0].apply(exports,arguments)
+},{"./common":53,"_process":4,"dup":32}],53:[function(require,module,exports){
+arguments[4][33][0].apply(exports,arguments)
+},{"dup":33,"ms":54}],54:[function(require,module,exports){
+arguments[4][34][0].apply(exports,arguments)
+},{"dup":34}]},{},[5]);

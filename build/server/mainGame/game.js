@@ -18,6 +18,7 @@ var Game = /** @class */ (function () {
         var h = 60;
         var v = 40;
         var s = 30;
+        global_1.Global.unitSize = s;
         world_1.World.inst = new world_1.World(h, v, s);
         world_1.World.inst.Build();
         var center = world_1.World.inst.GetWorldCenter();
@@ -94,7 +95,7 @@ var Game = /** @class */ (function () {
         if (global_1.Global.debugToggle) {
             quadTree_1.QuadtreeNode.root.AddDataPacks(pack); // draw quad tree
         }
-        pack.push({ dt: dt });
+        //pack.push({ dt: dt });
         return pack;
     };
     Game.inst = new Game();
