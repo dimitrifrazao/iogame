@@ -1,40 +1,45 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var express = require("express");
+const express = require("express");
+const game_1 = require("./mainGame/game");
 var path = require("path");
 var http = require("http");
-var app = express();
+const app = express();
+app.set("view engine", "ejs");
 var serv = http.Server(app);
-var rooDir = path.resolve(__dirname, "../");
+const rooDir = path.resolve(__dirname, "../");
 var indexPath = path.join(rooDir + "/client/index.html");
+var indexEJSPath = path.join(rooDir + "/client/index.ejs");
 var gamePath = path.join(rooDir + "/client/game.html");
 var clientPath = path.join(rooDir + "/client");
 app.get("/", function (req, res) {
-    res.sendFile(indexPath);
+    res.render(indexEJSPath, { message: "" });
+    //res.sendFile(indexPath);
 });
-var PlayerNames = new Set();
+let PlayerNames = new Set();
 var queryName = "";
 app.get("/start", function (req, res) {
     queryName = "";
-    var name = req.query.name;
+    let name = req.query.name;
     if (typeof name === "string" && name.length !== 0 && !PlayerNames.has(name)) {
         res.sendFile(gamePath);
         queryName = name;
     }
+    else if (typeof name === "string" && PlayerNames.has(name)) {
+        res.render(indexEJSPath, { message: name + " is already in use" });
+        //res.sendFile(indexPath);
+    }
     else {
-        res.sendFile(indexPath);
+        res.render(indexEJSPath, { message: "You must enter a name." });
     }
 });
 app.use("/client", express.static(clientPath));
-var PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 serv.listen(PORT);
 console.log("Server listening on port " + PORT);
-var game_1 = require("./mainGame/game");
-var world_1 = require("./mainGame/world");
-var player_1 = require("./gameObjects/player");
 game_1.Game.inst.Init();
-var SOCKET_LIST = new Map();
-var NAME_LIST = new Map();
+const SOCKET_LIST = new Map();
+const NAME_LIST = new Map();
 var io = require("socket.io")(serv, {});
 io.sockets.on("connection", function (socket) {
     console.log("socket connection!");
@@ -48,21 +53,18 @@ io.sockets.on("connection", function (socket) {
     SOCKET_LIST.set(socket.id, socket);
     NAME_LIST.set(socket.id, queryName);
     PlayerNames.add(queryName);
-    socket.emit("worldData", world_1.World.inst.GenerateDataPack());
-    socket.emit("worldSize", world_1.World.inst.GetWorldSizeData());
+    // game start, send data to client
+    socket.emit("worldData", game_1.Game.inst.EmitWorldData());
     socket.emit("setPlayerId", { id: socket.id });
-    console.log("Adding player: " + queryName);
     game_1.Game.inst.AddPlayer(socket.id, queryName, EmitDeadPlayer);
+    // receive client input
     socket.on("playerDir", function (data) {
-        //console.log("press " + data.dir);
         game_1.Game.inst.SetPlayerDir(socket.id, data.dir);
     });
     socket.on("shoot", function (data) {
-        //console.log("shoot");
         game_1.Game.inst.Shoot(socket.id, data.dir);
     });
     socket.on("dash", function (data) {
-        //console.log("shoot");
         game_1.Game.inst.Dash(socket.id, data.dash);
     });
     socket.on("weaponChange", function (data) {
@@ -72,30 +74,36 @@ io.sockets.on("connection", function (socket) {
         game_1.Game.inst.ClientRequest(socket.id, data);
     });
     socket.on("disconnect", function () {
-        var name = NAME_LIST.get(socket.id);
+        let name = NAME_LIST.get(socket.id);
         if (name !== undefined) {
             console.log("disconnecting " + name);
             PlayerNames.delete(name);
         }
-        player_1.Player.DeletePlayer(socket.id);
+        game_1.Game.inst.DeletePlayer(socket.id);
         NAME_LIST.delete(socket.id);
         SOCKET_LIST.delete(socket.id);
     });
 });
-var EmitDeadPlayer = function (dead_id, data) {
-    SOCKET_LIST.forEach(function (socket, id) {
+// send client data
+function EmitDeadPlayer(dead_id, data) {
+    SOCKET_LIST.forEach((socket, id) => {
         socket.emit("worldAddDeadBody", data);
     });
-    var name = NAME_LIST.get(dead_id);
+    let name = NAME_LIST.get(dead_id);
     if (name !== undefined)
         PlayerNames.delete(name);
     NAME_LIST.delete(dead_id);
     console.log("releasing name: " + name);
-};
-var FRAME_RATE = 50;
+}
+function SendGameData(gameData) {
+    SOCKET_LIST.forEach((socket, id) => {
+        socket.emit("gameData", gameData);
+    });
+}
+const FRAME_RATE = 50;
 setInterval(function () {
     game_1.Game.inst.Tick();
-    var pack = [];
+    let pack = [];
     try {
         pack = game_1.Game.inst.Update();
     }
@@ -103,10 +111,9 @@ setInterval(function () {
         console.log("UPDATE ERROR");
         console.log(error);
     }
-    SOCKET_LIST.forEach(function (socket, id) {
-        var player = player_1.Player.GetPlayer(socket.id);
-        if (player !== null)
-            socket.emit("cameraPos", { pos: player.GetPos() });
+    SOCKET_LIST.forEach((socket, id) => {
+        let playerData = game_1.Game.inst.GetPlayerData(id);
+        socket.emit("playerData", playerData);
         socket.emit("update", pack);
     });
 }, 1000 / FRAME_RATE);

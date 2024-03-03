@@ -1,0 +1,29 @@
+<head>
+  <link rel="stylesheet" href="client/styles.css" />
+  <title>IO Game</title>
+</head>
+<body>
+  <div id="enterGame">
+    <br />
+    <form action="start" id="form">
+      <label>Player Name</label>
+      <input type="text" id="name" name="name" maxlength="10" />
+      <input type="submit" value="Join Game" />
+    </form>
+    <p id="rules">
+      WASD keys moves your character<br />
+      Arrow keys shoots in four directions<br />
+      1, 2, 3 and 4 changes bullet size <br />
+      Your bullets cost your health<br />
+    </p>
+    <h1><%= message %></h1>
+  </div>
+</body>
+<script>
+  // Add event listener for the keypress event
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      document.getElementById("form").submit();
+    }
+  });
+</script>

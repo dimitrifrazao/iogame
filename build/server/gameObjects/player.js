@@ -1,178 +1,196 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Player = exports.PlayerState = void 0;
-var transform_1 = require("./transform");
-var vector_1 = require("../../shared/vector");
-var color_1 = require("../../shared/color");
-var playerInput_1 = require("../../shared/enums/playerInput");
-var world_1 = require("../mainGame/world");
-var boundingBox_1 = require("./boundingBox");
-var quadTree_1 = require("./quadTree");
-var weapons_1 = require("../../shared/enums/weapons");
-var global_1 = require("../mainGame/global");
-var unitType_1 = require("../../shared/enums/unitType");
+const transform_1 = require("./transform");
+const vector_1 = require("../../shared/vector");
+const color_1 = require("../../shared/color");
+const playerInput_1 = require("../../shared/enums/playerInput");
+const world_1 = require("../mainGame/world");
+const boundingBox_1 = require("../../shared/boundingBox");
+const quadTree_1 = require("./quadTree");
+const weapons_1 = require("../../shared/enums/weapons");
+const global_1 = require("../mainGame/global");
+const unitType_1 = require("../../shared/enums/unitType");
 var PlayerState;
 (function (PlayerState) {
     PlayerState[PlayerState["Alive"] = 0] = "Alive";
     PlayerState[PlayerState["Stunned"] = 1] = "Stunned";
     PlayerState[PlayerState["Dead"] = 2] = "Dead";
 })(PlayerState || (exports.PlayerState = PlayerState = {}));
-var Player = /** @class */ (function (_super) {
-    __extends(Player, _super);
-    function Player(id, name, deadCallback) {
-        var _this = _super.call(this) || this;
-        _this.hpMax = 11;
-        _this.level = 1;
-        _this.hp = _this.hpMax;
-        _this.playerState = PlayerState.Alive;
-        _this.weaponType = weapons_1.WeaponType.default;
-        _this.dashing = false;
-        _this.dashBuffer = 0;
-        _this.dashBufferMax = 100;
+class Player extends transform_1.Transform {
+    constructor(id, name, deadCallback) {
+        super();
+        this.hpMax = 11;
+        this.level = 1;
+        this.hp = this.hpMax;
+        this.playerState = PlayerState.Alive;
+        this.weaponType = weapons_1.WeaponType.default;
+        this.dashing = false;
+        this.dashBuffer = 0;
+        this.dashBufferMax = 100;
+        this.emitUpdate = false;
         // from IMove
-        _this.dir = playerInput_1.DirEnum.None;
-        _this.speed = Player.defaultSpeed;
-        _this.push = new vector_1.Vector();
+        this.dir = playerInput_1.DirEnum.None;
+        this.speed = Player.defaultSpeed;
+        this.push = new vector_1.Vector();
         // from IBulletManager
-        _this.bullets = new Map();
-        _this.size.x = 30;
-        _this.size.y = 30;
-        _this.id = id;
-        _this.deadCallback = deadCallback;
-        _this.SetColor(color_1.Color.PlayerRandomColor());
-        _this.type = unitType_1.UnitType.Player;
-        _this.name = name;
-        Player.PlayerMap.set(id, _this);
-        return _this;
+        this.bullets = new Map();
+        this.size.x = 30;
+        this.size.y = 30;
+        this.id = id;
+        this.deadCallback = deadCallback;
+        this.SetColor(color_1.Color.PlayerRandomColor());
+        this.unitType = unitType_1.UnitType.Player;
+        this.name = name;
+        Player.PlayerMap.set(id, this);
     }
-    Player.prototype.Push = function (obj) { };
-    Player.prototype.GetMoveVector = function () {
+    SetPlayerGameData(gameData) {
+        if (this.emitUpdate) {
+            gameData.data.push(this.hp);
+            gameData.data.push(this.level);
+            this.emitUpdate = false;
+        }
+        gameData.data.push(this.pos.y);
+        gameData.data.push(this.pos.x);
+    }
+    Push(obj) { }
+    GetMoveVector() {
         return vector_1.Vector.Sub(this.pos, this.previousPos);
-    };
-    Player.prototype.SetWeaponType = function (weaponType) {
+    }
+    SetWeaponType(weaponType) {
         this.weaponType = weaponType;
-    };
-    Player.prototype.GetWeaponType = function () {
+        this.emitUpdate = true;
+    }
+    GetWeaponType() {
         return this.weaponType;
-    };
-    Player.prototype.GetWeaponData = function () {
+    }
+    GetWeaponData() {
         switch (this.weaponType) {
             case weapons_1.WeaponType.default:
-                return { damage: 1, speed: 0.4, size: 10, timer: -1 };
+                return 1;
             case weapons_1.WeaponType.shotgun:
-                return { damage: 3, speed: 0.3, size: 15, timer: -1 };
+                return 3;
             case weapons_1.WeaponType.drop:
-                return { damage: 5, speed: 0.2, size: 20, timer: -1 };
+                return 5;
             case weapons_1.WeaponType.knife:
-                return { damage: 7, speed: 0.1, size: 25, timer: -1 };
+                return 7;
         }
-    };
-    Player.prototype.AddBullet = function (bullet) {
+    }
+    GetWeaponDamage() {
+        return this.GetWeaponData();
+    }
+    CanShoot() {
+        let damage = this.GetWeaponDamage();
+        let hasHP = this.hp >= 1 + damage;
+        //let maxOverHP = this.bullets.keys.length <= this.hpMax * 2;
+        return hasHP && !this.IsDashing();
+    }
+    AddBullet(bullet, dir) {
         this.bullets.set(bullet.GetId(), bullet);
-    };
-    Player.prototype.RemoveBullet = function (bullet) {
+        this.TakeDamage(this.GetWeaponDamage());
+        bullet.Shoot(dir);
+    }
+    RemoveBullet(bullet) {
         this.bullets.delete(bullet.GetId());
-    };
-    Player.prototype.RemovePlayer = function () {
-        this.bullets.forEach(function (bullet, bulletId) {
+    }
+    RemovePlayer() {
+        console.log("Removing player: " + this.name);
+        this.bullets.forEach((bullet, bulletId) => {
             bullet.Release();
         });
         this.bullets.clear();
-        var id = this.GetId();
-        var dPack = this.GetDataPack();
+        let id = this.GetId();
+        let dPack = this.GetDataPack();
         dPack.SetColor(color_1.Color.EmptyPlayer);
         this.deadCallback(id, dPack);
         if (!Player.PlayerMap.has(id)) {
             console.log("ERROR: trying to delete a non existing Player id");
         }
-        console.log("Removing player: " + this.name);
         Player.PlayerMap.delete(id);
-    };
-    Player.prototype.LevelUp = function () {
+    }
+    LevelUp() {
         this.level++;
         this.hpMax++;
         this.hp++;
         this.size.x += 5;
         this.size.y += 5;
-    };
-    Player.prototype.AddHp = function (hp) {
+        this.emitUpdate = true;
+    }
+    AddHp(hp) {
         if (this.playerState != PlayerState.Dead) {
             this.hp += hp;
             if (this.hp > this.hpMax) {
                 this.hp = this.hpMax;
             }
+            this.emitUpdate = true;
         }
-    };
+    }
     // from IPlayer
-    Player.prototype.GetId = function () {
+    GetId() {
         return this.id;
-    };
-    Player.prototype.TakeDamage = function (damage) {
+    }
+    TakeDamage(damage) {
         if (this.playerState == PlayerState.Alive) {
             this.hp -= damage;
             if (this.hp <= 0) {
                 this.playerState = PlayerState.Dead;
                 this.RemovePlayer();
             }
+            this.emitUpdate = true;
         }
-    };
-    Player.prototype.IsAlive = function () {
+    }
+    IsAlive() {
         return this.playerState !== PlayerState.Dead;
-    };
-    Player.prototype.GetTransform = function () {
+    }
+    GetTransform() {
         return this;
-    };
+    }
     // player default
-    Player.prototype.SetPlayerState = function (state) {
+    SetPlayerState(state) {
         this.playerState = state;
-    };
-    Player.prototype.SetDash = function (state) {
-        if (state && this.dashBuffer >= this.dashBufferMax)
+        this.emitUpdate = true;
+    }
+    SetDash(state) {
+        if (state && this.dashBuffer >= this.dashBufferMax) {
             this.dashing = true;
-        else if (state == false)
+        }
+        else if (state === false) {
             this.dashing = false;
-    };
-    Player.prototype.IsDashing = function () {
-        return this.dashing;
-    };
-    Player.prototype.GetDataPack = function () {
-        var dPack = _super.prototype.GetDataPack.call(this);
+        }
+    }
+    IsDashing() {
+        return this.dashing === true;
+    }
+    GetDataPack() {
+        let dPack = super.GetDataPack();
         dPack.name = this.name;
         return dPack;
-    };
-    Player.prototype.SetDirection = function (dir) {
+    }
+    SetDirection(dir) {
         this.dir = dir;
-    };
-    Player.prototype.UpdatePosition = function (dt) {
+    }
+    UpdatePosition(dt) {
         if (this.playerState != PlayerState.Alive)
             return;
         this.SetPreviousPos(this.GetPos());
         if (this.dashing) {
-            this.speed = 2 * Player.defaultSpeed;
-            this.dashBuffer -= dt * 0.5;
-            if (this.dashBuffer < 0) {
+            if (this.dashBuffer > 0) {
+                this.speed = 2 * Player.defaultSpeed;
+                this.dashBuffer -= dt * 0.5;
+                this.emitUpdate = true;
+            }
+            else {
+                this.speed = Player.defaultSpeed;
                 this.dashBuffer = 0;
                 this.dashing = false;
                 this.speed = Player.defaultSpeed;
             }
         }
         else {
-            this.dashBuffer += dt * 0.05;
+            if (this.dashBuffer < this.dashBufferMax) {
+                this.dashBuffer += dt * 0.05;
+                this.emitUpdate = true;
+            }
             if (this.dashBuffer >= this.dashBufferMax) {
                 this.dashBuffer = this.dashBufferMax;
             }
@@ -203,34 +221,34 @@ var Player = /** @class */ (function (_super) {
                 this.pos.x += this.speed * dt;
                 break;
         }
-    };
-    Player.DeletePlayer = function (id) {
-        var player = Player.GetPlayer(id);
+    }
+    static DeletePlayer(id) {
+        let player = Player.GetPlayer(id);
         if (player !== null)
             player.RemovePlayer();
-    };
-    Player.GetPlayer = function (id) {
-        var player = Player.PlayerMap.get(id);
+    }
+    static GetPlayer(id) {
+        let player = Player.PlayerMap.get(id);
         if (player !== undefined)
             return player;
         return null;
-    };
-    Player.UpdatePlayers = function (dt, pack) {
-        Player.PlayerMap.forEach(function (player, id) {
+    }
+    static UpdatePlayers(dt, pack) {
+        Player.PlayerMap.forEach((player, id) => {
             player.UpdatePosition(dt);
             player.CheckWorldWrap();
             // check collision against rocks
-            var cells = world_1.World.inst.GetPossibleCollisions(player.GetPos());
-            for (var _i = 0, cells_1 = cells; _i < cells_1.length; _i++) {
-                var cell = cells_1[_i];
+            let cells = world_1.World.inst.GetPossibleCollisions(player.GetPos());
+            for (let cell of cells) {
                 if (cell.GetCellType() === world_1.CellType.Rock &&
                     player.CheckCollision(cell) === true) {
-                    var overlapBB = boundingBox_1.BoundingBox.Sub(player.GetBoundingBox(), cell.GetBoundingBox());
+                    let overlapBB = boundingBox_1.BoundingBox.Sub(player.GetBoundingBox(), cell.GetBoundingBox());
                     if (global_1.Global.debugToggle) {
-                        var cpack = cell.GetDataPack();
+                        let cpack = cell.GetDataPack();
+                        cpack.SetUnitType(unitType_1.UnitType.Player);
                         cpack.SetColor(color_1.Color.Cyan);
                         pack.push(cpack);
-                        var op = overlapBB.GetDataPack();
+                        let op = transform_1.Transform.MakeFromBoundingBox(overlapBB).GetDataPack();
                         op.SetColor(color_1.Color.Orange);
                         pack.push(op);
                     }
@@ -250,80 +268,36 @@ var Player = /** @class */ (function (_super) {
             }
             quadTree_1.QuadtreeNode.root.Insert(player);
         });
-        var deadPlayers = [];
-        Player.PlayerMap.forEach(function (player, id) {
-            var transSet = new Set();
-            var transforms = quadTree_1.QuadtreeNode.root.Retrieve(player);
-            for (var i = 0; i < transforms.length; i++) {
-                var transform = transforms[i];
-                if (
-                //!transSet.has(transform) &&
-                transform.GetUnitType() === unitType_1.UnitType.Player &&
+        let deadPlayers = new Set();
+        Player.PlayerMap.forEach((player, id) => {
+            let transforms = quadTree_1.QuadtreeNode.root.Retrieve(player);
+            transforms.forEach((transform) => {
+                if (transform.GetUnitType() === unitType_1.UnitType.Player &&
                     transform.GetId() !== player.id &&
                     player.CheckCollision(transform)) {
-                    transSet.add(transform);
-                    deadPlayers.push(player);
-                    continue;
+                    deadPlayers.add(player);
                 }
-            }
-            transforms.length = 0;
+            });
+            transforms.clear();
             // back red square
-            var playerRedPack = player.GetDataPack();
+            let playerRedPack = player.GetDataPack();
             playerRedPack.SetColor(color_1.Color.EmptyPlayer);
             playerRedPack.id = -1;
             pack.push(playerRedPack);
             // main player square that shrinks as hp lowers
-            var playerPack = player.GetDataPack();
+            let playerPack = player.GetDataPack();
             playerPack.name = ""; // erase name so we dont have double moving up n down
             playerPack.sy = player.size.y * (player.hp / player.hpMax);
             playerPack.y += playerPack.sx - playerPack.sy;
             pack.push(playerPack);
-            var dashUI = new transform_1.Transform();
-            dashUI.SetPosValues(70, 20);
-            dashUI.SetSizeValues(100, 20);
-            dashUI.SetColor(color_1.Color.DarkGrey);
-            var pashPack = dashUI.GetDataPack();
-            pashPack.id = player.id;
-            pashPack.type = 3;
-            pack.push(pashPack);
-            dashUI.SetColor(color_1.Color.Grey);
-            if (player.dashBuffer >= player.dashBufferMax)
-                dashUI.SetColor(color_1.Color.LightGrey);
-            dashUI.SetPosValues(25 + 45 * (player.dashBuffer / player.dashBufferMax), 20);
-            dashUI.SetSizeValues(90 * (player.dashBuffer / player.dashBufferMax), 10);
-            pashPack = dashUI.GetDataPack();
-            pashPack.id = player.id;
-            pashPack.type = 3;
-            pack.push(pashPack);
-            var square = new transform_1.Transform();
-            for (var si = 0; si < 4; si++) {
-                square.SetSizeValues(20, 20);
-                square.SetColor(color_1.Color.DarkGrey);
-                square.SetPosValues(150 + si * 40, 20);
-                var sPack = square.GetDataPack();
-                sPack.id = player.id;
-                sPack.type = 3;
-                pack.push(sPack);
-                if (si == player.weaponType) {
-                    square.SetSizeValues(10, 10);
-                    square.SetColor(color_1.Color.DarkGrey);
-                    square.SetColor(color_1.Color.LightGrey);
-                    sPack = square.GetDataPack();
-                    sPack.id = player.id;
-                    sPack.type = 3;
-                    pack.push(sPack);
-                }
-            }
         });
-        while (deadPlayers.length > 0) {
-            var deadPlayer = deadPlayers.pop();
-            if (deadPlayer !== undefined)
-                deadPlayer.TakeDamage(deadPlayer.hp);
-        }
-    };
-    Player.defaultSpeed = 0.3;
-    Player.startSize = 30;
-    Player.PlayerMap = new Map();
-    return Player;
-}(transform_1.Transform));
+        deadPlayers.forEach((deadPlayer) => {
+            deadPlayer.TakeDamage(deadPlayer.hp);
+        });
+        deadPlayers.clear();
+    }
+}
 exports.Player = Player;
+Player.defaultSpeed = 0.3;
+Player.startSize = 30;
+Player.PlayerMap = new Map();

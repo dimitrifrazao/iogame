@@ -2207,20 +2207,20 @@ process.umask = function() { return 0; };
 },{}],5:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var setup_1 = require("./src/setup");
-var socket_io_client_1 = require("socket.io-client");
-var canvas = document.getElementById("canvas");
-var socket = (0, socket_io_client_1.io)();
+const setup_1 = require("./src/setup");
+const socket_io_client_1 = require("socket.io-client");
+const canvas = document.getElementById("canvas");
+const socket = (0, socket_io_client_1.io)();
 (0, setup_1.ClientSetUp)(canvas, socket);
 console.log("bundle loaded");
 
-},{"./src/setup":8,"socket.io-client":41}],6:[function(require,module,exports){
+},{"./src/setup":8,"socket.io-client":45}],6:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InputManager = void 0;
-var playerInput_1 = require("../../shared/enums/playerInput");
-var weapons_1 = require("../../shared/enums/weapons");
-var clientRequests_1 = require("../../shared/enums/clientRequests");
+const playerInput_1 = require("../../shared/enums/playerInput");
+const weapons_1 = require("../../shared/enums/weapons");
+const clientRequests_1 = require("../../shared/enums/clientRequests");
 var KeyCode;
 (function (KeyCode) {
     KeyCode[KeyCode["W"] = 87] = "W";
@@ -2239,14 +2239,12 @@ var KeyCode;
     KeyCode[KeyCode["N4"] = 52] = "N4";
     KeyCode[KeyCode["P"] = 80] = "P";
 })(KeyCode || (KeyCode = {}));
-var InputManager = /** @class */ (function () {
-    function InputManager() {
-    }
-    InputManager.SetSocket = function (socket) {
+class InputManager {
+    static SetSocket(socket) {
         InputManager.socket = socket;
-    };
-    InputManager.EmitPlayerDir = function () {
-        var playerDir = playerInput_1.DirEnum.None;
+    }
+    static EmitPlayerDir() {
+        let playerDir = playerInput_1.DirEnum.None;
         if (InputManager.w != InputManager.s) {
             if (InputManager.w) {
                 if (InputManager.a) {
@@ -2280,8 +2278,8 @@ var InputManager = /** @class */ (function () {
             }
         }
         InputManager.socket.emit("playerDir", { dir: playerDir });
-    };
-    InputManager.OnKeyDown = function (keyCode) {
+    }
+    static OnKeyDown(keyCode) {
         switch (keyCode) {
             case KeyCode.W:
                 InputManager.w = true;
@@ -2340,8 +2338,8 @@ var InputManager = /** @class */ (function () {
                 });
                 break;
         }
-    };
-    InputManager.OnKeyUp = function (keyCode) {
+    }
+    static OnKeyUp(keyCode) {
         switch (keyCode) {
             case KeyCode.W:
                 InputManager.w = false;
@@ -2363,104 +2361,108 @@ var InputManager = /** @class */ (function () {
                 InputManager.socket.emit("dash", { dash: false });
                 break;
         }
-    };
-    InputManager.OnKeyPress = function (keyCode) { };
-    InputManager.w = false;
-    InputManager.a = false;
-    InputManager.s = false;
-    InputManager.d = false;
-    InputManager.space = false;
-    InputManager.weaponCounter = 0;
-    return InputManager;
-}());
+    }
+    static OnKeyPress(keyCode) { }
+}
 exports.InputManager = InputManager;
+InputManager.w = false;
+InputManager.a = false;
+InputManager.s = false;
+InputManager.d = false;
+InputManager.space = false;
+InputManager.weaponCounter = 0;
 
-},{"../../shared/enums/clientRequests":11,"../../shared/enums/playerInput":12,"../../shared/enums/weapons":14}],7:[function(require,module,exports){
+},{"../../shared/enums/clientRequests":15,"../../shared/enums/playerInput":16,"../../shared/enums/weapons":18}],7:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Renderer = void 0;
-var color_1 = require("../../shared/color");
-var data_1 = require("../../shared/data");
-var unitType_1 = require("../../shared/enums/unitType");
-var vector_1 = require("../../shared/vector");
-var Renderer = /** @class */ (function () {
-    function Renderer() {
+const color_1 = require("../../shared/color");
+const data_1 = require("../../shared/data");
+const unitType_1 = require("../../shared/enums/unitType");
+const vector_1 = require("../../shared/vector");
+const gameUI_1 = require("./ui/gameUI");
+const data_2 = require("../../shared/data");
+class Renderer {
+    constructor() {
+        this.gameUI = new gameUI_1.GameUI();
+        Renderer.Inst = this;
     }
-    Renderer.SetPlayerId = function (id) {
+    static SetPlayerId(id) {
         Renderer.id = id;
-    };
-    Renderer.SetCameraPos = function (pos) {
-        Renderer.cameraPos = pos;
-    };
-    Renderer.SetWorldData = function (data) {
+    }
+    static SetPlayerData(data) {
+        if (data.data.length >= 2) {
+            Renderer.cameraPos.x = data.data.pop();
+            Renderer.cameraPos.y = data.data.pop();
+        }
+    }
+    static SetWorldData(gameData) {
         console.log("set world data");
-        Renderer.worldData = data;
-    };
-    Renderer.SetWorldSize = function (data) {
+        Renderer.worldUnitSize = gameData.data.pop();
+        Renderer.worldVerticalUnits = gameData.data.pop();
+        Renderer.worldHorizontalUnits = gameData.data.pop();
+        Renderer.worldWidth =
+            Renderer.worldHorizontalUnits * Renderer.worldUnitSize;
+        Renderer.worldHeight = Renderer.worldVerticalUnits * Renderer.worldUnitSize;
+        while (gameData.data.length > 0) {
+            let v = new vector_1.Vector(gameData.data.pop(), gameData.data.pop());
+            Renderer.worldData.push(v);
+        }
+    }
+    static SetWorldSize(data) {
         Renderer.worldWidth = data.width;
         Renderer.worldHeight = data.height;
         Renderer.worldHorizontalUnits = data.horizontalUnits;
         Renderer.worldVerticalUnits = data.verticalUnits;
         Renderer.worldUnitSize = data.size;
-    };
-    Renderer.AddDeadBody = function (data) {
+    }
+    static AddDeadBody(data) {
         Renderer.deadBodies.set(data.id, data);
-    };
-    Renderer.GetTopLeftVector = function () {
+    }
+    static GetTopLeftVector() {
         return Renderer.topLeftPos;
-    };
-    Renderer.DrawSquare = function (ctx, data, worldSpace) {
-        if (worldSpace === void 0) { worldSpace = true; }
-        var pos = data.GetPos();
+    }
+    static DrawSquare(ctx, data, worldSpace = true) {
+        let pos = data.GetPos();
         if (worldSpace) {
             pos.add(Renderer.GetTopLeftVector());
         }
         ctx.fillStyle = data.GetColor().ToString();
         ctx.fillRect(pos.x, pos.y, data.sx, data.sy);
-    };
-    Renderer.DrawSquareLine = function (ctx, data, worldSpace) {
-        if (worldSpace === void 0) { worldSpace = true; }
-        var pos = data.GetPos();
+    }
+    static DrawSquareLine(ctx, data, worldSpace = true) {
+        let pos = data.GetPos();
         if (worldSpace) {
             pos.add(Renderer.GetTopLeftVector());
         }
-        ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y); // left top
-        ctx.lineTo(pos.x + data.sx, pos.y); // right top
-        ctx.lineTo(pos.x + data.sx, pos.y + data.sy); // right bot
-        ctx.lineTo(pos.x, pos.y + data.sy); // left bot
-        ctx.lineTo(pos.x, pos.y); // left top
-        ctx.closePath(); // Close the path to connect the last point with the first
-        ctx.lineWidth = 2;
         ctx.strokeStyle = data.GetColor().ToString();
-        ctx.stroke();
-    };
-    Renderer.DrawText = function (ctx, data, size, worldSpace) {
-        if (worldSpace === void 0) { worldSpace = true; }
-        var pos = data.GetPos();
+        ctx.strokeRect(pos.x, pos.y, data.sx, data.sy);
+    }
+    static DrawText(ctx, data, textSize, worldSpace = true) {
+        let pos = data.GetPos();
         if (worldSpace) {
             pos.add(Renderer.GetTopLeftVector());
         }
         ctx.fillStyle = data.GetColor().ToString();
-        ctx.font = size.toString() + "px Arial";
+        ctx.font = textSize.toString() + "px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(data.name, pos.x, pos.y);
-    };
-    Renderer.Render = function (canvas, ctx, serverData) {
-        var dt = 0; //serverData.pop().dt;
-        var topLeftX = canvas.width / 2 - Renderer.cameraPos.x;
-        var topLeftY = canvas.height / 2 - Renderer.cameraPos.y;
+    }
+    static Render(canvas, ctx, serverData) {
+        let dt = 0; //serverData.pop().dt;
+        let topLeftX = canvas.width / 2 - Renderer.cameraPos.x;
+        let topLeftY = canvas.height / 2 - Renderer.cameraPos.y;
         Renderer.topLeftPos = new vector_1.Vector(topLeftX, topLeftY);
         ctx.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
         ctx.beginPath(); // draw grid
         for (var x = 1; x <= Renderer.worldHorizontalUnits; x++) {
-            var finalX = topLeftX + x * Renderer.worldUnitSize;
+            let finalX = topLeftX + x * Renderer.worldUnitSize;
             ctx.moveTo(finalX, topLeftY);
             ctx.lineTo(finalX, topLeftY + Renderer.worldHeight);
         }
         for (var y = 1; y <= Renderer.worldVerticalUnits; y++) {
-            var finalY = topLeftY + y * Renderer.worldUnitSize;
+            let finalY = topLeftY + y * Renderer.worldUnitSize;
             ctx.moveTo(topLeftX, finalY);
             ctx.lineTo(topLeftX + Renderer.worldWidth, finalY);
         }
@@ -2479,12 +2481,16 @@ var Renderer = /** @class */ (function () {
         ctx.strokeStyle = color_1.Color.Black.ToString();
         ctx.stroke();
         // draw rocks
-        Renderer.worldData.forEach(function (data) {
-            var dataPack = data_1.DataPack.Cast(data);
-            Renderer.DrawSquare(ctx, dataPack);
+        Renderer.worldData.forEach((vector) => {
+            let pos = vector.newAdd(Renderer.GetTopLeftVector());
+            let units = Renderer.worldUnitSize;
+            pos.x -= units / 2;
+            pos.y -= units / 2;
+            ctx.fillStyle = color_1.Color.Black.ToString();
+            ctx.fillRect(pos.x, pos.y, units, units);
         });
-        var toRemoveWorldData = [];
-        Renderer.deadBodies.forEach(function (data, id) {
+        let toRemoveWorldData = [];
+        Renderer.deadBodies.forEach((data, id) => {
             data.a -= 0.01;
             if (data.a <= 0)
                 toRemoveWorldData.push(id);
@@ -2494,93 +2500,120 @@ var Renderer = /** @class */ (function () {
         if (toRemoveWorldData.length > 0) {
             console.log("deleting dead bodies");
         }
-        for (var _i = 0, toRemoveWorldData_1 = toRemoveWorldData; _i < toRemoveWorldData_1.length; _i++) {
-            var id = toRemoveWorldData_1[_i];
+        for (let id of toRemoveWorldData) {
             Renderer.deadBodies.delete(id);
         }
         for (var i = 0; i < serverData.length; i++) {
-            var data = data_1.DataPack.Cast(serverData[i]);
-            var rgbText = data.GetColor().ToString();
-            switch (data.type) {
-                case unitType_1.UnitType.None: // debug
-                    Renderer.DrawSquare(ctx, data);
-                    break;
-                case unitType_1.UnitType.Player:
-                    if (data.id == Renderer.id) {
-                        // our player
-                        data.x = canvas.width / 2 - data.sx / 2;
-                        data.y = canvas.height / 2 - data.sy / 2;
-                        data.y += (data.sx - data.sy) / 2;
-                        Renderer.DrawSquare(ctx, data, false);
-                    }
-                    else {
-                        // other players
+            let d = serverData[i];
+            if (d.type === data_1.DataType.DataPack) {
+                let data = data_1.DataPack.Cast(d);
+                switch (data.unitType) {
+                    case unitType_1.UnitType.None: // debug
+                        data.SetColor(color_1.Color.Magenta);
                         Renderer.DrawSquare(ctx, data);
-                        data.x += data.sx / 2;
-                        data.y -= 5;
-                        Renderer.DrawText(ctx, data, 15);
-                    }
-                    break;
-                case unitType_1.UnitType.Bullet:
-                    if (data.id == Renderer.id)
-                        data.SetColor(color_1.Color.Red);
-                    Renderer.DrawSquare(ctx, data);
-                    break;
-                case unitType_1.UnitType.UI:
-                    if (data.id != Renderer.id)
-                        continue;
-                    ctx.fillStyle = rgbText;
-                    ctx.fillRect(data.x, data.y, data.sx, data.sy);
-                    break;
-                case unitType_1.UnitType.QuadTree: // QuadTreeNode
-                    Renderer.DrawSquareLine(ctx, data);
-                    break;
+                        break;
+                    case unitType_1.UnitType.Player:
+                        if (data.id === Renderer.id) {
+                            // our player
+                            data.x = canvas.width / 2 - data.sx / 2;
+                            data.y = canvas.height / 2 - data.sy / 2;
+                            data.y += (data.sx - data.sy) / 2;
+                            Renderer.DrawSquare(ctx, data, false);
+                            let color = data.GetColor();
+                            color.ScaleBy(0.4);
+                            data.SetColor(color);
+                            Renderer.DrawSquareLine(ctx, data, false);
+                        }
+                        else {
+                            // other players
+                            Renderer.DrawSquare(ctx, data);
+                            let color = data.GetColor();
+                            color.ScaleBy(0.4);
+                            data.SetColor(color);
+                            Renderer.DrawSquareLine(ctx, data);
+                            data.x += data.sx / 2;
+                            data.y -= 10;
+                            data.SetColor(color_1.Color.Black);
+                            Renderer.DrawText(ctx, data, 15);
+                        }
+                        break;
+                    case unitType_1.UnitType.Bullet:
+                        if (data.id == Renderer.id)
+                            data.SetColor(color_1.Color.Red);
+                        Renderer.DrawSquare(ctx, data);
+                        let color = data.GetColor();
+                        color.ScaleBy(0.4);
+                        data.SetColor(color);
+                        Renderer.DrawSquareLine(ctx, data);
+                        break;
+                    case unitType_1.UnitType.UI:
+                        if (data.id != Renderer.id)
+                            continue;
+                        ctx.fillStyle = data.GetColor().ToString();
+                        ctx.fillRect(data.x, data.y, data.sx, data.sy);
+                        break;
+                    case unitType_1.UnitType.QuadTree: // QuadTreeNode
+                        Renderer.DrawSquareLine(ctx, data);
+                        break;
+                }
+            }
+            else if (d.type === data_1.DataType.GameData) {
+                let data = data_2.GameData.Cast(d);
+                switch (data.gameDataType) {
+                    case data_1.GameDataType.FrameRate:
+                        let dt = data.data.pop();
+                        ctx.font = "15px Arial";
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+                        ctx.fillStyle = "black";
+                        var x = canvas.width * 0.95;
+                        var y = canvas.height * 0.05;
+                        ctx.fillText("FR: " + dt.toString(), x, y);
+                        break;
+                }
             }
         }
-        // FPS draw
-        ctx.font = "15px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "black";
-        var x = canvas.width * 0.95;
-        var y = canvas.height * 0.05;
-        ctx.fillText("FR: " + dt.toString(), x, y);
-    };
-    Renderer.gridColor = "rgba(0,0,255,0.1)"; // transparent blue
-    Renderer.worldData = [];
-    Renderer.deadBodies = new Map();
-    return Renderer;
-}());
+        // draw UI
+        //Renderer.Inst.gameUI.Draw(ctx);
+    }
+}
 exports.Renderer = Renderer;
+Renderer.gridColor = "rgba(0,0,255,0.1)"; // transparent blue
+Renderer.worldData = [];
+Renderer.deadBodies = new Map();
+Renderer.id = -1;
+Renderer.cameraPos = new vector_1.Vector();
 
-},{"../../shared/color":9,"../../shared/data":10,"../../shared/enums/unitType":13,"../../shared/vector":15}],8:[function(require,module,exports){
+},{"../../shared/color":13,"../../shared/data":14,"../../shared/enums/unitType":17,"../../shared/vector":19,"./ui/gameUI":10}],8:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClientSetUp = void 0;
-var renderer_1 = require("./renderer");
-var input_1 = require("./input");
+const renderer_1 = require("./renderer");
+const input_1 = require("./input");
 function ClientSetUp(canvas, socket) {
     canvas.width = document.body.clientWidth;
     canvas.height = document.body.clientHeight;
     var ctx = canvas.getContext("2d");
-    socket.on("update", function (data) {
-        renderer_1.Renderer.Render(canvas, ctx, data);
-    });
+    // Renderer only receives socket data
+    new renderer_1.Renderer();
+    // start up data
     socket.on("worldData", function (data) {
         renderer_1.Renderer.SetWorldData(data);
-    });
-    socket.on("worldSize", function (data) {
-        renderer_1.Renderer.SetWorldSize(data);
-    });
-    socket.on("worldAddDeadBody", function (data) {
-        renderer_1.Renderer.AddDeadBody(data);
-    });
-    socket.on("cameraPos", function (data) {
-        renderer_1.Renderer.SetCameraPos(data.pos);
     });
     socket.on("setPlayerId", function (data) {
         renderer_1.Renderer.SetPlayerId(data.id);
     });
+    // game updates
+    socket.on("update", function (data) {
+        renderer_1.Renderer.Render(canvas, ctx, data);
+    });
+    socket.on("worldAddDeadBody", function (data) {
+        renderer_1.Renderer.AddDeadBody(data);
+    });
+    socket.on("playerData", function (data) {
+        renderer_1.Renderer.SetPlayerData(data);
+    });
+    // InputManager only emits
     input_1.InputManager.SetSocket(socket);
     document.onkeydown = function (event) {
         input_1.InputManager.OnKeyDown(event.keyCode);
@@ -2604,31 +2637,177 @@ exports.ClientSetUp = ClientSetUp;
 },{"./input":6,"./renderer":7}],9:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.UIBase = void 0;
+const boundingBox_1 = require("../../../shared/boundingBox");
+const vector_1 = require("../../../shared/vector");
+const color_1 = require("../../../shared/color");
+class UIBase extends boundingBox_1.BoundingBox {
+    constructor(tlx, tly, brx, bry) {
+        super(new vector_1.Vector(tlx, tly), new vector_1.Vector(brx, bry));
+        this.color = color_1.Color.Black;
+    }
+    Render(ctx) { }
+    Draw(ctx) {
+        let topLeft = this.GetTopLeft();
+        let botRight = this.GetBotRight();
+        ctx.fillStyle = this.color.ToString();
+        ctx.fillRect(topLeft.x, topLeft.y, botRight.x, botRight.y);
+    }
+}
+exports.UIBase = UIBase;
+
+},{"../../../shared/boundingBox":12,"../../../shared/color":13,"../../../shared/vector":19}],10:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.GameUI = void 0;
+const toggle_1 = require("./toggle");
+class GameUI {
+    constructor() {
+        this.elements = [];
+        this.elements.push(new toggle_1.ToggleUI(10, 10, 30, 30));
+    }
+    Draw(ctx) {
+        this.elements.forEach((element) => {
+            element.Draw(ctx);
+        });
+    }
+}
+exports.GameUI = GameUI;
+
+},{"./toggle":11}],11:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ToggleUI = void 0;
+const base_1 = require("./base");
+class ToggleUI extends base_1.UIBase {
+    constructor() {
+        super(...arguments);
+        this.state = false;
+    }
+    Toggle() {
+        this.state !== this.state;
+    }
+    GetState() {
+        return this.state;
+    }
+}
+exports.ToggleUI = ToggleUI;
+
+},{"./base":9}],12:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.BoundingBox = void 0;
+const vector_1 = require("./vector");
+class BoundingBox {
+    constructor(topLeft = new vector_1.Vector(0, 0), botRight = new vector_1.Vector(0, 0)) {
+        this.topLeft = topLeft;
+        this.botRight = botRight;
+        if (topLeft.x > botRight.x || topLeft.y > botRight.y) {
+            console.log("ERROR: bounding box topLeft and bottomRight crossing");
+            this.topLeft = botRight;
+            this.botRight = topLeft;
+        }
+    }
+    GetTopLeft() {
+        return this.topLeft;
+    }
+    GetBotRight() {
+        return this.botRight;
+    }
+    GetSizeX() {
+        return this.botRight.x - this.topLeft.x;
+    }
+    GetSizeY() {
+        return this.botRight.y - this.topLeft.y;
+    }
+    GetSize() {
+        return new vector_1.Vector(this.GetSizeX(), this.GetSizeY());
+    }
+    GetArea() {
+        return this.GetSizeX() * this.GetSizeY();
+    }
+    GetCenterPoint() {
+        return this.topLeft.newAdd(this.botRight.newSub(this.topLeft).newScaleBy(0.5));
+    }
+    /* GetDataPack(): DataPack {
+      return this.GetTransform().GetDataPack();
+    } */
+    CheckCollision(bb) {
+        let pos1 = this.GetCenterPoint();
+        let pos2 = bb.GetCenterPoint();
+        let size1 = this.GetSize();
+        let size2 = bb.GetSize();
+        return (Math.abs(pos1.x - pos2.x) < (size1.x + size2.x) / 2 &&
+            Math.abs(pos1.y - pos2.y) < (size1.y + size2.y) / 2);
+    }
+    /* CheckTransformCollision(transform: Transform) {
+      return transform.CheckBBCollision(this);
+    } */
+    CheckVectorCollision(vec) {
+        return (vec.x > this.topLeft.x &&
+            vec.x < this.botRight.x &&
+            vec.y > this.topLeft.y &&
+            vec.y < this.botRight.y);
+    }
+    static Add(bb1, bb2) {
+        let topLeft = new vector_1.Vector(Math.min(bb1.topLeft.x, bb2.topLeft.x), Math.min(bb1.topLeft.y, bb2.topLeft.y));
+        let botRight = new vector_1.Vector(Math.max(bb1.botRight.x, bb2.botRight.x), Math.max(bb1.botRight.y, bb2.botRight.y));
+        return new BoundingBox(topLeft, botRight);
+    }
+    static Sub(bb1, bb2) {
+        let topLeft = new vector_1.Vector(Math.max(bb1.topLeft.x, bb2.topLeft.x), Math.max(bb1.topLeft.y, bb2.topLeft.y));
+        let botRight = new vector_1.Vector(Math.min(bb1.botRight.x, bb2.botRight.x), Math.min(bb1.botRight.y, bb2.botRight.y));
+        return new BoundingBox(topLeft, botRight);
+    }
+    /* static MakeFrom(trans: Transform): BoundingBox {
+      let topLeft = Vector.Copy(trans.GetPos());
+      let botRight = Vector.Copy(trans.GetPos());
+      topLeft.sub(Vector.ScaleBy(trans.GetSize(), 0.5));
+      botRight.add(Vector.ScaleBy(trans.GetSize(), 0.5));
+      return new BoundingBox(topLeft, botRight);
+    } */
+    static MakeFromPosAndSize(pos, size) {
+        return new BoundingBox(pos.newSub(size.newScaleBy(0.5)), pos.newAdd(size.newScaleBy(0.5)));
+    }
+}
+exports.BoundingBox = BoundingBox;
+
+},{"./vector":19}],13:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 exports.Color = void 0;
-var Color = /** @class */ (function () {
-    function Color(r, g, b, a // alpha goes from 0 to 1
+class Color {
+    constructor(r = 0, g = 0, b = 0, a = 1 // alpha goes from 0 to 1
     ) {
-        if (r === void 0) { r = 0; }
-        if (g === void 0) { g = 0; }
-        if (b === void 0) { b = 0; }
-        if (a === void 0) { a = 1; }
         this.r = r;
         this.g = g;
         this.b = b;
         this.a = a;
     }
-    Color.Random = function () {
+    Copy() {
+        return new Color(this.r, this.g, this.b, this.a);
+    }
+    ScaleBy(scale) {
+        this.r *= scale;
+        this.g *= scale;
+        this.b *= scale;
+    }
+    static Random() {
         return new Color(Math.random() * 255, Math.random() * 255, Math.random() * 255);
-    };
-    Color.prototype.ToString = function () {
+    }
+    // player colors should not use red
+    static PlayerRandom() {
+        let g = Math.random() * 200;
+        let b = 200 - g;
+        return new Color(0.0, g, b);
+    }
+    ToString() {
         return "rgba(" + this.r + "," + this.g + "," + this.b + "," + this.a + ")";
-    };
-    Color.PlayerRandomColor = function () {
+    }
+    static PlayerRandomColor() {
         return Color.HueShift(50, 150, Math.random());
-    };
-    Color.HueShift = function (min, max, x) {
-        if (min === void 0) { min = 0; }
-        if (max === void 0) { max = 255; }
+    }
+    static HueShift(min = 0, max = 255, x) {
         if (min >= max)
             throw Error("min argument must be smaller than max");
         x = x % 1;
@@ -2641,48 +2820,75 @@ var Color = /** @class */ (function () {
             (Math.max(Math.min(-6 * Math.abs(x - 1 / 6) + 2, 1), 0) +
                 Math.max(-6 * Math.abs(x - 7 / 6) + 2, 0)) *
                 max, min + Math.max(Math.min(-6 * Math.abs(x - 1 / 2) + 2, 1), 0) * max, min + Math.max(Math.min(-6 * Math.abs(x - 5 / 6) + 2, 1), 0) * max);
-    };
-    Color.RandomPlayerColor = function () {
+    }
+    static RandomPlayerColor() {
         return new Color(Math.random() * 100 + 100, Math.random() * 100 + 100, Math.random() * 100 + 100);
-    };
-    Color.Lerp = function (start, end, t) {
+    }
+    static Lerp(start, end, t) {
         if (t > 1)
             t = 1;
         else if (t < 0)
             t = 0;
         return new Color(start.r * (1 - t) + end.r * t, start.g * (1 - t) + end.g * t, start.b * (1 - t) + end.b * t, start.a * (1 - t) + end.a * t);
-    };
-    Color.maxValue = 255;
-    Color.Black = new Color(0, 0, 0);
-    Color.White = new Color(255, 255, 255);
-    Color.Red = new Color(255, 0, 0);
-    Color.Green = new Color(0, 255, 0);
-    Color.Blue = new Color(0, 0, 255);
-    Color.Orange = new Color(255, 165, 0);
-    Color.Yellow = new Color(255, 255, 0);
-    Color.Cyan = new Color(0, 255, 255);
-    Color.Magenta = new Color(255, 0, 255);
-    Color.LightGrey = new Color(200, 200, 200);
-    Color.Grey = new Color(100, 100, 100);
-    Color.DarkGrey = new Color(50, 50, 50);
-    Color.Transparent = new Color(0, 0, 0, 0.2);
-    Color.EmptyPlayer = new Color(150, 0, 0);
-    return Color;
-}());
+    }
+}
 exports.Color = Color;
+Color.maxValue = 255;
+Color.Black = new Color(0, 0, 0);
+Color.White = new Color(255, 255, 255);
+Color.Red = new Color(255, 0, 0);
+Color.Green = new Color(0, 255, 0);
+Color.Blue = new Color(0, 0, 255);
+Color.Orange = new Color(255, 165, 0);
+Color.Yellow = new Color(255, 255, 0);
+Color.Cyan = new Color(0, 255, 255);
+Color.Magenta = new Color(255, 0, 255);
+Color.LightGrey = new Color(200, 200, 200);
+Color.Grey = new Color(100, 100, 100);
+Color.DarkGrey = new Color(50, 50, 50);
+Color.EmptyPlayer = new Color(150, 0, 0);
 
-},{}],10:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DataPack = exports.DataType = void 0;
-var unitType_1 = require("./enums/unitType");
-var vector_1 = require("./vector");
-var color_1 = require("./color");
+exports.DataPack = exports.GameData = exports.GameDataType = exports.DataType = void 0;
+const unitType_1 = require("./enums/unitType");
+const vector_1 = require("./vector");
+const color_1 = require("./color");
 var DataType;
 (function (DataType) {
+    DataType[DataType["GameData"] = 0] = "GameData";
+    DataType[DataType["DataPack"] = 1] = "DataPack";
 })(DataType || (exports.DataType = DataType = {}));
-var DataPack = /** @class */ (function () {
-    function DataPack() {
+class Data {
+    constructor(type) {
+        this.type = type;
+        this.type = type;
+    }
+}
+var GameDataType;
+(function (GameDataType) {
+    GameDataType[GameDataType["WorldData"] = 0] = "WorldData";
+    GameDataType[GameDataType["PlayerData"] = 1] = "PlayerData";
+    GameDataType[GameDataType["GameData"] = 2] = "GameData";
+    GameDataType[GameDataType["FrameRate"] = 3] = "FrameRate";
+})(GameDataType || (exports.GameDataType = GameDataType = {}));
+class GameData extends Data {
+    constructor(gameDataType) {
+        super(DataType.GameData);
+        this.gameDataType = gameDataType;
+        this.data = [];
+    }
+    static Cast(obj) {
+        let gameData = new GameData(obj.gameDataType);
+        gameData.data = obj.data;
+        return gameData;
+    }
+}
+exports.GameData = GameData;
+class DataPack extends Data {
+    constructor() {
+        super(DataType.DataPack);
         this.x = 0;
         this.y = 0;
         this.r = 0;
@@ -2692,30 +2898,37 @@ var DataPack = /** @class */ (function () {
         this.sx = 0;
         this.sy = 0;
         this.id = 0;
-        this.type = unitType_1.UnitType.None;
+        this.unitType = unitType_1.UnitType.None;
         this.name = "";
     }
-    DataPack.prototype.SetPos = function (pos) {
+    GetPos() {
+        return new vector_1.Vector(this.x, this.y);
+    }
+    GetSize() {
+        return new vector_1.Vector(this.sx, this.sy);
+    }
+    GetColor() {
+        return new color_1.Color(this.r, this.g, this.b, this.a);
+    }
+    SetPos(pos) {
         this.x = pos.x;
         this.y = pos.y;
-    };
-    DataPack.prototype.GetPos = function () {
-        return new vector_1.Vector(this.x, this.y);
-    };
-    DataPack.prototype.GetSize = function () {
-        return new vector_1.Vector(this.sx, this.sy);
-    };
-    DataPack.prototype.SetColor = function (color) {
+    }
+    SetSize(size) {
+        this.sx = size.x;
+        this.sy = size.y;
+    }
+    SetColor(color) {
         this.r = color.r;
         this.g = color.g;
         this.b = color.b;
         this.a = color.a;
-    };
-    DataPack.prototype.GetColor = function () {
-        return new color_1.Color(this.r, this.g, this.b, this.a);
-    };
-    DataPack.Cast = function (obj) {
-        var dp = new DataPack();
+    }
+    SetUnitType(unitType) {
+        this.unitType = unitType;
+    }
+    static Cast(obj) {
+        let dp = new DataPack();
         dp.x = obj.x;
         dp.y = obj.y;
         dp.r = obj.r;
@@ -2726,14 +2939,14 @@ var DataPack = /** @class */ (function () {
         dp.sy = obj.sy;
         dp.id = obj.id;
         dp.type = obj.type;
+        dp.unitType = obj.unitType;
         dp.name = obj.name;
         return dp;
-    };
-    return DataPack;
-}());
+    }
+}
 exports.DataPack = DataPack;
 
-},{"./color":9,"./enums/unitType":13,"./vector":15}],11:[function(require,module,exports){
+},{"./color":13,"./enums/unitType":17,"./vector":19}],15:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClientRequestEnum = void 0;
@@ -2742,7 +2955,7 @@ var ClientRequestEnum;
     ClientRequestEnum[ClientRequestEnum["debugToggle"] = 0] = "debugToggle";
 })(ClientRequestEnum || (exports.ClientRequestEnum = ClientRequestEnum = {}));
 
-},{}],12:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DirEnum = void 0;
@@ -2759,7 +2972,7 @@ var DirEnum;
     DirEnum[DirEnum["DownRight"] = 8] = "DownRight";
 })(DirEnum || (exports.DirEnum = DirEnum = {}));
 
-},{}],13:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UnitType = void 0;
@@ -2772,7 +2985,7 @@ var UnitType;
     UnitType[UnitType["QuadTree"] = 4] = "QuadTree";
 })(UnitType || (exports.UnitType = UnitType = {}));
 
-},{}],14:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WeaponType = void 0;
@@ -2784,70 +2997,68 @@ var WeaponType;
     WeaponType[WeaponType["knife"] = 3] = "knife";
 })(WeaponType || (exports.WeaponType = WeaponType = {}));
 
-},{}],15:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Vector = void 0;
-var playerInput_1 = require("./enums/playerInput");
-var Vector = /** @class */ (function () {
-    function Vector(x, y) {
-        if (x === void 0) { x = 0; }
-        if (y === void 0) { y = 0; }
+const playerInput_1 = require("./enums/playerInput");
+class Vector {
+    constructor(x = 0, y = 0) {
         this.x = x;
         this.y = y;
     }
-    Vector.prototype.add = function (vec) {
+    add(vec) {
         this.x += vec.x;
         this.y += vec.y;
-    };
-    Vector.prototype.sub = function (vec) {
+    }
+    sub(vec) {
         this.x -= vec.x;
         this.y -= vec.y;
-    };
-    Vector.prototype.mul = function (vec) {
+    }
+    mul(vec) {
         this.x *= vec.x;
         this.y *= vec.y;
-    };
-    Vector.prototype.newAdd = function (vec) {
-        var v = new Vector(this.x, this.y);
+    }
+    newAdd(vec) {
+        let v = new Vector(this.x, this.y);
         v.add(vec);
         return v;
-    };
-    Vector.prototype.newSub = function (vec) {
-        var v = new Vector(this.x, this.y);
+    }
+    newSub(vec) {
+        let v = new Vector(this.x, this.y);
         v.sub(vec);
         return v;
-    };
-    Vector.prototype.newMul = function (vec) {
-        var v = new Vector(this.x, this.y);
+    }
+    newMul(vec) {
+        let v = new Vector(this.x, this.y);
         v.mul(vec);
         return v;
-    };
-    Vector.prototype.newScaleBy = function (value) {
-        var v = new Vector(this.x, this.y);
+    }
+    newScaleBy(value) {
+        let v = new Vector(this.x, this.y);
         v.scaleBy(value);
         return v;
-    };
-    Vector.prototype.len = function () {
+    }
+    len() {
         return Math.sqrt(this.x * this.x + this.y * this.y);
-    };
-    Vector.prototype.normal = function () {
+    }
+    normal() {
         return new Vector(this.x / this.len(), this.y / this.len());
-    };
-    Vector.prototype.normalize = function () {
+    }
+    normalize() {
         if (this.len() > 0) {
             this.x /= this.len();
             this.y /= this.len();
         }
-    };
-    Vector.prototype.scaleBy = function (scale) {
+    }
+    scaleBy(scale) {
         this.x *= scale;
         this.y *= scale;
-    };
-    Vector.prototype.distaceTo = function (target) {
+    }
+    distaceTo(target) {
         return Vector.Sub(target, this).len();
-    };
-    Vector.prototype.wrap = function (x, y) {
+    }
+    wrap(x, y) {
         if (this.x < 0)
             this.x += x;
         else
@@ -2856,11 +3067,11 @@ var Vector = /** @class */ (function () {
             this.y += y;
         else
             this.y = this.y % y;
-    };
-    Vector.prototype.copy = function () {
+    }
+    Copy() {
         return Vector.Copy(this);
-    };
-    Vector.GetDirVector = function (dir) {
+    }
+    static GetDirVector(dir) {
         switch (dir) {
             case playerInput_1.DirEnum.Up:
                 return Vector.Up;
@@ -2873,45 +3084,46 @@ var Vector = /** @class */ (function () {
             default:
                 return new Vector();
         }
-    };
-    Vector.Copy = function (vec) {
+    }
+    static Copy(vec) {
         return new Vector(vec.x, vec.y);
-    };
-    Vector.Add = function (vec1, vec2) {
+    }
+    static Add(vec1, vec2) {
         return new Vector(vec1.x + vec2.x, vec1.y + vec2.y);
-    };
-    Vector.Sub = function (vec1, vec2) {
+    }
+    static Sub(vec1, vec2) {
         return new Vector(vec1.x - vec2.x, vec1.y - vec2.y);
-    };
-    Vector.ScaleBy = function (vec, scale) {
+    }
+    static ScaleBy(vec, scale) {
         return new Vector(vec.x * scale, vec.y * scale);
-    };
-    Vector.Wrap = function (vec, x, y) {
-        var wrappedVec = Vector.Copy(vec);
+    }
+    static Wrap(vec, x, y) {
+        let wrappedVec = Vector.Copy(vec);
         wrappedVec.wrap(x, y);
         return wrappedVec;
-    };
-    Vector.Lerp = function (start, end, t) {
+    }
+    static Lerp(start, end, t) {
         if (t > 1)
             t = 1;
         else if (t < 0)
             t = 0;
         return new Vector(start.x * (1 - t) + end.x * t, start.y * (1 - t) + end.y * t);
-    };
-    Vector.Up = new Vector(0, -1);
-    Vector.Down = new Vector(0, 1);
-    Vector.Left = new Vector(-1, 0);
-    Vector.Right = new Vector(1, 0);
-    Vector.UpLeft = new Vector(-1, -1).normal();
-    Vector.UpRight = new Vector(1, -1).normal();
-    Vector.DownLeft = new Vector(-1, 1).normal();
-    Vector.DownRight = new Vector(1, 1).normal();
-    Vector.Zero = new Vector();
-    return Vector;
-}());
+    }
+}
 exports.Vector = Vector;
+Vector.Up = new Vector(0, -1);
+Vector.Down = new Vector(0, 1);
+Vector.Left = new Vector(-1, 0);
+Vector.Right = new Vector(1, 0);
+Vector.UpLeft = new Vector(-1, -1).normal();
+Vector.UpRight = new Vector(1, -1).normal();
+Vector.DownLeft = new Vector(-1, 1).normal();
+Vector.DownRight = new Vector(1, 1).normal();
+Vector.FlipH = new Vector(-1, 1);
+Vector.FlipV = new Vector(1, -1);
+Vector.Zero = new Vector();
 
-},{"./enums/playerInput":12}],16:[function(require,module,exports){
+},{"./enums/playerInput":16}],20:[function(require,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -3089,7 +3301,7 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],17:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hasCORS = void 0;
@@ -3105,7 +3317,7 @@ catch (err) {
 }
 exports.hasCORS = value;
 
-},{}],18:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 "use strict";
 // imported from https://github.com/galkn/querystring
 /**
@@ -3146,7 +3358,7 @@ function decode(qs) {
 }
 exports.decode = decode;
 
-},{}],19:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parse = void 0;
@@ -3216,7 +3428,7 @@ function queryKey(uri, query) {
     return data;
 }
 
-},{}],20:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 // imported from https://github.com/unshiftio/yeast
 'use strict';
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -3273,7 +3485,7 @@ exports.yeast = yeast;
 for (; i < length; i++)
     map[alphabet[i]] = i;
 
-},{}],21:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.globalThisShim = void 0;
@@ -3289,7 +3501,7 @@ exports.globalThisShim = (() => {
     }
 })();
 
-},{}],22:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.nextTick = exports.parse = exports.installTimerFunctions = exports.transports = exports.TransportError = exports.Transport = exports.protocol = exports.Socket = void 0;
@@ -3308,7 +3520,7 @@ Object.defineProperty(exports, "parse", { enumerable: true, get: function () { r
 var websocket_constructor_js_1 = require("./transports/websocket-constructor.js");
 Object.defineProperty(exports, "nextTick", { enumerable: true, get: function () { return websocket_constructor_js_1.nextTick; } });
 
-},{"./contrib/parseuri.js":19,"./socket.js":23,"./transport.js":24,"./transports/index.js":25,"./transports/websocket-constructor.js":27,"./util.js":31}],23:[function(require,module,exports){
+},{"./contrib/parseuri.js":23,"./socket.js":27,"./transport.js":28,"./transports/index.js":29,"./transports/websocket-constructor.js":31,"./util.js":35}],27:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -3936,7 +4148,7 @@ class Socket extends component_emitter_1.Emitter {
 exports.Socket = Socket;
 Socket.protocol = engine_io_parser_1.protocol;
 
-},{"./contrib/parseqs.js":18,"./contrib/parseuri.js":19,"./transports/index.js":25,"./transports/websocket-constructor.js":27,"./util.js":31,"@socket.io/component-emitter":16,"debug":32,"engine.io-parser":39}],24:[function(require,module,exports){
+},{"./contrib/parseqs.js":22,"./contrib/parseuri.js":23,"./transports/index.js":29,"./transports/websocket-constructor.js":31,"./util.js":35,"@socket.io/component-emitter":20,"debug":36,"engine.io-parser":43}],28:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -4090,7 +4302,7 @@ class Transport extends component_emitter_1.Emitter {
 }
 exports.Transport = Transport;
 
-},{"./contrib/parseqs.js":18,"./util.js":31,"@socket.io/component-emitter":16,"debug":32,"engine.io-parser":39}],25:[function(require,module,exports){
+},{"./contrib/parseqs.js":22,"./util.js":35,"@socket.io/component-emitter":20,"debug":36,"engine.io-parser":43}],29:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.transports = void 0;
@@ -4103,7 +4315,7 @@ exports.transports = {
     polling: polling_js_1.Polling,
 };
 
-},{"./polling.js":26,"./websocket.js":28,"./webtransport.js":29}],26:[function(require,module,exports){
+},{"./polling.js":30,"./websocket.js":32,"./webtransport.js":33}],30:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -4519,7 +4731,7 @@ function unloadHandler() {
     }
 }
 
-},{"../contrib/yeast.js":20,"../globalThis.js":21,"../transport.js":24,"../util.js":31,"./xmlhttprequest.js":30,"@socket.io/component-emitter":16,"debug":32,"engine.io-parser":39}],27:[function(require,module,exports){
+},{"../contrib/yeast.js":24,"../globalThis.js":25,"../transport.js":28,"../util.js":35,"./xmlhttprequest.js":34,"@socket.io/component-emitter":20,"debug":36,"engine.io-parser":43}],31:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.defaultBinaryType = exports.usingBrowserWebSocket = exports.WebSocket = exports.nextTick = void 0;
@@ -4537,7 +4749,7 @@ exports.WebSocket = globalThis_js_1.globalThisShim.WebSocket || globalThis_js_1.
 exports.usingBrowserWebSocket = true;
 exports.defaultBinaryType = "arraybuffer";
 
-},{"../globalThis.js":21}],28:[function(require,module,exports){
+},{"../globalThis.js":25}],32:[function(require,module,exports){
 (function (Buffer){(function (){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
@@ -4703,7 +4915,7 @@ class WS extends transport_js_1.Transport {
 exports.WS = WS;
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../contrib/yeast.js":20,"../transport.js":24,"../util.js":31,"./websocket-constructor.js":27,"buffer":2,"debug":32,"engine.io-parser":39}],29:[function(require,module,exports){
+},{"../contrib/yeast.js":24,"../transport.js":28,"../util.js":35,"./websocket-constructor.js":31,"buffer":2,"debug":36,"engine.io-parser":43}],33:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -4790,7 +5002,7 @@ class WT extends transport_js_1.Transport {
 }
 exports.WT = WT;
 
-},{"../transport.js":24,"./websocket-constructor.js":27,"debug":32,"engine.io-parser":39}],30:[function(require,module,exports){
+},{"../transport.js":28,"./websocket-constructor.js":31,"debug":36,"engine.io-parser":43}],34:[function(require,module,exports){
 "use strict";
 // browser shim for xmlhttprequest module
 Object.defineProperty(exports, "__esModule", { value: true });
@@ -4817,7 +5029,7 @@ exports.XHR = XHR;
 function createCookieJar() { }
 exports.createCookieJar = createCookieJar;
 
-},{"../contrib/has-cors.js":17,"../globalThis.js":21}],31:[function(require,module,exports){
+},{"../contrib/has-cors.js":21,"../globalThis.js":25}],35:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.byteLength = exports.installTimerFunctions = exports.pick = void 0;
@@ -4877,7 +5089,7 @@ function utf8Length(str) {
     return length;
 }
 
-},{"./globalThis.js":21}],32:[function(require,module,exports){
+},{"./globalThis.js":25}],36:[function(require,module,exports){
 (function (process){(function (){
 /* eslint-env browser */
 
@@ -5150,7 +5362,7 @@ formatters.j = function (v) {
 };
 
 }).call(this)}).call(this,require('_process'))
-},{"./common":33,"_process":4}],33:[function(require,module,exports){
+},{"./common":37,"_process":4}],37:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -5426,7 +5638,7 @@ function setup(env) {
 
 module.exports = setup;
 
-},{"ms":34}],34:[function(require,module,exports){
+},{"ms":38}],38:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -5590,7 +5802,7 @@ function plural(ms, msAbs, n, name) {
   return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
 }
 
-},{}],35:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ERROR_PACKET = exports.PACKET_TYPES_REVERSE = exports.PACKET_TYPES = void 0;
@@ -5611,7 +5823,7 @@ Object.keys(PACKET_TYPES).forEach((key) => {
 const ERROR_PACKET = { type: "error", data: "parser error" };
 exports.ERROR_PACKET = ERROR_PACKET;
 
-},{}],36:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decode = exports.encode = void 0;
@@ -5661,7 +5873,7 @@ const decode = (base64) => {
 };
 exports.decode = decode;
 
-},{}],37:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decodePacket = void 0;
@@ -5729,7 +5941,7 @@ const mapBinary = (data, binaryType) => {
     }
 };
 
-},{"./commons.js":35,"./contrib/base64-arraybuffer.js":36}],38:[function(require,module,exports){
+},{"./commons.js":39,"./contrib/base64-arraybuffer.js":40}],42:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.encodePacket = exports.encodePacketToBinary = void 0;
@@ -5803,7 +6015,7 @@ function encodePacketToBinary(packet, callback) {
 }
 exports.encodePacketToBinary = encodePacketToBinary;
 
-},{"./commons.js":35}],39:[function(require,module,exports){
+},{"./commons.js":39}],43:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.decodePayload = exports.decodePacket = exports.encodePayload = exports.encodePacket = exports.protocol = exports.createPacketDecoderStream = exports.createPacketEncoderStream = void 0;
@@ -5971,7 +6183,7 @@ function createPacketDecoderStream(maxPayload, binaryType) {
 exports.createPacketDecoderStream = createPacketDecoderStream;
 exports.protocol = 4;
 
-},{"./commons.js":35,"./decodePacket.js":37,"./encodePacket.js":38}],40:[function(require,module,exports){
+},{"./commons.js":39,"./decodePacket.js":41,"./encodePacket.js":42}],44:[function(require,module,exports){
 "use strict";
 /**
  * Initialize backoff timer with `opts`.
@@ -6043,7 +6255,7 @@ Backoff.prototype.setJitter = function (jitter) {
     this.jitter = jitter;
 };
 
-},{}],41:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -6114,7 +6326,7 @@ Object.defineProperty(exports, "protocol", { enumerable: true, get: function () 
 
 module.exports = lookup;
 
-},{"./manager.js":42,"./socket.js":44,"./url.js":45,"debug":46,"socket.io-parser":50}],42:[function(require,module,exports){
+},{"./manager.js":46,"./socket.js":48,"./url.js":49,"debug":50,"socket.io-parser":54}],46:[function(require,module,exports){
 "use strict";
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -6519,7 +6731,7 @@ class Manager extends component_emitter_1.Emitter {
 }
 exports.Manager = Manager;
 
-},{"./contrib/backo2.js":40,"./on.js":43,"./socket.js":44,"@socket.io/component-emitter":16,"debug":46,"engine.io-client":22,"socket.io-parser":50}],43:[function(require,module,exports){
+},{"./contrib/backo2.js":44,"./on.js":47,"./socket.js":48,"@socket.io/component-emitter":20,"debug":50,"engine.io-client":26,"socket.io-parser":54}],47:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.on = void 0;
@@ -6531,7 +6743,7 @@ function on(obj, ev, fn) {
 }
 exports.on = on;
 
-},{}],44:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -7399,7 +7611,7 @@ class Socket extends component_emitter_1.Emitter {
 }
 exports.Socket = Socket;
 
-},{"./on.js":43,"@socket.io/component-emitter":16,"debug":46,"socket.io-parser":50}],45:[function(require,module,exports){
+},{"./on.js":47,"@socket.io/component-emitter":20,"debug":50,"socket.io-parser":54}],49:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -7471,13 +7683,13 @@ function url(uri, path = "", loc) {
 }
 exports.url = url;
 
-},{"debug":46,"engine.io-client":22}],46:[function(require,module,exports){
-arguments[4][32][0].apply(exports,arguments)
-},{"./common":47,"_process":4,"dup":32}],47:[function(require,module,exports){
-arguments[4][33][0].apply(exports,arguments)
-},{"dup":33,"ms":48}],48:[function(require,module,exports){
-arguments[4][34][0].apply(exports,arguments)
-},{"dup":34}],49:[function(require,module,exports){
+},{"debug":50,"engine.io-client":26}],50:[function(require,module,exports){
+arguments[4][36][0].apply(exports,arguments)
+},{"./common":51,"_process":4,"dup":36}],51:[function(require,module,exports){
+arguments[4][37][0].apply(exports,arguments)
+},{"dup":37,"ms":52}],52:[function(require,module,exports){
+arguments[4][38][0].apply(exports,arguments)
+},{"dup":38}],53:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.reconstructPacket = exports.deconstructPacket = void 0;
@@ -7567,7 +7779,7 @@ function _reconstructPacket(data, buffers) {
     return data;
 }
 
-},{"./is-binary.js":51}],50:[function(require,module,exports){
+},{"./is-binary.js":55}],54:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Decoder = exports.Encoder = exports.PacketType = exports.protocol = void 0;
@@ -7890,7 +8102,7 @@ class BinaryReconstructor {
     }
 }
 
-},{"./binary.js":49,"./is-binary.js":51,"@socket.io/component-emitter":16,"debug":52}],51:[function(require,module,exports){
+},{"./binary.js":53,"./is-binary.js":55,"@socket.io/component-emitter":20,"debug":56}],55:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.hasBinary = exports.isBinary = void 0;
@@ -7947,10 +8159,10 @@ function hasBinary(obj, toJSON) {
 }
 exports.hasBinary = hasBinary;
 
-},{}],52:[function(require,module,exports){
-arguments[4][32][0].apply(exports,arguments)
-},{"./common":53,"_process":4,"dup":32}],53:[function(require,module,exports){
-arguments[4][33][0].apply(exports,arguments)
-},{"dup":33,"ms":54}],54:[function(require,module,exports){
-arguments[4][34][0].apply(exports,arguments)
-},{"dup":34}]},{},[5]);
+},{}],56:[function(require,module,exports){
+arguments[4][36][0].apply(exports,arguments)
+},{"./common":57,"_process":4,"dup":36}],57:[function(require,module,exports){
+arguments[4][37][0].apply(exports,arguments)
+},{"dup":37,"ms":58}],58:[function(require,module,exports){
+arguments[4][38][0].apply(exports,arguments)
+},{"dup":38}]},{},[5]);

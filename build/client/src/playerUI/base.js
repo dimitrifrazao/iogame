@@ -15,21 +15,24 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ToggleUI = void 0;
-var base_1 = require("./base");
-var ToggleUI = /** @class */ (function (_super) {
-    __extends(ToggleUI, _super);
-    function ToggleUI() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this.state = false;
+exports.UIBase = void 0;
+var boundingBox_1 = require("../../../shared/boundingBox");
+var vector_1 = require("../../../shared/vector");
+var color_1 = require("../../../shared/color");
+var UIBase = /** @class */ (function (_super) {
+    __extends(UIBase, _super);
+    function UIBase(tlx, tly, brx, bry) {
+        var _this = _super.call(this, new vector_1.Vector(tlx, tly), new vector_1.Vector(brx, bry)) || this;
+        _this.color = color_1.Color.Black;
         return _this;
     }
-    ToggleUI.prototype.Toggle = function () {
-        this.state !== this.state;
+    UIBase.prototype.Render = function (ctx) { };
+    UIBase.prototype.Draw = function (ctx) {
+        var topLeft = this.GetTopLeft();
+        var botRight = this.GetBotRight();
+        ctx.fillStyle = this.color.ToString();
+        ctx.fillRect(topLeft.x, topLeft.y, botRight.x, botRight.y);
     };
-    ToggleUI.prototype.GetState = function () {
-        return this.state;
-    };
-    return ToggleUI;
-}(base_1.UIBase));
-exports.ToggleUI = ToggleUI;
+    return UIBase;
+}(boundingBox_1.BoundingBox));
+exports.UIBase = UIBase;

@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InputManager = void 0;
-var playerInput_1 = require("../../shared/enums/playerInput");
-var weapons_1 = require("../../shared/enums/weapons");
-var clientRequests_1 = require("../../shared/enums/clientRequests");
+const playerInput_1 = require("../../shared/enums/playerInput");
+const weapons_1 = require("../../shared/enums/weapons");
+const clientRequests_1 = require("../../shared/enums/clientRequests");
 var KeyCode;
 (function (KeyCode) {
     KeyCode[KeyCode["W"] = 87] = "W";
@@ -22,14 +22,12 @@ var KeyCode;
     KeyCode[KeyCode["N4"] = 52] = "N4";
     KeyCode[KeyCode["P"] = 80] = "P";
 })(KeyCode || (KeyCode = {}));
-var InputManager = /** @class */ (function () {
-    function InputManager() {
-    }
-    InputManager.SetSocket = function (socket) {
+class InputManager {
+    static SetSocket(socket) {
         InputManager.socket = socket;
-    };
-    InputManager.EmitPlayerDir = function () {
-        var playerDir = playerInput_1.DirEnum.None;
+    }
+    static EmitPlayerDir() {
+        let playerDir = playerInput_1.DirEnum.None;
         if (InputManager.w != InputManager.s) {
             if (InputManager.w) {
                 if (InputManager.a) {
@@ -63,8 +61,8 @@ var InputManager = /** @class */ (function () {
             }
         }
         InputManager.socket.emit("playerDir", { dir: playerDir });
-    };
-    InputManager.OnKeyDown = function (keyCode) {
+    }
+    static OnKeyDown(keyCode) {
         switch (keyCode) {
             case KeyCode.W:
                 InputManager.w = true;
@@ -123,8 +121,8 @@ var InputManager = /** @class */ (function () {
                 });
                 break;
         }
-    };
-    InputManager.OnKeyUp = function (keyCode) {
+    }
+    static OnKeyUp(keyCode) {
         switch (keyCode) {
             case KeyCode.W:
                 InputManager.w = false;
@@ -146,14 +144,13 @@ var InputManager = /** @class */ (function () {
                 InputManager.socket.emit("dash", { dash: false });
                 break;
         }
-    };
-    InputManager.OnKeyPress = function (keyCode) { };
-    InputManager.w = false;
-    InputManager.a = false;
-    InputManager.s = false;
-    InputManager.d = false;
-    InputManager.space = false;
-    InputManager.weaponCounter = 0;
-    return InputManager;
-}());
+    }
+    static OnKeyPress(keyCode) { }
+}
 exports.InputManager = InputManager;
+InputManager.w = false;
+InputManager.a = false;
+InputManager.s = false;
+InputManager.d = false;
+InputManager.space = false;
+InputManager.weaponCounter = 0;

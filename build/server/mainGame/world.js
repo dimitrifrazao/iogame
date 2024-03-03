@@ -1,54 +1,32 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.World = exports.CellType = exports.Cell = void 0;
-var transform_1 = require("../gameObjects/transform");
-var vector_1 = require("../../shared/vector");
-var color_1 = require("../../shared/color");
-var Cell = /** @class */ (function (_super) {
-    __extends(Cell, _super);
-    function Cell(cellType) {
-        if (cellType === void 0) { cellType = CellType.Empty; }
-        var _this = _super.call(this) || this;
-        _this.cellType = CellType.Empty;
-        _this.cellType = cellType;
-        return _this;
-    }
-    Cell.prototype.SetCellType = function (cellType) {
+const transform_1 = require("../gameObjects/transform");
+const vector_1 = require("../../shared/vector");
+const data_1 = require("../../shared/data");
+const data_2 = require("../../shared/data");
+class Cell extends transform_1.Transform {
+    constructor(cellType = CellType.Empty) {
+        super();
+        this.cellType = CellType.Empty;
         this.cellType = cellType;
-    };
-    Cell.prototype.GetCellType = function () {
+    }
+    SetCellType(cellType) {
+        this.cellType = cellType;
+    }
+    GetCellType() {
         return this.cellType;
-    };
-    Cell.prototype.GetDataPack = function () {
-        var dPack = _super.prototype.GetDataPack.call(this);
-        dPack.SetColor(color_1.Color.Black);
-        return dPack;
-    };
-    return Cell;
-}(transform_1.Transform));
+    }
+    GetWorldIndex() { }
+}
 exports.Cell = Cell;
 var CellType;
 (function (CellType) {
     CellType[CellType["Empty"] = 0] = "Empty";
     CellType[CellType["Rock"] = 1] = "Rock";
 })(CellType || (exports.CellType = CellType = {}));
-var World = /** @class */ (function () {
-    function World(hUnits, vUnits, unitSize) {
+class World {
+    constructor(hUnits, vUnits, unitSize) {
         this.hUnits = hUnits;
         this.vUnits = vUnits;
         this.unitSize = unitSize;
@@ -64,45 +42,38 @@ var World = /** @class */ (function () {
         this.surroundingIndexes.push(-this.hUnits);
         this.surroundingIndexes.push(1 - this.hUnits);
         this.surroundingIndexes.push(-1 - this.hUnits);
+        World.inst = this;
     }
-    /* public static Init(
-      hUnits: number = World.defaultH,
-      vUnits: number = World.defaultV,
-      unitSize: number = World.defaultSize
-    ) {
-      World.inst = new World(hUnits, vUnits, unitSize);
-      World.inst.Build();
-    } */
-    World.prototype.GetHorizontalUnits = function () {
+    GetHorizontalUnits() {
         return this.hUnits;
-    };
-    World.prototype.GetVerticalUnits = function () {
+    }
+    GetVerticalUnits() {
         return this.vUnits;
-    };
-    World.prototype.GetUnitSize = function () {
+    }
+    GetUnitSize() {
         return this.unitSize;
-    };
-    World.prototype.GetHorizontalSize = function () {
+    }
+    GetHorizontalSize() {
         return this.hUnits * this.unitSize;
-    };
-    World.prototype.GetVerticalSize = function () {
+    }
+    GetVerticalSize() {
         return this.vUnits * this.unitSize;
-    };
-    World.prototype.GetCellCount = function () {
+    }
+    GetCellCount() {
         return this.hUnits * this.vUnits;
-    };
-    World.prototype.GetXValue = function (i) {
+    }
+    GetXValue(i) {
         return (i % this.hUnits) * this.unitSize;
-    };
-    World.prototype.GetYValue = function (i) {
+    }
+    GetYValue(i) {
         return Math.floor(i / this.hUnits) * this.unitSize;
-    };
-    World.prototype.GetIndex = function (pos) {
-        var wPos = vector_1.Vector.Wrap(pos, this.GetHorizontalSize(), this.GetVerticalSize());
+    }
+    GetIndex(pos) {
+        let wPos = vector_1.Vector.Wrap(pos, this.GetHorizontalSize(), this.GetVerticalSize());
         return (Math.floor(wPos.y / this.unitSize) * this.hUnits +
             Math.floor(wPos.x / this.unitSize));
-    };
-    World.prototype.WorldWrap = function (pos) {
+    }
+    WorldWrap(pos) {
         if (pos.x > this.GetHorizontalSize())
             pos.x = 0;
         else if (pos.x < 0)
@@ -111,9 +82,9 @@ var World = /** @class */ (function () {
             pos.y = 0;
         else if (pos.y < 0)
             pos.y = this.GetVerticalSize();
-    };
-    World.prototype.WorldWrapVector = function (pos) {
-        var vec = new vector_1.Vector();
+    }
+    WorldWrapVector(pos) {
+        let vec = new vector_1.Vector();
         if (pos.x > this.GetHorizontalSize())
             vec.x = -this.GetHorizontalSize();
         else if (pos.x < 0)
@@ -123,40 +94,39 @@ var World = /** @class */ (function () {
         else if (pos.y < 0)
             vec.y = this.GetVerticalSize();
         return vec;
-    };
-    World.prototype.WorldWrapTransform = function (trans) {
-        var wrapVec = this.WorldWrapVector(trans.GetPos());
+    }
+    WorldWrapTransform(trans) {
+        let wrapVec = this.WorldWrapVector(trans.GetPos());
         if (wrapVec.len() > 1) {
             trans.AddPos(wrapVec);
             trans.AddPreviousPos(wrapVec);
         }
-    };
-    World.prototype.WrapIndex = function (i) {
+    }
+    WrapIndex(i) {
         if (i < 0)
             return this.GetCellCount() + i;
         else if (i > this.GetCellCount())
             return i - this.GetCellCount();
         return i;
-    };
-    World.prototype.GetSurroundingCells = function (i) {
-        var cells = [];
-        for (var _i = 0, _a = this.surroundingIndexes; _i < _a.length; _i++) {
-            var cellIndex = _a[_i];
-            var cell = this.cells[this.WrapIndex(i + cellIndex)];
+    }
+    GetSurroundingCells(i) {
+        let cells = [];
+        for (let cellIndex of this.surroundingIndexes) {
+            let cell = this.cells[this.WrapIndex(i + cellIndex)];
             if (cell != undefined)
                 cells.push(cell);
         }
         return cells;
-    };
-    World.prototype.GetPossibleCollisions = function (pos) {
+    }
+    GetPossibleCollisions(pos) {
         return this.GetSurroundingCells(this.GetIndex(pos));
-    };
-    World.prototype.Build = function () {
-        var cellsCount = this.GetCellCount();
-        for (var i = 0; i < cellsCount; i++) {
-            var x = this.GetXValue(i) + this.unitSize / 2;
-            var y = this.GetYValue(i) + this.unitSize / 2;
-            var cell = new Cell();
+    }
+    Build() {
+        let cellsCount = this.GetCellCount();
+        for (let i = 0; i < cellsCount; i++) {
+            let x = this.GetXValue(i) + this.unitSize / 2;
+            let y = this.GetYValue(i) + this.unitSize / 2;
+            let cell = new Cell();
             cell.SetPos(new vector_1.Vector(x, y));
             cell.SetSize(new vector_1.Vector(this.unitSize, this.unitSize));
             if (Math.random() * 100 > 98) {
@@ -166,25 +136,29 @@ var World = /** @class */ (function () {
             this.cells.push(cell);
         }
         console.log("World generated");
-    };
-    World.prototype.GetRocks = function () {
+    }
+    GetRocks() {
         return this.rocks;
-    };
-    World.prototype.GenerateDataPack = function () {
-        var pack = [];
-        for (var _i = 0, _a = this.rocks; _i < _a.length; _i++) {
-            var cell = _a[_i];
-            pack.push(cell.GetDataPack());
+    }
+    GetWorldData() {
+        let gd = new data_1.GameData(data_2.GameDataType.WorldData);
+        for (let cell of this.rocks) {
+            let v = cell.GetPos();
+            gd.data.push(v.y);
+            gd.data.push(v.x);
         }
-        return pack;
-    };
-    World.prototype.GetWorldCenter = function () {
+        gd.data.push(World.inst.GetHorizontalUnits());
+        gd.data.push(World.inst.GetVerticalUnits());
+        gd.data.push(World.inst.GetUnitSize());
+        return gd;
+    }
+    GetWorldCenter() {
         return new vector_1.Vector(World.inst.GetHorizontalSize() / 2, World.inst.GetVerticalSize() / 2);
-    };
-    World.prototype.GetWorldSize = function () {
+    }
+    GetWorldSize() {
         return new vector_1.Vector(World.inst.GetHorizontalSize(), World.inst.GetVerticalSize());
-    };
-    World.prototype.GetWorldSizeData = function () {
+    }
+    GetWorldSizeData() {
         return {
             width: World.inst.GetHorizontalSize(),
             height: World.inst.GetVerticalSize(),
@@ -192,10 +166,9 @@ var World = /** @class */ (function () {
             verticalUnits: World.inst.GetVerticalUnits(),
             size: World.inst.GetUnitSize(),
         };
-    };
-    World.defaultH = 60;
-    World.defaultV = 40;
-    World.defaultSize = 30;
-    return World;
-}());
+    }
+}
 exports.World = World;
+World.defaultH = 60;
+World.defaultV = 40;
+World.defaultSize = 30;

@@ -1,65 +1,44 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    };
-    return function (d, b) {
-        if (typeof b !== "function" && b !== null)
-            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.QuadtreeNode = void 0;
-var transform_1 = require("./transform");
-var vector_1 = require("../../shared/vector");
-var unitType_1 = require("../../shared/enums/unitType");
-var color_1 = require("../../shared/color");
-var QuadtreeNode = /** @class */ (function (_super) {
-    __extends(QuadtreeNode, _super);
-    function QuadtreeNode(pos, size, depth) {
-        if (pos === void 0) { pos = new vector_1.Vector(0, 0); }
-        if (size === void 0) { size = new vector_1.Vector(1, 1); }
-        if (depth === void 0) { depth = 0; }
-        var _this = _super.call(this, pos, size) || this;
-        _this.depth = depth;
-        _this.transforms = [];
-        _this.children = [];
-        return _this;
+const transform_1 = require("./transform");
+const vector_1 = require("../../shared/vector");
+const unitType_1 = require("../../shared/enums/unitType");
+const color_1 = require("../../shared/color");
+class QuadtreeNode extends transform_1.Transform {
+    constructor(pos = new vector_1.Vector(0, 0), size = new vector_1.Vector(1, 1), depth = 0) {
+        super(pos, size);
+        this.depth = depth;
+        this.transforms = [];
+        this.children = [];
         //console.log("quad data", pos, size, depth);
     }
-    QuadtreeNode.prototype.Clear = function () {
-        var size = this.children.length;
-        for (var i = 0; i < size; i++) {
+    Clear() {
+        let size = this.children.length;
+        for (let i = 0; i < size; i++) {
             this.children[i].Clear();
         }
         this.transforms.length = 0;
         this.children.length = 0;
-    };
-    QuadtreeNode.prototype.Retrieve = function (transform) {
-        var neighbours = [];
+    }
+    Retrieve(transform) {
+        let neighbours = new Set();
         this.RetrieveRec(transform, neighbours);
         return neighbours;
-    };
-    QuadtreeNode.prototype.RetrieveRec = function (transform, neighbours) {
+    }
+    RetrieveRec(transform, neighbours) {
         if (!this.CheckCollision(transform))
             return;
-        this.children.forEach(function (child) {
+        this.children.forEach((child) => {
             child.RetrieveRec(transform, neighbours);
         });
-        this.transforms.forEach(function (transform) {
-            neighbours.push(transform);
+        this.transforms.forEach((transform) => {
+            neighbours.add(transform);
         });
-    };
-    QuadtreeNode.prototype.Insert = function (transform) {
-        var _this = this;
+    }
+    Insert(transform) {
         if (this.children.length > 0) {
-            this.children.forEach(function (child) {
+            this.children.forEach((child) => {
                 if (child.CheckCollision(transform)) {
                     child.Insert(transform);
                 }
@@ -70,35 +49,34 @@ var QuadtreeNode = /** @class */ (function (_super) {
         if (this.depth < QuadtreeNode.depthLimit &&
             this.transforms.length > QuadtreeNode.capacity) {
             this.subdivide();
-            this.transforms.forEach(function (transform) {
-                _this.Insert(transform);
+            this.transforms.forEach((transform) => {
+                this.Insert(transform);
             });
             this.transforms.length = 0;
         }
-    };
+    }
     // Subdivide the node into four children quadrants
-    QuadtreeNode.prototype.subdivide = function () {
-        var center = this.GetPos();
-        var size = this.GetSize();
-        var halfSize = size.newScaleBy(0.5);
-        var quarterSize = size.newScaleBy(0.25);
-        var flipped = quarterSize.copy();
+    subdivide() {
+        let center = this.GetPos();
+        let size = this.GetSize();
+        let halfSize = size.newScaleBy(0.5);
+        let quarterSize = size.newScaleBy(0.25);
+        let flipped = quarterSize.Copy();
         flipped.x *= -1.0;
-        var newDepth = this.depth + 1;
+        let newDepth = this.depth + 1;
         this.children.push(new QuadtreeNode(center.newSub(quarterSize), halfSize, newDepth));
         this.children.push(new QuadtreeNode(center.newAdd(quarterSize), halfSize, newDepth));
         this.children.push(new QuadtreeNode(center.newSub(flipped), halfSize, newDepth));
         this.children.push(new QuadtreeNode(center.newAdd(flipped), halfSize, newDepth));
-    };
-    QuadtreeNode.prototype.AddDataPacks = function (packs) {
-        var p = _super.prototype.GetDataPack.call(this);
-        p.type = unitType_1.UnitType.QuadTree;
+    }
+    AddDataPacks(packs) {
+        let p = super.GetDataPack();
+        p.unitType = unitType_1.UnitType.QuadTree;
         p.SetColor(color_1.Color.Green);
         packs.push(p);
-        this.children.forEach(function (child) {
+        this.children.forEach((child) => {
             child.AddDataPacks(packs);
         });
-    };
-    return QuadtreeNode;
-}(transform_1.Transform));
+    }
+}
 exports.QuadtreeNode = QuadtreeNode;

@@ -3,6 +3,13 @@ body {
   background-color: rgb(221, 227, 231);
 }
 
+h1 {
+  font-weight: bold;
+  font-size: 20px;
+  color: rgb(146, 0, 0);
+  text-align: center;
+}
+
 #enterGame {
   margin: auto;
   position: absolute;
