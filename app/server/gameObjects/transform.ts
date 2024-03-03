@@ -3,13 +3,13 @@ import { Vector } from "../../shared/vector";
 import { Color } from "../../shared/color";
 import { DirEnum } from "../../shared/enums/playerInput";
 import { GameObject } from "./gameObject";
-import { BoundingBox } from "./boundingBox";
+import { BoundingBox } from "../../shared/boundingBox";
 import { UnitType } from "../../shared/enums/unitType";
 import { DataPack } from "../../shared/data";
 
 export class Transform extends GameObject {
   protected id: number = -1;
-  protected type: UnitType = UnitType.None;
+  protected unitType: UnitType = UnitType.None;
   protected color: Color = Color.DarkGrey;
   protected previousPos: Vector = new Vector();
 
@@ -24,18 +24,18 @@ export class Transform extends GameObject {
     return this.id;
   }
   GetUnitType(): UnitType {
-    return this.type;
+    return this.unitType;
   }
 
   SetPos(pos: Vector) {
-    this.pos = pos;
+    this.SetPosValues(pos.x, pos.y);
   }
   SetPosValues(x: number, y: number) {
     this.pos.x = x;
     this.pos.y = y;
   }
   GetPos() {
-    return this.pos;
+    return this.pos.Copy();
   }
   AddPos(pos: Vector) {
     this.pos.add(pos);
@@ -49,31 +49,31 @@ export class Transform extends GameObject {
     this.previousPos.add(pos);
   }
   GetPreviousPos() {
-    return this.previousPos;
+    return this.previousPos.Copy();
   }
 
   SetSize(size: Vector) {
-    this.size = size;
+    this.SetSizeValues(size.x, size.y);
   }
   SetSizeValues(x: number, y: number) {
     this.size.x = x;
     this.size.y = y;
   }
   GetSize() {
-    return this.size;
+    return this.size.Copy();
   }
   SetColor(color: Color) {
-    this.color = color;
+    this.color = color.Copy();
   }
   GetColor() {
-    return this.color;
+    return this.color.Copy();
   }
 
   GetBoundingBox(): BoundingBox {
-    return BoundingBox.MakeFrom(this);
+    return new BoundingBox(this.GetTopLeftPos(), this.GetBotRightPos());
   }
   GetOldBoundingBox(): BoundingBox {
-    return BoundingBox.MakeFromVectorAndSize(
+    return BoundingBox.MakeFromPosAndSize(
       this.GetPreviousPos(),
       this.GetSize()
     );
@@ -86,11 +86,10 @@ export class Transform extends GameObject {
   GetDataPack(): DataPack {
     let dPack = new DataPack();
     dPack.SetPos(this.GetTopLeftPos());
+    dPack.SetSize(this.GetSize());
     dPack.SetColor(this.GetColor());
-    dPack.sx = this.size.x;
-    dPack.sy = this.size.y;
     dPack.id = this.GetId();
-    dPack.type = this.GetUnitType();
+    dPack.unitType = this.GetUnitType();
     return dPack;
   }
   CheckCollision(trans: Transform): boolean {
@@ -100,14 +99,14 @@ export class Transform extends GameObject {
     );
   }
   CheckBBCollision(bb: BoundingBox): boolean {
-    return this.CheckCollision(bb.GetTransform());
+    return this.CheckCollision(Transform.MakeFromBoundingBox(bb));
   }
 
   GetOverlap(trans: Transform): Transform {
     let bb1 = this.GetBoundingBox();
     let bb2 = trans.GetBoundingBox();
     let bb3 = BoundingBox.Sub(bb1, bb2);
-    return bb3.GetTransform();
+    return Transform.MakeFromBoundingBox(bb3);
   }
 
   ApplyBulletOverlapPush(bulletStretch: Transform, overlap: Transform) {
@@ -119,17 +118,11 @@ export class Transform extends GameObject {
   }
 
   GetTopLeftPos() {
-    return new Vector(
-      this.pos.x - this.size.x / 2,
-      this.pos.y - this.size.y / 2
-    );
+    return this.pos.newSub(this.size.newScaleBy(0.5));
   }
 
   GetBotRightPos() {
-    return new Vector(
-      this.pos.x + this.size.x / 2,
-      this.pos.y + this.size.y / 2
-    );
+    return this.pos.newAdd(this.size.newScaleBy(0.5));
   }
 
   GetArea() {
@@ -156,5 +149,9 @@ export class Transform extends GameObject {
         return DirEnum.DownLeft;
     }
     return DirEnum.None;
+  }
+
+  static MakeFromBoundingBox(bb: BoundingBox) {
+    return new Transform(bb.GetCenterPoint(), bb.GetSize());
   }
 }

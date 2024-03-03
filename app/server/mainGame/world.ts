@@ -2,6 +2,8 @@ import { Transform } from "../gameObjects/transform";
 import { Vector } from "../../shared/vector";
 import { Color } from "../../shared/color";
 import { DataPack } from "../../shared/data";
+import { GameData } from "../../shared/data";
+import { GameDataType } from "../../shared/data";
 
 export class Cell extends Transform {
   private cellType: CellType = CellType.Empty;
@@ -15,12 +17,7 @@ export class Cell extends Transform {
   GetCellType() {
     return this.cellType;
   }
-
-  GetDataPack(): DataPack {
-    let dPack = super.GetDataPack();
-    dPack.SetColor(Color.Black);
-    return dPack;
-  }
+  GetWorldIndex() {}
 }
 
 export enum CellType {
@@ -53,16 +50,8 @@ export class World {
     this.surroundingIndexes.push(-this.hUnits);
     this.surroundingIndexes.push(1 - this.hUnits);
     this.surroundingIndexes.push(-1 - this.hUnits);
+    World.inst = this;
   }
-
-  /* public static Init(
-    hUnits: number = World.defaultH,
-    vUnits: number = World.defaultV,
-    unitSize: number = World.defaultSize
-  ) {
-    World.inst = new World(hUnits, vUnits, unitSize);
-    World.inst.Build();
-  } */
 
   GetHorizontalUnits() {
     return this.hUnits;
@@ -167,12 +156,17 @@ export class World {
     return this.rocks;
   }
 
-  GenerateDataPack(): object[] {
-    let pack: object[] = [];
+  GetWorldData() {
+    let gd = new GameData(GameDataType.WorldData);
     for (let cell of this.rocks) {
-      pack.push(cell.GetDataPack());
+      let v = cell.GetPos();
+      gd.data.push(v.y);
+      gd.data.push(v.x);
     }
-    return pack;
+    gd.data.push(World.inst.GetHorizontalUnits());
+    gd.data.push(World.inst.GetVerticalUnits());
+    gd.data.push(World.inst.GetUnitSize());
+    return gd;
   }
 
   GetWorldCenter(): Vector {

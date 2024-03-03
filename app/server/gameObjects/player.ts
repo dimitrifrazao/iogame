@@ -5,11 +5,13 @@ import { IMove } from "./interfaces/imove";
 import { DirEnum } from "../../shared/enums/playerInput";
 import { IBulletManager, IBulletObserver, IPlayer } from "./interfaces/ishoot";
 import { CellType, World } from "../mainGame/world";
-import { BoundingBox } from "./boundingBox";
+import { BoundingBox } from "../../shared/boundingBox";
 import { QuadtreeNode } from "./quadTree";
 import { WeaponType } from "../../shared/enums/weapons";
 import { Global } from "../mainGame/global";
 import { UnitType } from "../../shared/enums/unitType";
+import { DataPack } from "../../shared/data";
+import { GameData } from "../../shared/data";
 
 export enum PlayerState {
   Alive = 0,
@@ -32,6 +34,9 @@ export class Player
   private dashBuffer = 0;
   private dashBufferMax = 100;
   static defaultSpeed: number = 0.3;
+
+  private emitUpdate: boolean = false;
+
   private static startSize = 30;
 
   constructor(id: number, name: string, deadCallback: any) {
@@ -41,9 +46,19 @@ export class Player
     this.id = id;
     this.deadCallback = deadCallback;
     this.SetColor(Color.PlayerRandomColor());
-    this.type = UnitType.Player;
+    this.unitType = UnitType.Player;
     this.name = name;
     Player.PlayerMap.set(id, this);
+  }
+
+  SetPlayerGameData(gameData: GameData) {
+    if (this.emitUpdate) {
+      gameData.data.push(this.hp);
+      gameData.data.push(this.level);
+      this.emitUpdate = false;
+    }
+    gameData.data.push(this.pos.y);
+    gameData.data.push(this.pos.x);
   }
 
   // from IMove
@@ -51,39 +66,54 @@ export class Player
   speed: number = Player.defaultSpeed;
   push: Vector = new Vector();
   Push(obj: IMove) {}
-  GetMoveVector() {
+  GetMoveVector(): Vector {
     return Vector.Sub(this.pos, this.previousPos);
   }
 
-  SetWeaponType(weaponType: WeaponType) {
+  SetWeaponType(weaponType: WeaponType): void {
     this.weaponType = weaponType;
+    this.emitUpdate = true;
   }
-  GetWeaponType() {
+  GetWeaponType(): WeaponType {
     return this.weaponType;
   }
-  GetWeaponData(): any {
+  GetWeaponData(): number {
     switch (this.weaponType) {
       case WeaponType.default:
-        return { damage: 1, speed: 0.4, size: 10, timer: -1 };
+        return 1;
       case WeaponType.shotgun:
-        return { damage: 3, speed: 0.3, size: 15, timer: -1 };
+        return 3;
       case WeaponType.drop:
-        return { damage: 5, speed: 0.2, size: 20, timer: -1 };
+        return 5;
       case WeaponType.knife:
-        return { damage: 7, speed: 0.1, size: 25, timer: -1 };
+        return 7;
     }
+  }
+
+  GetWeaponDamage(): number {
+    return this.GetWeaponData();
+  }
+
+  CanShoot(): boolean {
+    let damage = this.GetWeaponDamage();
+    let hasHP = this.hp >= 1 + damage;
+    //let maxOverHP = this.bullets.keys.length <= this.hpMax * 2;
+    return hasHP && !this.IsDashing();
   }
 
   // from IBulletManager
   bullets: Map<number, IBulletObserver> = new Map<number, IBulletObserver>();
-  AddBullet(bullet: IBulletObserver): void {
+  AddBullet(bullet: IBulletObserver, dir: DirEnum): void {
     this.bullets.set(bullet.GetId(), bullet);
+    this.TakeDamage(this.GetWeaponDamage());
+    bullet.Shoot(dir);
   }
   RemoveBullet(bullet: IBulletObserver): void {
     this.bullets.delete(bullet.GetId());
   }
 
   RemovePlayer(): void {
+    console.log("Removing player: " + this.name);
     this.bullets.forEach((bullet, bulletId) => {
       bullet.Release();
     });
@@ -95,24 +125,25 @@ export class Player
     if (!Player.PlayerMap.has(id)) {
       console.log("ERROR: trying to delete a non existing Player id");
     }
-    console.log("Removing player: " + this.name);
     Player.PlayerMap.delete(id);
   }
 
-  LevelUp() {
+  LevelUp(): void {
     this.level++;
     this.hpMax++;
     this.hp++;
     this.size.x += 5;
     this.size.y += 5;
+    this.emitUpdate = true;
   }
 
-  AddHp(hp: number) {
+  AddHp(hp: number): void {
     if (this.playerState != PlayerState.Dead) {
       this.hp += hp;
       if (this.hp > this.hpMax) {
         this.hp = this.hpMax;
       }
+      this.emitUpdate = true;
     }
   }
   // from IPlayer
@@ -127,10 +158,11 @@ export class Player
         this.playerState = PlayerState.Dead;
         this.RemovePlayer();
       }
+      this.emitUpdate = true;
     }
   }
 
-  IsAlive() {
+  IsAlive(): boolean {
     return this.playerState !== PlayerState.Dead;
   }
 
@@ -139,44 +171,53 @@ export class Player
   }
 
   // player default
-
-  SetPlayerState(state: PlayerState) {
+  SetPlayerState(state: PlayerState): void {
     this.playerState = state;
+    this.emitUpdate = true;
   }
 
-  SetDash(state: boolean) {
-    if (state && this.dashBuffer >= this.dashBufferMax) this.dashing = true;
-    else if (state == false) this.dashing = false;
+  SetDash(state: boolean): void {
+    if (state && this.dashBuffer >= this.dashBufferMax) {
+      this.dashing = true;
+    } else if (state === false) {
+      this.dashing = false;
+    }
   }
-  IsDashing() {
-    return this.dashing;
+  IsDashing(): boolean {
+    return this.dashing === true;
   }
 
-  GetDataPack() {
+  GetDataPack(): DataPack {
     let dPack = super.GetDataPack();
     dPack.name = this.name;
     return dPack;
   }
 
-  SetDirection(dir: DirEnum) {
+  SetDirection(dir: DirEnum): void {
     this.dir = dir;
   }
 
-  UpdatePosition(dt: number) {
+  UpdatePosition(dt: number): void {
     if (this.playerState != PlayerState.Alive) return;
 
     this.SetPreviousPos(this.GetPos());
 
     if (this.dashing) {
-      this.speed = 2 * Player.defaultSpeed;
-      this.dashBuffer -= dt * 0.5;
-      if (this.dashBuffer < 0) {
+      if (this.dashBuffer > 0) {
+        this.speed = 2 * Player.defaultSpeed;
+        this.dashBuffer -= dt * 0.5;
+        this.emitUpdate = true;
+      } else {
+        this.speed = Player.defaultSpeed;
         this.dashBuffer = 0;
         this.dashing = false;
         this.speed = Player.defaultSpeed;
       }
     } else {
-      this.dashBuffer += dt * 0.05;
+      if (this.dashBuffer < this.dashBufferMax) {
+        this.dashBuffer += dt * 0.05;
+        this.emitUpdate = true;
+      }
       if (this.dashBuffer >= this.dashBufferMax) {
         this.dashBuffer = this.dashBufferMax;
       }
@@ -212,7 +253,7 @@ export class Player
 
   private static PlayerMap: Map<number, Player> = new Map<number, Player>();
 
-  static DeletePlayer(id: number) {
+  static DeletePlayer(id: number): void {
     let player = Player.GetPlayer(id);
     if (player !== null) player.RemovePlayer();
   }
@@ -222,7 +263,7 @@ export class Player
     return null;
   }
 
-  static UpdatePlayers(dt: number, pack: object[]) {
+  static UpdatePlayers(dt: number, pack: object[]): void {
     Player.PlayerMap.forEach((player, id) => {
       player.UpdatePosition(dt);
       player.CheckWorldWrap();
@@ -240,10 +281,11 @@ export class Player
 
           if (Global.debugToggle) {
             let cpack = cell.GetDataPack();
+            cpack.SetUnitType(UnitType.Player);
             cpack.SetColor(Color.Cyan);
             pack.push(cpack);
 
-            let op = overlapBB.GetDataPack();
+            let op = Transform.MakeFromBoundingBox(overlapBB).GetDataPack();
             op.SetColor(Color.Orange);
             pack.push(op);
           }
@@ -262,25 +304,20 @@ export class Player
       QuadtreeNode.root.Insert(player);
     });
 
-    let deadPlayers: Player[] = [];
+    let deadPlayers = new Set<Player>();
 
     Player.PlayerMap.forEach((player, id) => {
-      let transSet = new Set<Transform>();
       let transforms = QuadtreeNode.root.Retrieve(player);
-      for (let i = 0; i < transforms.length; i++) {
-        let transform = transforms[i];
+      transforms.forEach((transform) => {
         if (
-          //!transSet.has(transform) &&
           transform.GetUnitType() === UnitType.Player &&
           transform.GetId() !== player.id &&
           player.CheckCollision(transform)
         ) {
-          transSet.add(transform);
-          deadPlayers.push(player);
-          continue;
+          deadPlayers.add(player);
         }
-      }
-      transforms.length = 0;
+      });
+      transforms.clear();
 
       // back red square
       let playerRedPack = player.GetDataPack();
@@ -294,54 +331,10 @@ export class Player
       playerPack.sy = player.size.y * (player.hp / player.hpMax);
       playerPack.y += playerPack.sx - playerPack.sy;
       pack.push(playerPack);
-
-      let dashUI = new Transform();
-      dashUI.SetPosValues(70, 20);
-      dashUI.SetSizeValues(100, 20);
-      dashUI.SetColor(Color.DarkGrey);
-      let pashPack = dashUI.GetDataPack();
-      pashPack.id = player.id;
-      pashPack.type = 3;
-      pack.push(pashPack);
-
-      dashUI.SetColor(Color.Grey);
-      if (player.dashBuffer >= player.dashBufferMax)
-        dashUI.SetColor(Color.LightGrey);
-      dashUI.SetPosValues(
-        25 + 45 * (player.dashBuffer / player.dashBufferMax),
-        20
-      );
-      dashUI.SetSizeValues(90 * (player.dashBuffer / player.dashBufferMax), 10);
-
-      pashPack = dashUI.GetDataPack();
-      pashPack.id = player.id;
-      pashPack.type = 3;
-      pack.push(pashPack);
-
-      let square = new Transform();
-      for (let si = 0; si < 4; si++) {
-        square.SetSizeValues(20, 20);
-        square.SetColor(Color.DarkGrey);
-        square.SetPosValues(150 + si * 40, 20);
-        let sPack = square.GetDataPack();
-        sPack.id = player.id;
-        sPack.type = 3;
-        pack.push(sPack);
-        if (si == player.weaponType) {
-          square.SetSizeValues(10, 10);
-          square.SetColor(Color.DarkGrey);
-          square.SetColor(Color.LightGrey);
-          sPack = square.GetDataPack();
-          sPack.id = player.id;
-          sPack.type = 3;
-          pack.push(sPack);
-        }
-      }
     });
-
-    while (deadPlayers.length > 0) {
-      let deadPlayer = deadPlayers.pop();
-      if (deadPlayer !== undefined) deadPlayer.TakeDamage(deadPlayer.hp);
-    }
+    deadPlayers.forEach((deadPlayer) => {
+      deadPlayer.TakeDamage(deadPlayer.hp);
+    });
+    deadPlayers.clear();
   }
 }

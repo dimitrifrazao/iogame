@@ -1,17 +1,25 @@
 import express = require("express");
+import { Game } from "./mainGame/game";
+import { DataPack, GameData } from "../shared/data";
+
 var path = require("path");
 var http = require("http");
 
 const app: express.Application = express();
+app.set("view engine", "ejs");
+
 var serv = http.Server(app);
 
 const rooDir = path.resolve(__dirname, "../");
 var indexPath = path.join(rooDir + "/client/index.html");
+var indexEJSPath = path.join(rooDir + "/client/index.ejs");
+
 var gamePath = path.join(rooDir + "/client/game.html");
 var clientPath = path.join(rooDir + "/client");
 
 app.get("/", function (req, res) {
-  res.sendFile(indexPath);
+  res.render(indexEJSPath, { message: "" });
+  //res.sendFile(indexPath);
 });
 
 let PlayerNames = new Set<string>();
@@ -22,8 +30,11 @@ app.get("/start", function (req, res) {
   if (typeof name === "string" && name.length !== 0 && !PlayerNames.has(name)) {
     res.sendFile(gamePath);
     queryName = name;
+  } else if (typeof name === "string" && PlayerNames.has(name)) {
+    res.render(indexEJSPath, { message: name + " is already in use" });
+    //res.sendFile(indexPath);
   } else {
-    res.sendFile(indexPath);
+    res.render(indexEJSPath, { message: "You must enter a name." });
   }
 });
 
@@ -32,11 +43,6 @@ app.use("/client", express.static(clientPath));
 const PORT = process.env.PORT || 3000;
 serv.listen(PORT);
 console.log("Server listening on port " + PORT);
-
-import { Game } from "./mainGame/game";
-import { World } from "./mainGame/world";
-import { Player } from "./gameObjects/player";
-import { DataPack } from "../shared/data";
 
 Game.inst.Init();
 
@@ -58,25 +64,21 @@ io.sockets.on("connection", function (socket: any) {
   NAME_LIST.set(socket.id, queryName);
   PlayerNames.add(queryName);
 
-  socket.emit("worldData", World.inst.GenerateDataPack());
-  socket.emit("worldSize", World.inst.GetWorldSizeData());
+  // game start, send data to client
+  socket.emit("worldData", Game.inst.EmitWorldData());
   socket.emit("setPlayerId", { id: socket.id });
-
-  console.log("Adding player: " + queryName);
   Game.inst.AddPlayer(socket.id, queryName, EmitDeadPlayer);
 
+  // receive client input
   socket.on("playerDir", function (data: any) {
-    //console.log("press " + data.dir);
     Game.inst.SetPlayerDir(socket.id, data.dir);
   });
 
   socket.on("shoot", function (data: any) {
-    //console.log("shoot");
     Game.inst.Shoot(socket.id, data.dir);
   });
 
   socket.on("dash", function (data: any) {
-    //console.log("shoot");
     Game.inst.Dash(socket.id, data.dash);
   });
 
@@ -94,13 +96,14 @@ io.sockets.on("connection", function (socket: any) {
       console.log("disconnecting " + name);
       PlayerNames.delete(name);
     }
-    Player.DeletePlayer(socket.id);
+    Game.inst.DeletePlayer(socket.id);
     NAME_LIST.delete(socket.id);
     SOCKET_LIST.delete(socket.id);
   });
 });
 
-var EmitDeadPlayer = function (dead_id: number, data: any) {
+// send client data
+function EmitDeadPlayer(dead_id: number, data: any) {
   SOCKET_LIST.forEach((socket, id) => {
     socket.emit("worldAddDeadBody", data);
   });
@@ -108,13 +111,19 @@ var EmitDeadPlayer = function (dead_id: number, data: any) {
   if (name !== undefined) PlayerNames.delete(name);
   NAME_LIST.delete(dead_id);
   console.log("releasing name: " + name);
-};
+}
+
+function SendGameData(gameData: GameData) {
+  SOCKET_LIST.forEach((socket, id) => {
+    socket.emit("gameData", gameData);
+  });
+}
 
 const FRAME_RATE = 50;
 setInterval(function () {
   Game.inst.Tick();
 
-  let pack: DataPack[] = [];
+  let pack: any[] = [];
   try {
     pack = Game.inst.Update();
   } catch (error) {
@@ -123,8 +132,8 @@ setInterval(function () {
   }
 
   SOCKET_LIST.forEach((socket, id) => {
-    let player = Player.GetPlayer(socket.id);
-    if (player !== null) socket.emit("cameraPos", { pos: player.GetPos() });
+    let playerData = Game.inst.GetPlayerData(id);
+    socket.emit("playerData", playerData);
     socket.emit("update", pack);
   });
 }, 1000 / FRAME_RATE);

@@ -1,24 +1,20 @@
 export class Color {
   static maxValue: number = 255;
 
-  static Black: Color = new Color(0, 0, 0);
-  static White: Color = new Color(255, 255, 255);
-  static Red: Color = new Color(255, 0, 0);
-  static Green: Color = new Color(0, 255, 0);
-  static Blue: Color = new Color(0, 0, 255);
-  static Orange: Color = new Color(255, 165, 0);
+  static readonly Black: Color = new Color(0, 0, 0);
+  static readonly White: Color = new Color(255, 255, 255);
+  static readonly Red: Color = new Color(255, 0, 0);
+  static readonly Green: Color = new Color(0, 255, 0);
+  static readonly Blue: Color = new Color(0, 0, 255);
+  static readonly Orange: Color = new Color(255, 165, 0);
+  static readonly Yellow: Color = new Color(255, 255, 0);
+  static readonly Cyan: Color = new Color(0, 255, 255);
+  static readonly Magenta: Color = new Color(255, 0, 255);
+  static readonly LightGrey: Color = new Color(200, 200, 200);
+  static readonly Grey: Color = new Color(100, 100, 100);
+  static readonly DarkGrey: Color = new Color(50, 50, 50);
 
-  static Yellow: Color = new Color(255, 255, 0);
-  static Cyan: Color = new Color(0, 255, 255);
-  static Magenta: Color = new Color(255, 0, 255);
-
-  static LightGrey: Color = new Color(200, 200, 200);
-  static Grey: Color = new Color(100, 100, 100);
-  static DarkGrey: Color = new Color(50, 50, 50);
-
-  static Transparent: Color = new Color(0, 0, 0, 0.2);
-
-  static EmptyPlayer: Color = new Color(150, 0, 0);
+  static readonly EmptyPlayer: Color = new Color(150, 0, 0);
 
   constructor(
     public r: number = 0,
@@ -26,12 +22,30 @@ export class Color {
     public b: number = 0,
     public a: number = 1 // alpha goes from 0 to 1
   ) {}
+
+  Copy(): Color {
+    return new Color(this.r, this.g, this.b, this.a);
+  }
+
+  ScaleBy(scale: number) {
+    this.r *= scale;
+    this.g *= scale;
+    this.b *= scale;
+  }
+
   static Random() {
     return new Color(
       Math.random() * 255,
       Math.random() * 255,
       Math.random() * 255
     );
+  }
+
+  // player colors should not use red
+  static PlayerRandom() {
+    let g = Math.random() * 200;
+    let b = 200 - g;
+    return new Color(0.0, g, b);
   }
 
   ToString() {

@@ -60,18 +60,21 @@ export class Vector {
     else this.y = this.y % y;
   }
 
-  copy(): Vector {
+  Copy(): Vector {
     return Vector.Copy(this);
   }
 
-  static Up: Vector = new Vector(0, -1);
-  static Down: Vector = new Vector(0, 1);
-  static Left: Vector = new Vector(-1, 0);
-  static Right: Vector = new Vector(1, 0);
-  static UpLeft: Vector = new Vector(-1, -1).normal();
-  static UpRight: Vector = new Vector(1, -1).normal();
-  static DownLeft: Vector = new Vector(-1, 1).normal();
-  static DownRight: Vector = new Vector(1, 1).normal();
+  static readonly Up: Vector = new Vector(0, -1);
+  static readonly Down: Vector = new Vector(0, 1);
+  static readonly Left: Vector = new Vector(-1, 0);
+  static readonly Right: Vector = new Vector(1, 0);
+  static readonly UpLeft: Vector = new Vector(-1, -1).normal();
+  static readonly UpRight: Vector = new Vector(1, -1).normal();
+  static readonly DownLeft: Vector = new Vector(-1, 1).normal();
+  static readonly DownRight: Vector = new Vector(1, 1).normal();
+
+  static readonly FlipH: Vector = new Vector(-1, 1);
+  static readonly FlipV: Vector = new Vector(1, -1);
 
   static Zero: Vector = new Vector();
 

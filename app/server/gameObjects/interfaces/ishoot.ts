@@ -1,22 +1,19 @@
 import { Transform } from "../transform";
-
+import { DirEnum } from "../../../shared/enums/playerInput";
 /*
 Interfaces between bullets & players
 */
 export interface IBulletManager {
   bullets: Map<number, IBulletObserver>;
-  AddBullet(bullet: IBulletObserver): void;
+  AddBullet(bullet: IBulletObserver, dir: DirEnum): void;
   RemoveBullet(bullet: IBulletObserver): void;
-  //RemovePlayer(): void;
-  //GetId(): number;
-  //LevelUp(): void;
-  //AddHp(hp: number): void;
 }
 
 export interface IBulletObserver {
   GetPlayerManager(): IBulletManager | null;
   Release(): void;
   GetId(): number;
+  Shoot(dir: DirEnum): void;
 }
 
 export interface IPlayer {

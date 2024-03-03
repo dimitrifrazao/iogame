@@ -1,16 +1,17 @@
-import { Vector } from "../../shared/vector";
-import { Transform } from "./transform";
-import { DataPack } from "../../shared/data";
+import { Vector } from "./vector";
+import { DataPack } from "./data";
 
 export class BoundingBox {
   // these 2 vectors are in world space
   private topLeft: Vector;
   private botRight: Vector;
-  constructor(topLeft = new Vector(), botRight = new Vector()) {
+  constructor(topLeft = new Vector(0, 0), botRight = new Vector(0, 0)) {
     this.topLeft = topLeft;
     this.botRight = botRight;
     if (topLeft.x > botRight.x || topLeft.y > botRight.y) {
       console.log("ERROR: bounding box topLeft and bottomRight crossing");
+      this.topLeft = botRight;
+      this.botRight = topLeft;
     }
   }
 
@@ -30,44 +31,37 @@ export class BoundingBox {
     return new Vector(this.GetSizeX(), this.GetSizeY());
   }
 
-  GetTransform(): Transform {
-    let t = new Transform();
-    let size = this.botRight.newSub(this.topLeft);
-    let center = this.topLeft.newAdd(size.newScaleBy(0.5));
-    t.SetPos(center);
-    t.SetSize(size);
-    return t;
+  GetArea(): number {
+    return this.GetSizeX() * this.GetSizeY();
   }
 
   GetCenterPoint(): Vector {
-    return this.GetTransform().GetPos();
+    return this.topLeft.newAdd(
+      this.botRight.newSub(this.topLeft).newScaleBy(0.5)
+    );
   }
 
-  GetDataPack(): DataPack {
+  /* GetDataPack(): DataPack {
     return this.GetTransform().GetDataPack();
-  }
+  } */
 
   CheckCollision(bb: BoundingBox): boolean {
-    let topLeft = bb.GetTopLeft();
-    let botRight = bb.GetBotRight();
+    let pos1 = this.GetCenterPoint();
+    let pos2 = bb.GetCenterPoint();
+    let size1 = this.GetSize();
+    let size2 = bb.GetSize();
 
-    let topRight = topLeft.copy();
-    let botLeft = botRight.copy();
-    topRight.x = botRight.x;
-    botLeft.x = topLeft.x;
-
-    if (this.CheckVectorCollision(topLeft)) return true;
-    if (this.CheckVectorCollision(botRight)) return true;
-    if (this.CheckVectorCollision(topRight)) return true;
-    if (this.CheckVectorCollision(botLeft)) return true;
-    return false;
+    return (
+      Math.abs(pos1.x - pos2.x) < (size1.x + size2.x) / 2 &&
+      Math.abs(pos1.y - pos2.y) < (size1.y + size2.y) / 2
+    );
   }
 
-  CheckTransformCollision(transform: Transform) {
+  /* CheckTransformCollision(transform: Transform) {
     return transform.CheckBBCollision(this);
-  }
+  } */
 
-  CheckVectorCollision(vec: Vector) {
+  CheckVectorCollision(vec: Vector): boolean {
     return (
       vec.x > this.topLeft.x &&
       vec.x < this.botRight.x &&
@@ -88,7 +82,7 @@ export class BoundingBox {
     return new BoundingBox(topLeft, botRight);
   }
 
-  static Sub(bb1: BoundingBox, bb2: BoundingBox) {
+  static Sub(bb1: BoundingBox, bb2: BoundingBox): BoundingBox {
     let topLeft = new Vector(
       Math.max(bb1.topLeft.x, bb2.topLeft.x),
       Math.max(bb1.topLeft.y, bb2.topLeft.y)
@@ -100,19 +94,18 @@ export class BoundingBox {
     return new BoundingBox(topLeft, botRight);
   }
 
-  static MakeFrom(trans: Transform): BoundingBox {
+  /* static MakeFrom(trans: Transform): BoundingBox {
     let topLeft = Vector.Copy(trans.GetPos());
     let botRight = Vector.Copy(trans.GetPos());
     topLeft.sub(Vector.ScaleBy(trans.GetSize(), 0.5));
     botRight.add(Vector.ScaleBy(trans.GetSize(), 0.5));
     return new BoundingBox(topLeft, botRight);
-  }
+  } */
 
-  static MakeFromVectorAndSize(vec: Vector, size: Vector): BoundingBox {
-    let topLeft = Vector.Copy(vec);
-    let botRight = Vector.Copy(vec);
-    topLeft.sub(Vector.ScaleBy(size, 0.5));
-    botRight.add(Vector.ScaleBy(size, 0.5));
-    return new BoundingBox(topLeft, botRight);
+  static MakeFromPosAndSize(pos: Vector, size: Vector): BoundingBox {
+    return new BoundingBox(
+      pos.newSub(size.newScaleBy(0.5)),
+      pos.newAdd(size.newScaleBy(0.5))
+    );
   }
 }

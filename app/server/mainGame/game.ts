@@ -6,7 +6,7 @@ import { Bullet } from "../gameObjects/bullet";
 import { QuadtreeNode } from "../gameObjects/quadTree";
 import { ClientRequestEnum } from "../../shared/enums/clientRequests";
 import { Global } from "./global";
-import { DataPack } from "../../shared/data";
+import { DataPack, GameData, GameDataType } from "../../shared/data";
 
 export class Game {
   static inst: Game = new Game();
@@ -20,7 +20,7 @@ export class Game {
     let v = 40;
     let s = 30;
     Global.unitSize = s;
-    World.inst = new World(h, v, s);
+    new World(h, v, s);
     World.inst.Build();
     let center = World.inst.GetWorldCenter();
     let size = World.inst.GetWorldSize();
@@ -37,6 +37,10 @@ export class Game {
 
   GetDeltaTime() {
     return this.dt * this.timeScale;
+  }
+
+  EmitWorldData(): GameData {
+    return World.inst.GetWorldData();
   }
 
   AddPlayer(id: number, name: string, EmitDeadPlayer: any) {
@@ -61,31 +65,9 @@ export class Game {
 
   Shoot(id: number, dir: DirEnum) {
     let player = Player.GetPlayer(id);
-    if (player != null) {
-      let damageData = player.GetWeaponData();
-      let hasHP = player.hp >= 1 + damageData.damage;
-      let maxOverHP = player.bullets.keys.length <= player.hpMax * 2;
-      if (hasHP && maxOverHP && !player.IsDashing()) {
-        let pos = Vector.Copy(player.GetPos());
-
-        let bullet = new Bullet(player);
-        bullet.SetDamage(damageData.damage);
-        bullet.speed = damageData.speed;
-        //bullet.SetSize( new Vector(damageData.size, damageData.size) );
-        bullet.SetColor(player.GetColor());
-
-        pos.add(
-          Vector.ScaleBy(
-            Vector.GetDirVector(dir),
-            player.GetSize().x / 2 + bullet.GetSize().x / 2
-          )
-        );
-        bullet.SetPos(pos);
-        bullet.SetDirection(dir);
-
-        player.AddBullet(bullet);
-        player.TakeDamage(damageData.damage);
-      }
+    if (player !== null && player.CanShoot()) {
+      let bullet = new Bullet(player);
+      player.AddBullet(bullet, dir);
     }
   }
 
@@ -107,8 +89,17 @@ export class Game {
     }
   }
 
-  Update(): DataPack[] {
-    let pack: DataPack[] = [];
+  GetPlayerData(id: number): GameData {
+    let gameData = new GameData(GameDataType.PlayerData);
+    let player = Player.GetPlayer(id);
+    if (player !== null) {
+      player.SetPlayerGameData(gameData);
+    }
+    return gameData;
+  }
+
+  Update(): any[] {
+    let pack: any[] = [];
     let dt = this.GetDeltaTime();
     QuadtreeNode.root.Clear();
     Player.UpdatePlayers(dt, pack);
@@ -116,7 +107,11 @@ export class Game {
     if (Global.debugToggle) {
       QuadtreeNode.root.AddDataPacks(pack); // draw quad tree
     }
-    //pack.push({ dt: dt });
+    if (Global.debugToggle) {
+      let frameRate = new GameData(GameDataType.FrameRate);
+      frameRate.data.push(dt);
+      pack.push(frameRate);
+    }
     return pack;
   }
 }

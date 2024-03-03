@@ -29,19 +29,19 @@ export class QuadtreeNode extends Transform {
     this.children.length = 0;
   }
 
-  Retrieve(transform: Transform): Transform[] {
-    let neighbours: Transform[] = [];
+  Retrieve(transform: Transform): Set<Transform> {
+    let neighbours = new Set<Transform>();
     this.RetrieveRec(transform, neighbours);
     return neighbours;
   }
 
-  private RetrieveRec(transform: Transform, neighbours: Transform[]) {
+  private RetrieveRec(transform: Transform, neighbours: Set<Transform>) {
     if (!this.CheckCollision(transform)) return;
     this.children.forEach((child) => {
       child.RetrieveRec(transform, neighbours);
     });
     this.transforms.forEach((transform) => {
-      neighbours.push(transform);
+      neighbours.add(transform);
     });
   }
 
@@ -73,7 +73,7 @@ export class QuadtreeNode extends Transform {
     let size = this.GetSize();
     let halfSize = size.newScaleBy(0.5);
     let quarterSize = size.newScaleBy(0.25);
-    let flipped = quarterSize.copy();
+    let flipped = quarterSize.Copy();
     flipped.x *= -1.0;
     let newDepth = this.depth + 1;
 
@@ -93,7 +93,7 @@ export class QuadtreeNode extends Transform {
 
   AddDataPacks(packs: DataPack[]) {
     let p = super.GetDataPack();
-    p.type = UnitType.QuadTree;
+    p.unitType = UnitType.QuadTree;
     p.SetColor(Color.Green);
     packs.push(p);
     this.children.forEach((child) => {
