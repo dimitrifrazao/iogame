@@ -1,6 +1,7 @@
 **/.DS_Store
 .DS_Store
-
+nohup
+nohup.out
 
 # Logs
 logs
