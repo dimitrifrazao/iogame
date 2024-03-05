@@ -4,17 +4,26 @@ const express = require("express");
 const game_1 = require("./mainGame/game");
 var path = require("path");
 var http = require("http");
+//const fs = require("fs");
+const fs_1 = require("fs");
 const app = express();
 app.set("view engine", "ejs");
 var serv = http.Server(app);
-const rooDir = path.resolve(__dirname, "../");
-var indexPath = path.join(rooDir + "/client/index.html");
-var indexEJSPath = path.join(rooDir + "/client/index.ejs");
-var gamePath = path.join(rooDir + "/client/game.html");
-var clientPath = path.join(rooDir + "/client");
+const projectDir = path.resolve(__dirname, "../../");
+const rootDir = path.resolve(__dirname, "../");
+var indexPath = path.join(rootDir + "/client/index.html");
+var indexEJSPath = path.join(rootDir + "/client/index.ejs");
+var gamePath = path.join(rootDir + "/client/game.html");
+var clientPath = path.join(rootDir + "/client");
 app.get("/", function (req, res) {
     res.render(indexEJSPath, { message: "" });
     //res.sendFile(indexPath);
+});
+// https
+var keyPath = path.join(projectDir + "/F63369EE89B8762C73F6D5370722D843.txt");
+const file = (0, fs_1.readFileSync)(keyPath);
+app.get("/.well-known/pki-validation/", (req, res) => {
+    res.sendFile(keyPath);
 });
 let PlayerNames = new Set();
 var queryName = "";
