@@ -3,6 +3,10 @@
 nohup
 nohup.out
 
+/ssl
+/build/server
+/build/shared
+
 # Logs
 logs
 *.log
